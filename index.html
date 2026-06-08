@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v12 (Drill-down Explorer)</title>
+    <title>LINE Talk Viewer v13 (Logout Supported)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -54,17 +54,18 @@
                     Googleドライブと連携する
                 </button>
                 
+                <button id="logoutBtn" class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs py-1.5 px-3 rounded font-medium shadow-2xs transition hidden cursor-pointer">
+                    連携を解除する
+                </button>
+                
                 <div id="driveExplorerZone" class="hidden space-y-1.5 pt-1 flex flex-col min-h-0">
                     <label class="block text-[11px] font-bold text-gray-500">ドライブを探索</label>
-                    
                     <div id="breadcrumb" class="text-xs bg-gray-100 p-2 rounded border border-gray-200 text-gray-600 font-medium break-all select-none">
                         読み込み中...
                     </div>
-                    
                     <button id="batchLoadBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded font-bold shadow-sm transition hidden cursor-pointer">
                         ⚡ このフォルダ内のトークをすべて結合
                     </button>
-                    
                     <div id="explorerList" class="border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-52 overflow-y-auto text-xs">
                         <p class="text-gray-400 text-center py-4">読み込み中...</p>
                     </div>
@@ -127,7 +128,6 @@
         let currentMe = "";
         let globalSenders = [];
 
-        // 📁 エクスプローラー管理用の状態変数
         let currentFolderId = 'root'; 
         let folderHistory = [{ id: 'root', name: 'マイドライブ' }];
         let currentFolderFiles = []; 
@@ -143,6 +143,7 @@
         const talkTitle = document.getElementById('talkTitle');
         const talkSub = document.getElementById('talkSub');
         const authBtn = document.getElementById('authBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
         const driveExplorerZone = document.getElementById('driveExplorerZone');
         const breadcrumb = document.getElementById('breadcrumb');
         const batchLoadBtn = document.getElementById('batchLoadBtn');
@@ -196,8 +197,7 @@
                         return;
                     }
                 }
-                guideText.innerText = "右上のメニューを開き、Googleドライブと連携してください。同一タブで滑らかに認証します。";
-                talkSub.innerText = "未連携";
+                clearUiToUnauthenticated();
             });
         };
 
@@ -206,40 +206,77 @@
             window.location.href = authUrl;
         });
 
+        // 🔓 連携を解除する（ログアウト）処理の実装
+        logoutBtn.addEventListener('click', () => {
+            const currentToken = localStorage.getItem('drive_access_token');
+            if (currentToken) {
+                // Googleのサーバー側へトークンの失効を通知
+                google.accounts.oauth2.revokeToken(currentToken, () => {
+                    console.log('Googleトークンの失効処理が完了しました');
+                });
+            }
+            // ブラウザのストレージデータを完全消去
+            localStorage.removeItem('drive_access_token');
+            localStorage.removeItem('drive_token_expiry');
+            gapi.client.setToken(null);
+            
+            // UIを初期状態に戻す
+            clearUiToUnauthenticated();
+            
+            // 画面を初期化
+            chatContainer.innerHTML = `
+                <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+                    <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
+                    <p class="text-xs text-white/80">連携を解除しました。</p>
+                </div>
+            `;
+            talkTitle.innerText = "LINE Talk Viewer";
+            talkSub.innerText = "未連携";
+            
+            alert("Googleアカウントの連携を解除しました。");
+            toggleDrawer();
+        });
+
         function setAuthSuccessState() {
             authBtn.innerText = "✓ 連携完了";
             authBtn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
+            logoutBtn.classList.remove('hidden'); // 解除ボタンを出出
             guideText.innerText = "自動ログインに成功しました！右上のメニューを開き、ファイラーを掘り下げてLINEのバックアップフォルダを探してください。";
             talkSub.innerText = "フォルダを探してください";
         }
 
-        // 📁 コア機能：指定階層（folderId）の直下にあるフォルダ・ファイルを両方取得して描画する
+        function clearUiToUnauthenticated() {
+            authBtn.innerText = "Googleドライブと連携する";
+            authBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
+            logoutBtn.classList.add('hidden'); // 解除ボタンを隠す
+            driveExplorerZone.classList.add('hidden');
+            guideText.innerText = "右上のメニューを開き、Googleドライブと連携してください。同一タブで安全に認証します。";
+            talkSub.innerText = "未連携";
+            
+            // 探索ヒストリのリセット
+            currentFolderId = 'root';
+            folderHistory = [{ id: 'root', name: 'マイドライブ' }];
+            currentFolderFiles = [];
+        }
+
+        // 📁 エクスプローラー描画
         async function renderExplorer(folderId) {
             currentFolderId = folderId;
             explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
             batchLoadBtn.classList.add('hidden');
+            driveExplorerZone.classList.remove('hidden');
             updateBreadcrumb();
 
             try {
-                // フォルダとテキストファイル（.txt）をまとめて一挙に取得
                 const response = await gapi.client.drive.files.list({
                     q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain') and trashed = false`,
-                    fields: 'files(id, name, mimeType)',
-                    pageSize: 100,
-                    orderBy: 'folder,name'
+                    fields: 'files(id, name, mimeType)', pageSize: 100, orderBy: 'folder,name'
                 });
-
                 const files = response.result.files;
-                explorerList.innerHTML = '';
-                currentFolderFiles = [];
-
-                if (!files || files.length === 0) {
-                    explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">📁 このフォルダは空っぽです</p>';
-                    return;
-                }
+                explorerList.innerHTML = ''; currentFolderFiles = [];
+                if (!files || files.length === 0) { explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">📁 このフォルダは空っぽです</p>'; return; }
 
                 let textFileCount = 0;
-
                 files.forEach(file => {
                     const isFolder = (file.mimeType === 'application/vnd.google-apps.folder');
                     const item = document.createElement('div');
@@ -247,105 +284,62 @@
                     
                     if (isFolder) {
                         item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span><span class="text-gray-400 text-[10px] ml-2">開く →</span>`;
-                        item.addEventListener('click', () => {
-                            folderHistory.push({ id: file.id, name: file.name });
-                            renderExplorer(file.id);
-                        });
+                        item.addEventListener('click', () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); });
                     } else {
-                        // テキストファイル
                         item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`;
-                        currentFolderFiles.push(file);
-                        textFileCount++;
-                        
-                        // 単体ファイルをタップした際も個別で読めるようにバックアップ対応
-                        item.addEventListener('click', () => {
-                            talkTitle.innerText = "単一ファイルをロード中...";
-                            processSingleDriveFile(file.id, file.name);
-                        });
+                        currentFolderFiles.push(file); textFileCount++;
+                        item.addEventListener('click', () => { talkTitle.innerText = "単一ファイルをロード中..."; processSingleDriveFile(file.id, file.name); });
                     }
                     explorerList.appendChild(item);
                 });
 
-                // 💡 フォルダ内にテキストファイルが1つでもあれば、一括結合ボタンを最上部にドカンと出す！
                 if (textFileCount > 0) {
                     batchLoadBtn.innerText = `⚡ このフォルダ内のトーク (${textFileCount}個) を一括結合`;
                     batchLoadBtn.classList.remove('hidden');
                 }
-
             } catch (err) {
-                console.error("エクスプローラー描画失敗:", err);
+                console.error(err);
                 explorerList.innerHTML = '<p class="text-red-500 text-center py-4">データの取得に失敗しました</p>';
             }
         }
 
-        // 🥖 パンくずリスト（現在地）の表示更新と、タップによる階層逆戻り処理
         function updateBreadcrumb() {
             breadcrumb.innerHTML = '';
             folderHistory.forEach((f, idx) => {
-                if (idx > 0) {
-                    const arrow = document.createElement('span');
-                    arrow.className = 'mx-1 text-gray-300';
-                    arrow.innerText = '>';
-                    breadcrumb.appendChild(arrow);
-                }
-                const node = document.createElement('span');
-                const isLast = (idx === folderHistory.length - 1);
-                node.className = isLast ? 'font-bold text-gray-800' : 'text-blue-600 hover:underline cursor-pointer';
-                node.innerText = f.name;
-                
-                if (!isLast) {
-                    node.addEventListener('click', () => {
-                        folderHistory = folderHistory.slice(0, idx + 1);
-                        renderExplorer(f.id);
-                    });
-                }
+                if (idx > 0) { const arrow = document.createElement('span'); arrow.className = 'mx-1 text-gray-300'; arrow.innerText = '>'; breadcrumb.appendChild(arrow); }
+                const node = document.createElement('span'); const isLast = (idx === folderHistory.length - 1);
+                node.className = isLast ? 'font-bold text-gray-800' : 'text-blue-600 hover:underline cursor-pointer'; node.innerText = f.name;
+                if (!isLast) { node.addEventListener('click', () => { folderHistory = folderHistory.slice(0, idx + 1); renderExplorer(f.id); }); }
                 breadcrumb.appendChild(node);
             });
         }
 
-        // ⚡ ボタン一発！現在開いているフォルダ直下の全ファイルを一括合体
         batchLoadBtn.addEventListener('click', async () => {
             if (currentFolderFiles.length === 0) return;
             talkTitle.innerText = "フォルダ内を全自動結合中...";
             let combinedTexts = [];
-
             for (let file of currentFolderFiles) {
-                try {
-                    const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
-                    combinedTexts.push({ text: contentResponse.body, name: file.name });
-                } catch (err) {
-                    console.error("ファイルダウンロード失敗:", file.name, err);
-                }
+                try { const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' }); combinedTexts.push({ text: contentResponse.body, name: file.name }); }
+                catch (err) { console.error(err); }
             }
             processMultipleTexts(combinedTexts);
         });
 
-        // 単一ファイル読み込み時の補助関数
         async function processSingleDriveFile(fileId, filename) {
-            try {
-                const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-                processMultipleTexts([{ text: contentResponse.body, name: filename }]);
-            } catch (err) {
-                console.error(err);
-                alert("ファイルの取得に失敗しました。");
-            }
+            try { const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); processMultipleTexts([{ text: contentResponse.body, name: filename }]); }
+            catch (err) { console.error(err); alert("ファイルの取得に失敗しました。"); }
         }
 
-        // ローカル複数読み込み（バックアップ用）
         fileInput.addEventListener('change', async (e) => {
             const files = e.target.files; if (files.length === 0) return;
-            talkTitle.innerText = "ファイルを結合中...";
-            let combinedTexts = [];
+            talkTitle.innerText = "ファイルを結合中..."; let combinedTexts = [];
             for (let file of files) {
-                const text = await new Promise((resolve) => {
-                    const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsText(file, 'UTF-8');
-                });
+                const text = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsText(file, 'UTF-8'); });
                 combinedTexts.push({ text: text, name: file.name });
             }
             processMultipleTexts(combinedTexts);
         });
 
-        // 🧠 アルゴリズム：複数テキストを結合・時系列ソート・重複完全カット
         function processMultipleTexts(fileObjects) {
             let allRawMessages = []; let senderCounts = {};
             fileObjects.forEach(obj => { const { messages } = parseLineText(obj.text, obj.name); allRawMessages = allRawMessages.concat(messages); });
@@ -383,12 +377,7 @@
         function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); talkTitle.innerText = partners.length > 0 ? partners.join(', ') : currentMe; }
         function createSafeDate(dateStr) { if (!dateStr) return null; const matches = dateStr.match(/\d+/g); if (!matches || matches.length < 3) return null; return new Date(parseInt(matches[0], 10), parseInt(matches[1], 10) - 1, parseInt(matches[2], 10), 12, 0, 0); }
 
-        function clearAuth() {
-            localStorage.removeItem('drive_access_token'); localStorage.removeItem('drive_token_expiry');
-            guideText.innerText = "セッションが切れました。メニューから再連携してください。";
-            authBtn.innerText = "Googleドライブと連携する";
-            authBtn.className = "w-full bg-blue-600 text-white text-xs py-2 px-3 rounded font-bold cursor-pointer";
-        }
+        function clearAuth() { clearUiToUnauthenticated(); guideText.innerText = "セッションが切れました。メニューから再連携してください。"; }
 
         filterDateBtn.addEventListener('click', () => {
             const start = startDateInput.value ? createSafeDate(startDateInput.value) : null; const end = endDateInput.value ? createSafeDate(endDateInput.value) : null; if (!start && !end) return;
