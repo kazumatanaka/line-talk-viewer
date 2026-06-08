@@ -1,10 +1,9 @@
- 
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local LINE Viewer v6 (Drive Link)</title>
+    <title>Local LINE Viewer v7 (Auto Auth)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -105,19 +104,15 @@
     <main id="chatContainer" class="flex-1 overflow-y-auto p-4 line-bg flex flex-col space-y-4 select-text">
         <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
             <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-            <p class="text-xs text-white/80">右上の三本線メニューを開き、「Googleドライブと連携する」ボタンを押してください。</p>
+            <p id="guideText" class="text-xs text-white/80">APIを準備中...</p>
         </div>
     </main>
 
     <script>
-        // 🔑 あなたが取得したクライアントIDを自動埋め込み済み
         const CLIENT_ID = '903007987907-ctng3cio3hdiedu6ckimvtgkf1d5uq6s.apps.googleusercontent.com';
-        // 必要なスコープ（ドライブ内のメタデータ一覧と、ファイル中身の読み取り権限）
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
         let tokenClient;
-        let accessToken = null;
-
         let globalMessages = []; 
         let filteredMessages = []; 
         let currentMe = "";
@@ -136,6 +131,7 @@
         const authBtn = document.getElementById('authBtn');
         const driveFileZone = document.getElementById('driveFileZone');
         const driveFileSelector = document.getElementById('driveFileSelector');
+        const guideText = document.getElementById('guideText');
 
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
@@ -158,11 +154,19 @@
         window.onload = function() {
             gapi.load('client', async () => {
                 await gapi.client.init({});
-                // ドライブAPIのメタデータを有効化
                 await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+                
+                // 💾 記憶された鍵があるか確認
+                const savedToken = localStorage.getItem('google_drive_token');
+                if (savedToken) {
+                    gapi.client.setToken({ access_token: savedToken });
+                    setAuthSuccessState();
+                    listDriveFiles();
+                } else {
+                    guideText.innerText = "右上の三本線メニューを開き、「Googleドライブと連携する」ボタンを押してください。";
+                }
             });
 
-            // OAuthログインクライアントの準備
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
@@ -171,26 +175,31 @@
                         alert("認証エラーが発生しました");
                         return;
                     }
-                    accessToken = tokenResponse.access_token;
-                    authBtn.innerText = "✓ 連携完了";
-                    authBtn.className = "w-full bg-gray-400 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
-                    // ドライブからテキストファイル一覧を取得
+                    // 🔑 取得した鍵をブラウザに保存！
+                    localStorage.setItem('google_drive_token', tokenResponse.access_token);
+                    setAuthSuccessState();
                     listDriveFiles();
                 },
             });
         };
 
-        // 連携ボタンのクリックイベント
+        // 連携成功時のボタン・テキスト表示切り替え
+        function setAuthSuccessState() {
+            authBtn.innerText = "✓ 連携完了";
+            authBtn.className = "w-full bg-gray-400 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
+            guideText.innerText = "連携に成功しました！右上のメニューから、表示したいLINEのトーク履歴ファイル(.txt)を選んでください。";
+            talkSub.innerText = "ファイルを選択してください";
+        }
+
         authBtn.addEventListener('click', () => {
-            // ログインポップアップを起動
             tokenClient.requestAccessToken({prompt: 'consent'});
         });
 
-        // 📂 Googleドライブから「.txt」ファイルの一覧を検索して引っ張ってくる関数
+        // 📂 Googleドライブからファイル一覧を取得
         async function listDriveFiles() {
             try {
                 const response = await gapi.client.drive.files.list({
-                    q: "mimeType = 'text/plain' and trashed = false", // ゴミ箱に入っていないテキストファイル
+                    q: "mimeType = 'text/plain' and trashed = false",
                     fields: 'files(id, name)',
                     pageSize: 100
                 });
@@ -205,17 +214,23 @@
                         option.innerText = file.name;
                         driveFileSelector.appendChild(option);
                     });
-                    driveFileZone.classList.remove('hidden'); // セレクトボックスを表示
+                    driveFileZone.classList.remove('hidden');
                 } else {
-                    alert("ドライブ内にテキストファイル（.txt）が見つかりませんでした。");
+                    // もし鍵が古くなってエラーが出た場合は、再ログインを促すために保存をクリアする
+                    localStorage.removeItem('google_drive_token');
+                    alert("ドライブ内にテキストファイルが見つかりません。再連携を試してください。");
                 }
             } catch (err) {
                 console.error(err);
-                alert("ファイル一覧の取得に失敗しました。");
+                // 鍵の期限切れ（通常1時間）の場合は自動で古い鍵を消してリセット
+                localStorage.removeItem('google_drive_token');
+                guideText.innerText = "連携の期限が切れました。もう一度右上のメニューから連携し直してください。";
+                authBtn.innerText = "Googleドライブと連携する";
+                authBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
             }
         }
 
-        // ドライブ内のファイルが選ばれた時、中身をダウンロードして解析する処理
+        // ファイル選択時のダウンロードと解析
         driveFileSelector.addEventListener('change', async (e) => {
             const fileId = e.target.value;
             if (!fileId) return;
@@ -223,27 +238,21 @@
             talkTitle.innerText = "読み込み中...";
             
             try {
-                // ファイルのメタデータ（名前）を取得
                 const metaResponse = await gapi.client.drive.files.get({ fileId: fileId, fields: 'name' });
                 const filename = metaResponse.result.name;
 
-                // ファイルの本文（テキストデータ）をバイナリ/テキストとして直接ダウンロード
-                const contentResponse = await gapi.client.drive.files.get({
-                    fileId: fileId,
-                    alt: 'media'
-                });
-                
+                const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
                 const text = contentResponse.body;
                 processLoadedText(text, filename);
 
             } catch (err) {
                 console.error(err);
-                alert("ドライブからのファイル読み込みに失敗しました。");
+                alert("ファイルの読み込みに失敗しました。");
                 talkTitle.innerText = "LINE Talk Viewer";
             }
         });
 
-        // 従来通りのローカルファイル読み込み
+        // 予備のローカル読み込み
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -252,9 +261,8 @@
             reader.readAsText(file, 'UTF-8');
         });
 
-        // テキストデータを解析・描画ステージに流し込む共通処理
         function processLoadedText(text, filename) {
-            const { messages, senderCounts, chatPartner } = parseLineText(text, filename);
+            const { messages, senderCounts } = parseLineText(text, filename);
             
             globalMessages = messages;
             filteredMessages = [...globalMessages];
@@ -286,7 +294,7 @@
 
             updateHeaderTitle();
             renderChat(filteredMessages);
-            toggleDrawer(); // メニューを閉じる
+            toggleDrawer();
         }
 
         meSelector.addEventListener('change', (e) => {
