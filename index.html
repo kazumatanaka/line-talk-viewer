@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local LINE Viewer v7 (Auto Auth)</title>
+    <title>LINE Talk Viewer v8 (Perfect Auto Login)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -12,7 +12,6 @@
         .line-header-bg { background-color: #ffffff; }
         .bubble-other { background-color: #ffffff; color: #000000; }
         .bubble-me { background-color: #85e249; color: #000000; }
-        
         .bubble-me::after {
             content: ""; position: absolute; top: 12px; right: -7px;
             border-width: 5px 0 5px 8px; border-style: solid;
@@ -32,7 +31,7 @@
             <button class="text-gray-700 text-xl hover:opacity-70 cursor-pointer">←</button>
             <div>
                 <h1 id="talkTitle" class="font-bold text-gray-800 text-base select-text">LINE Talk Viewer</h1>
-                <p id="talkSub" class="text-[10px] text-gray-400">Googleドライブと連携してください</p>
+                <p id="talkSub" class="text-[10px] text-gray-400">自動ログインを準備中...</p>
             </div>
         </div>
         <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer">
@@ -104,7 +103,7 @@
     <main id="chatContainer" class="flex-1 overflow-y-auto p-4 line-bg flex flex-col space-y-4 select-text">
         <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
             <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-            <p id="guideText" class="text-xs text-white/80">APIを準備中...</p>
+            <p id="guideText" class="text-xs text-white/80">APIを読み込んでいます...</p>
         </div>
     </main>
 
@@ -112,13 +111,12 @@
         const CLIENT_ID = '903007987907-ctng3cio3hdiedu6ckimvtgkf1d5uq6s.apps.googleusercontent.com';
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
-        let tokenClient;
         let globalMessages = []; 
         let filteredMessages = []; 
         let currentMe = "";
         let globalSenders = [];
 
-        // DOMの取得
+        // DOM取得
         const menuBtn = document.getElementById('menuBtn');
         const closeMenuBtn = document.getElementById('closeMenuBtn');
         const drawerMenu = document.getElementById('drawerMenu');
@@ -150,52 +148,80 @@
             overlay.classList.toggle('hidden');
         }
 
-        // 🌐 Google APIの初期化
+        // 🌐 初期化と【超強力な自動ログイン】判定
         window.onload = function() {
             gapi.load('client', async () => {
                 await gapi.client.init({});
                 await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
                 
-                // 💾 記憶された鍵があるか確認
-                const savedToken = localStorage.getItem('google_drive_token');
-                if (savedToken) {
+                // 💾 保存されているアクセストークンがあるかチェック
+                const savedToken = localStorage.getItem('drive_access_token');
+                const tokenExpiry = localStorage.getItem('drive_token_expiry');
+                
+                // 有効期限内ならそのままログインスキップ！
+                if (savedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)) {
                     gapi.client.setToken({ access_token: savedToken });
                     setAuthSuccessState();
                     listDriveFiles();
                 } else {
-                    guideText.innerText = "右上の三本線メニューを開き、「Googleドライブと連携する」ボタンを押してください。";
+                    // 期限切れ、または初回なら自動で裏側から再取得を試みる（これが一番強力！）
+                    google.accounts.id.initialize({
+                        client_id: CLIENT_ID,
+                        callback: handleCredentialResponse,
+                        auto_select: true // 👈 過去に一度でもログインしていれば、ボタンを押さずとも自動ログイン！
+                    });
+                    google.accounts.id.renderButton(document.getElementById("authBtn"), { theme: "outline", size: "large" });
+                    
+                    // 通常ボタンのテキスト
+                    guideText.innerText = "右上のメニューを開き、Googleドライブと連携してください。";
+                    talkSub.innerText = "未連携";
                 }
-            });
-
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: (tokenResponse) => {
-                    if (tokenResponse.error !== undefined) {
-                        alert("認証エラーが発生しました");
-                        return;
-                    }
-                    // 🔑 取得した鍵をブラウザに保存！
-                    localStorage.setItem('google_drive_token', tokenResponse.access_token);
-                    setAuthSuccessState();
-                    listDriveFiles();
-                },
             });
         };
 
-        // 連携成功時のボタン・テキスト表示切り替え
+        // ワンタップ・自動ログイン成功時の処理
+        function handleCredentialResponse(response) {
+            // Googleの一発認証からトークンを自動展開
+            const tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                prompt: '', // 👈 画面を一切出さずに裏側で処理
+                callback: (tokenResponse) => {
+                    saveTokenAndLoad(tokenResponse.access_token, tokenResponse.expires_in);
+                }
+            });
+            tokenClient.requestAccessToken();
+        }
+
+        // 手動ボタンが押された時のバックアップ
+        authBtn.addEventListener('click', () => {
+            const tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    saveTokenAndLoad(tokenResponse.access_token, tokenResponse.expires_in);
+                }
+            });
+            tokenClient.requestAccessToken();
+        });
+
+        // 鍵の保存とファイル読み込み開始
+        function saveTokenAndLoad(token, expiresIn) {
+            localStorage.setItem('drive_access_token', token);
+            localStorage.setItem('drive_token_expiry', Date.now() + (expiresIn * 1000));
+            gapi.client.setToken({ access_token: token });
+            setAuthSuccessState();
+            listDriveFiles();
+        }
+
         function setAuthSuccessState() {
-            authBtn.innerText = "✓ 連携完了";
-            authBtn.className = "w-full bg-gray-400 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
-            guideText.innerText = "連携に成功しました！右上のメニューから、表示したいLINEのトーク履歴ファイル(.txt)を選んでください。";
+            authBtn.innerText = "✓ 連携完了（自動保存中）";
+            authBtn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
+            guideText.innerText = "自動ログインに成功しました！右上のメニューから、表示したいLINEのトーク履歴ファイル(.txt)を選んでください。";
             talkSub.innerText = "ファイルを選択してください";
         }
 
-        authBtn.addEventListener('click', () => {
-            tokenClient.requestAccessToken({prompt: 'consent'});
-        });
-
-        // 📂 Googleドライブからファイル一覧を取得
+        // 📂 ドライブからファイル一覧を取得
         async function listDriveFiles() {
             try {
                 const response = await gapi.client.drive.files.list({
@@ -203,59 +229,46 @@
                     fields: 'files(id, name)',
                     pageSize: 100
                 });
-                
                 const files = response.result.files;
                 driveFileSelector.innerHTML = '<option value="">-- ファイルを選択 --</option>';
-                
                 if (files && files.length > 0) {
                     files.forEach(file => {
                         const option = document.createElement('option');
-                        option.value = file.id;
-                        option.innerText = file.name;
+                        option.value = file.id; option.innerText = file.name;
                         driveFileSelector.appendChild(option);
                     });
                     driveFileZone.classList.remove('hidden');
-                } else {
-                    // もし鍵が古くなってエラーが出た場合は、再ログインを促すために保存をクリアする
-                    localStorage.removeItem('google_drive_token');
-                    alert("ドライブ内にテキストファイルが見つかりません。再連携を試してください。");
                 }
             } catch (err) {
                 console.error(err);
-                // 鍵の期限切れ（通常1時間）の場合は自動で古い鍵を消してリセット
-                localStorage.removeItem('google_drive_token');
-                guideText.innerText = "連携の期限が切れました。もう一度右上のメニューから連携し直してください。";
-                authBtn.innerText = "Googleドライブと連携する";
-                authBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
+                clearAuth();
             }
         }
 
-        // ファイル選択時のダウンロードと解析
-        driveFileSelector.addEventListener('change', async (e) => {
-            const fileId = e.target.value;
-            if (!fileId) return;
+        function clearAuth() {
+            localStorage.removeItem('drive_access_token');
+            localStorage.removeItem('drive_token_expiry');
+            guideText.innerText = "セッションが切れました。右上のメニューからもう一度連携してください。";
+            authBtn.innerText = "Googleドライブと連携する";
+            authBtn.className = "w-full bg-blue-600 text-white text-xs py-2 px-3 rounded font-bold cursor-pointer";
+        }
 
+        // ファイル選択
+        driveFileSelector.addEventListener('change', async (e) => {
+            const fileId = e.target.value; if (!fileId) return;
             talkTitle.innerText = "読み込み中...";
-            
             try {
                 const metaResponse = await gapi.client.drive.files.get({ fileId: fileId, fields: 'name' });
-                const filename = metaResponse.result.name;
-
                 const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-                const text = contentResponse.body;
-                processLoadedText(text, filename);
-
+                processLoadedText(contentResponse.body, metaResponse.result.name);
             } catch (err) {
                 console.error(err);
-                alert("ファイルの読み込みに失敗しました。");
                 talkTitle.innerText = "LINE Talk Viewer";
             }
         });
 
-        // 予備のローカル読み込み
         fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (evt) => processLoadedText(evt.target.result, file.name);
             reader.readAsText(file, 'UTF-8');
@@ -263,77 +276,30 @@
 
         function processLoadedText(text, filename) {
             const { messages, senderCounts } = parseLineText(text, filename);
-            
-            globalMessages = messages;
-            filteredMessages = [...globalMessages];
-            globalSenders = Object.keys(senderCounts);
-
+            globalMessages = messages; filteredMessages = [...globalMessages]; globalSenders = Object.keys(senderCounts);
             talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件のメッセージ`;
-
-            let assumedMe = "";
-            let maxCount = 0;
-            meSelector.innerHTML = '';
-
+            let assumedMe = "", maxCount = 0; meSelector.innerHTML = '';
             for (const [sender, count] of Object.entries(senderCounts)) {
-                const option = document.createElement('option');
-                option.value = sender;
-                option.innerText = `${sender} (${count}回)`;
-                meSelector.appendChild(option);
-
-                if (count > maxCount) {
-                    maxCount = count;
-                    assumedMe = sender;
-                }
+                const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; meSelector.appendChild(option);
+                if (count > maxCount) { maxCount = count; assumedMe = sender; }
             }
-
-            if (assumedMe) {
-                currentMe = assumedMe;
-                meSelector.value = assumedMe;
-                meSelector.disabled = false;
-            }
-
-            updateHeaderTitle();
-            renderChat(filteredMessages);
-            toggleDrawer();
+            if (assumedMe) { currentMe = assumedMe; meSelector.value = assumedMe; meSelector.disabled = false; }
+            updateHeaderTitle(); renderChat(filteredMessages); toggleDrawer();
         }
 
-        meSelector.addEventListener('change', (e) => {
-            currentMe = e.target.value;
-            updateHeaderTitle();
-            renderChat(filteredMessages);
-        });
-
-        function updateHeaderTitle() {
-            if (globalSenders.length === 0) return;
-            const partners = globalSenders.filter(sender => sender !== currentMe);
-            talkTitle.innerText = partners.length > 0 ? partners.join(', ') : currentMe;
-        }
-
-        function createSafeDate(dateStr) {
-            if (!dateStr) return null;
-            const matches = dateStr.match(/\d+/g);
-            if (!matches || matches.length < 3) return null;
-            return new Date(parseInt(matches[0], 10), parseInt(matches[1], 10) - 1, parseInt(matches[2], 10), 12, 0, 0);
-        }
+        meSelector.addEventListener('change', (e) => { currentMe = e.target.value; updateHeaderTitle(); renderChat(filteredMessages); });
+        function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); talkTitle.innerText = partners.length > 0 ? partners.join(', ') : currentMe; }
+        function createSafeDate(dateStr) { if (!dateStr) return null; const matches = dateStr.match(/\d+/g); if (!matches || matches.length < 3) return null; return new Date(parseInt(matches[0], 10), parseInt(matches[1], 10) - 1, parseInt(matches[2], 10), 12, 0, 0); }
 
         filterDateBtn.addEventListener('click', () => {
             const start = startDateInput.value ? createSafeDate(startDateInput.value) : null;
             const end = endDateInput.value ? createSafeDate(endDateInput.value) : null;
             if (!start && !end) return;
-
-            let currentFilterDate = null;
-            let currentFilterDateStr = "";
-            filteredMessages = [];
-
+            let currentFilterDate = null, currentFilterDateStr = ""; filteredMessages = [];
             globalMessages.forEach(msg => {
-                if (msg.type === 'date') {
-                    currentFilterDate = createSafeDate(msg.text);
-                    currentFilterDateStr = msg.text;
-                } else if (msg.type === 'msg' && currentFilterDate) {
-                    let keep = true;
-                    if (start && currentFilterDate < start) keep = false;
-                    if (end && currentFilterDate > end) keep = false;
-
+                if (msg.type === 'date') { currentFilterDate = createSafeDate(msg.text); currentFilterDateStr = msg.text; }
+                else if (msg.type === 'msg' && currentFilterDate) {
+                    let keep = true; if (start && currentFilterDate < start) keep = false; if (end && currentFilterDate > end) keep = false;
                     if (keep) {
                         const existingDate = filteredMessages.find(m => m.type === 'date' && m.text === currentFilterDateStr);
                         if (!existingDate) filteredMessages.push({ type: 'date', text: currentFilterDateStr });
@@ -341,41 +307,21 @@
                     }
                 }
             });
-            renderChat(filteredMessages);
-            toggleDrawer();
+            renderChat(filteredMessages); toggleDrawer();
         });
 
-        resetDateBtn.addEventListener('click', () => {
-            startDateInput.value = "";
-            endDateInput.value = "";
-            filteredMessages = [...globalMessages];
-            renderChat(filteredMessages);
-            toggleDrawer();
-        });
+        resetDateBtn.addEventListener('click', () => { startDateInput.value = ""; endDateInput.value = ""; filteredMessages = [...globalMessages]; renderChat(filteredMessages); toggleDrawer(); });
 
         searchBtn.addEventListener('click', () => {
-            const keyword = searchKeyword.value.trim().toLowerCase();
-            searchResults.innerHTML = '';
-            if (!keyword) { searchResults.classList.add('hidden'); return; }
-
+            const keyword = searchKeyword.value.trim().toLowerCase(); searchResults.innerHTML = ''; if (!keyword) { searchResults.classList.add('hidden'); return; }
             let matchCount = 0;
             globalMessages.forEach((msg, index) => {
                 if (msg.type === 'msg' && msg.body.toLowerCase().includes(keyword)) {
-                    matchCount++;
-                    const item = document.createElement('div');
-                    item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
-                    item.innerHTML = `
-                        <div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div>
-                        <div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>
-                    `;
+                    matchCount++; const item = document.createElement('div'); item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
+                    item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div><div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>`;
                     item.addEventListener('click', () => {
                         const targetElement = document.getElementById(`msg-${index}`);
-                        if (targetElement) {
-                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            targetElement.classList.add('ring-4', 'ring-yellow-400', 'transition-all');
-                            setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000);
-                            toggleDrawer(); 
-                        }
+                        if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
                     });
                     searchResults.appendChild(item);
                 }
@@ -385,78 +331,37 @@
         });
 
         function parseLineText(text, filename) {
-            const lines = text.split(/\r?\n/);
-            const messages = [];
-            const senderCounts = {}; 
-            let chatPartner = "";
-
-            const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/);
-            if (fileTitleMatch) chatPartner = fileTitleMatch[1];
-
-            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})/;
-            const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/;
-            const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
-
+            const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
+            const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
+            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})/; const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
             let currentMsgRef = null;
-
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const trimmedLine = line.trim();
-                if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
+                const line = lines[i]; const trimmedLine = line.trim(); if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
                 if (dateRegex.test(trimmedLine)) { messages.push({ type: 'date', text: trimmedLine }); currentMsgRef = null; continue; }
-
                 let match = line.match(msgRegex1) || line.match(msgRegex2);
                 if (match) {
-                    const [_, time, sender, body] = match;
-                    const cleanedSender = sender.trim();
-                    senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
-                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: body.replace(/\\n/g, '<br>') };
-                    messages.push(newMsg);
-                    currentMsgRef = newMsg;
-                } else if (currentMsgRef) {
-                    currentMsgRef.body += '<br>' + line;
-                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') {
-                    messages[messages.length - 1].body += '<br>' + line;
-                }
+                    const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
+                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: body.replace(/\\n/g, '<br>') }; messages.push(newMsg); currentMsgRef = newMsg;
+                } else if (currentMsgRef) { currentMsgRef.body += '<br>' + line; }
+                else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { messages[messages.length - 1].body += '<br>' + line; }
             }
             return { messages, senderCounts, chatPartner };
         }
 
         function renderChat(messages) {
-            chatContainer.innerHTML = ''; 
-            if (messages.length === 0) { chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-full px-4 py-1 self-center">表示できるメッセージがありません。</div>`; return; }
-
+            chatContainer.innerHTML = ''; if (messages.length === 0) { chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-full px-4 py-1 self-center">表示できるメッセージがありません。</div>`; return; }
             globalMessages.forEach((msg, globalIndex) => {
                 if (!messages.includes(msg)) return;
-
                 if (msg.type === 'date') {
-                    const dateDiv = document.createElement('div');
-                    dateDiv.className = 'text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10';
-                    dateDiv.innerText = msg.text;
-                    chatContainer.appendChild(dateDiv);
+                    const dateDiv = document.createElement('div'); dateDiv.className = 'text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10'; dateDiv.innerText = msg.text; chatContainer.appendChild(dateDiv);
                 } else if (msg.type === 'msg') {
-                    const isMe = (msg.sender === currentMe);
-                    const msgWrapper = document.createElement('div');
-                    msgWrapper.id = `msg-${globalIndex}`;
-                    
+                    const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
                     if (isMe) {
                         msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg';
-                        msgWrapper.innerHTML = `
-                            <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
-                            <div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
-                        `;
+                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`;
                     } else {
                         msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg';
-                        msgWrapper.innerHTML = `
-                            <div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div>
-                            <div class="flex flex-col">
-                                <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
-                                <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
-                                    <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
-                                </div>
-                            </div>
-                        `;
+                        msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`;
                     }
                     chatContainer.appendChild(msgWrapper);
                 }
