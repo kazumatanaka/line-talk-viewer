@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v8 (Perfect Auto Login)</title>
+    <title>LINE Talk Viewer v10 (Folder Batch Reader)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -53,17 +53,17 @@
                 <button id="authBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer">
                     Googleドライブと連携する
                 </button>
-                <div id="driveFileZone" class="hidden space-y-1 pt-1">
-                    <label class="block text-[11px] font-bold text-gray-500">ドライブ内のトークファイル (.txt)</label>
-                    <select id="driveFileSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white">
-                        <option value="">-- ファイルを選択 --</option>
+                <div id="driveFolderZone" class="hidden space-y-1 pt-1">
+                    <label class="block text-[11px] font-bold text-gray-500">対象のフォルダを選択</label>
+                    <select id="driveFolderSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white">
+                        <option value="">-- フォルダを選択 --</option>
                     </select>
                 </div>
             </div>
 
             <div class="space-y-1">
-                <label class="block text-xs font-bold text-gray-500">ローカルから直接読み込み</label>
-                <input type="file" id="fileInput" accept=".txt" class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
+                <label class="block text-xs font-bold text-gray-500">ローカルから複数読み込み</label>
+                <input type="file" id="fileInput" accept=".txt" multiple class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
             </div>
 
             <div class="space-y-1">
@@ -127,8 +127,8 @@
         const talkTitle = document.getElementById('talkTitle');
         const talkSub = document.getElementById('talkSub');
         const authBtn = document.getElementById('authBtn');
-        const driveFileZone = document.getElementById('driveFileZone');
-        const driveFileSelector = document.getElementById('driveFileSelector');
+        const driveFolderZone = document.getElementById('driveFolderZone');
+        const driveFolderSelector = document.getElementById('driveFolderSelector');
         const guideText = document.getElementById('guideText');
 
         const startDateInput = document.getElementById('startDate');
@@ -148,96 +148,85 @@
             overlay.classList.toggle('hidden');
         }
 
-        // 🌐 初期化と【超強力な自動ログイン】判定
+        // 🌐 自動ログイン初期化
         window.onload = function() {
             gapi.load('client', async () => {
                 await gapi.client.init({});
                 await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
                 
-                // 💾 保存されているアクセストークンがあるかチェック
                 const savedToken = localStorage.getItem('drive_access_token');
                 const tokenExpiry = localStorage.getItem('drive_token_expiry');
                 
-                // 有効期限内ならそのままログインスキップ！
                 if (savedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)) {
                     gapi.client.setToken({ access_token: savedToken });
                     setAuthSuccessState();
-                    listDriveFiles();
+                    listDriveFolders();
                 } else {
-                    // 期限切れ、または初回なら自動で裏側から再取得を試みる（これが一番強力！）
                     google.accounts.id.initialize({
                         client_id: CLIENT_ID,
                         callback: handleCredentialResponse,
-                        auto_select: true // 👈 過去に一度でもログインしていれば、ボタンを押さずとも自動ログイン！
+                        auto_select: true
                     });
                     google.accounts.id.renderButton(document.getElementById("authBtn"), { theme: "outline", size: "large" });
-                    
-                    // 通常ボタンのテキスト
                     guideText.innerText = "右上のメニューを開き、Googleドライブと連携してください。";
                     talkSub.innerText = "未連携";
                 }
             });
         };
 
-        // ワンタップ・自動ログイン成功時の処理
         function handleCredentialResponse(response) {
-            // Googleの一発認証からトークンを自動展開
             const tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                prompt: '', // 👈 画面を一切出さずに裏側で処理
-                callback: (tokenResponse) => {
-                    saveTokenAndLoad(tokenResponse.access_token, tokenResponse.expires_in);
-                }
+                client_id: CLIENT_ID, scope: SCOPES, prompt: '',
+                callback: (tokenResponse) => { saveTokenAndLoad(tokenResponse.access_token, tokenResponse.expires_in); }
             });
             tokenClient.requestAccessToken();
         }
 
-        // 手動ボタンが押された時のバックアップ
         authBtn.addEventListener('click', () => {
             const tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: (tokenResponse) => {
-                    saveTokenAndLoad(tokenResponse.access_token, tokenResponse.expires_in);
-                }
+                client_id: CLIENT_ID, scope: SCOPES,
+                callback: (tokenResponse) => { saveTokenAndLoad(tokenResponse.access_token, tokenResponse.expires_in); }
             });
             tokenClient.requestAccessToken();
         });
 
-        // 鍵の保存とファイル読み込み開始
         function saveTokenAndLoad(token, expiresIn) {
             localStorage.setItem('drive_access_token', token);
             localStorage.setItem('drive_token_expiry', Date.now() + (expiresIn * 1000));
             gapi.client.setToken({ access_token: token });
             setAuthSuccessState();
-            listDriveFiles();
+            listDriveFolders();
         }
 
         function setAuthSuccessState() {
-            authBtn.innerText = "✓ 連携完了（自動保存中）";
+            authBtn.innerText = "✓ 連携完了";
             authBtn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
-            guideText.innerText = "自動ログインに成功しました！右上のメニューから、表示したいLINEのトーク履歴ファイル(.txt)を選んでください。";
-            talkSub.innerText = "ファイルを選択してください";
+            guideText.innerText = "自動ログインに成功しました！右上のメニューから、LINEの履歴が保存されている「フォルダ」を選択してください。";
+            talkSub.innerText = "フォルダを選択してください";
         }
 
-        // 📂 ドライブからファイル一覧を取得
-        async function listDriveFiles() {
+        // 📂 ドライブ内の「フォルダ一覧」を全取得する
+        async function listDriveFolders() {
             try {
                 const response = await gapi.client.drive.files.list({
-                    q: "mimeType = 'text/plain' and trashed = false",
+                    q: "mimeType = 'application/vnd.google-apps.folder' and trashed = false",
                     fields: 'files(id, name)',
-                    pageSize: 100
+                    pageSize: 100,
+                    orderBy: 'name'
                 });
-                const files = response.result.files;
-                driveFileSelector.innerHTML = '<option value="">-- ファイルを選択 --</option>';
-                if (files && files.length > 0) {
-                    files.forEach(file => {
+                const folders = response.result.files;
+                driveFolderSelector.innerHTML = '<option value="">-- フォルダを選択 --</option>';
+                
+                if (folders && folders.length > 0) {
+                    folders.forEach(folder => {
                         const option = document.createElement('option');
-                        option.value = file.id; option.innerText = file.name;
-                        driveFileSelector.appendChild(option);
+                        option.value = folder.id;
+                        option.innerText = `📁 ${folder.name}`;
+                        driveFolderSelector.appendChild(option);
                     });
-                    driveFileZone.classList.remove('hidden');
+                    driveFolderZone.classList.remove('hidden');
+                } else {
+                    driveFolderSelector.innerHTML = '<option value="">フォルダが見つかりません</option>';
                 }
             } catch (err) {
                 console.error(err);
@@ -253,41 +242,132 @@
             authBtn.className = "w-full bg-blue-600 text-white text-xs py-2 px-3 rounded font-bold cursor-pointer";
         }
 
-        // ファイル選択
-        driveFileSelector.addEventListener('change', async (e) => {
-            const fileId = e.target.value; if (!fileId) return;
-            talkTitle.innerText = "読み込み中...";
+        // 📁 フォルダが選ばれたら、その中のテキストファイルを全自動検知＆一括読み込み
+        driveFolderSelector.addEventListener('change', async (e) => {
+            const folderId = e.target.value;
+            if (!folderId) return;
+
+            talkTitle.innerText = "フォルダ内を検索中...";
+            
             try {
-                const metaResponse = await gapi.client.drive.files.get({ fileId: fileId, fields: 'name' });
-                const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-                processLoadedText(contentResponse.body, metaResponse.result.name);
+                // 指定されたフォルダの直下にあるテキストファイルをすべて検索
+                const response = await gapi.client.drive.files.list({
+                    q: `'${folderId}' in parents and mimeType = 'text/plain' and trashed = false`,
+                    fields: 'files(id, name)',
+                    pageSize: 100
+                });
+                
+                const files = response.result.files;
+                if (!files || files.length === 0) {
+                    alert("選択したフォルダ内にテキストファイル（.txt）が見つかりませんでした。");
+                    talkTitle.innerText = "LINE Talk Viewer";
+                    return;
+                }
+
+                talkTitle.innerText = `${files.length}個のファイルを結合中...`;
+                let combinedTexts = [];
+
+                // フォルダ内のファイルを一気に全件ダウンロード
+                for (let file of files) {
+                    const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
+                    combinedTexts.push({ text: contentResponse.body, name: file.name });
+                }
+
+                processMultipleTexts(combinedTexts);
+
             } catch (err) {
-                console.error(err);
+                console.error("フォルダの読み込みに失敗しました:", err);
+                alert("フォルダ内のファイル取得に失敗しました。");
                 talkTitle.innerText = "LINE Talk Viewer";
             }
         });
 
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => processLoadedText(evt.target.result, file.name);
-            reader.readAsText(file, 'UTF-8');
+        // ローカル複数読み込み（バックアップ用）
+        fileInput.addEventListener('change', async (e) => {
+            const files = e.target.files; if (files.length === 0) return;
+            talkTitle.innerText = "ファイルを結合中...";
+            let combinedTexts = [];
+            for (let file of files) {
+                const text = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => resolve(evt.target.result);
+                    reader.readAsText(file, 'UTF-8');
+                });
+                combinedTexts.push({ text: text, name: file.name });
+            }
+            processMultipleTexts(combinedTexts);
         });
 
-        function processLoadedText(text, filename) {
-            const { messages, senderCounts } = parseLineText(text, filename);
-            globalMessages = messages; filteredMessages = [...globalMessages]; globalSenders = Object.keys(senderCounts);
-            talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件のメッセージ`;
+        // 🧠 複数ファイルの並び替え＆重複排除のコアロジック
+        function processMultipleTexts(fileObjects) {
+            let allRawMessages = [];
+            let senderCounts = {};
+
+            fileObjects.forEach(obj => {
+                const { messages } = parseLineText(obj.text, obj.name);
+                allRawMessages = allRawMessages.concat(messages);
+            });
+
+            let structuredTimeline = [];
+            let currentFileDateStr = "";
+            let uniqueMsgKeys = new Set();
+            let flatMessages = [];
+
+            allRawMessages.forEach(m => {
+                if (m.type === 'date') { currentFileDateStr = m.text; }
+                else if (m.type === 'msg' && currentFileDateStr) {
+                    flatMessages.push({
+                        dateStr: currentFileDateStr, time: m.time, sender: m.sender, body: m.body
+                    });
+                }
+            });
+
+            // ミリ秒単位で時系列ソート
+            flatMessages.sort((a, b) => parseToTimestamp(a.dateStr, a.time) - parseToTimestamp(b.dateStr, b.time));
+
+            let lastRenderedDateStr = "";
+            flatMessages.forEach(m => {
+                // 完全重複ガード用のキー
+                const uniqueKey = `${m.dateStr}_${m.time}_${m.sender}_${m.body}`;
+                
+                if (!uniqueMsgKeys.has(uniqueKey)) {
+                    uniqueMsgKeys.add(uniqueKey);
+
+                    if (m.dateStr !== lastRenderedDateStr) {
+                        structuredTimeline.push({ type: 'date', text: m.dateStr });
+                        lastRenderedDateStr = m.dateStr;
+                    }
+                    structuredTimeline.push({ type: 'msg', time: m.time, sender: m.sender, body: m.body });
+                    senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1;
+                }
+            });
+
+            globalMessages = structuredTimeline;
+            filteredMessages = [...globalMessages];
+            globalSenders = Object.keys(senderCounts);
+
+            talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件 (フォルダ結合・重複排除済)`;
+
             let assumedMe = "", maxCount = 0; meSelector.innerHTML = '';
             for (const [sender, count] of Object.entries(senderCounts)) {
                 const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; meSelector.appendChild(option);
                 if (count > maxCount) { maxCount = count; assumedMe = sender; }
             }
             if (assumedMe) { currentMe = assumedMe; meSelector.value = assumedMe; meSelector.disabled = false; }
-            updateHeaderTitle(); renderChat(filteredMessages); toggleDrawer();
+
+            updateHeaderTitle();
+            renderChat(filteredMessages);
+            toggleDrawer();
         }
 
-        meSelector.addEventListener('change', (e) => { currentMe = e.target.value; updateHeaderTitle(); renderChat(filteredMessages); });
+        function parseToTimestamp(dateStr, timeStr) {
+            const dMatches = dateStr.match(/\d+/g); const tMatches = timeStr.match(/\d+/g);
+            if (!dMatches || dMatches.length < 3) return 0;
+            const hour = tMatches ? parseInt(tMatches[0], 10) : 0;
+            const min = tMatches ? parseInt(tMatches[1], 10) : 0;
+            return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime();
+        }
+
         function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); talkTitle.innerText = partners.length > 0 ? partners.join(', ') : currentMe; }
         function createSafeDate(dateStr) { if (!dateStr) return null; const matches = dateStr.match(/\d+/g); if (!matches || matches.length < 3) return null; return new Date(parseInt(matches[0], 10), parseInt(matches[1], 10) - 1, parseInt(matches[2], 10), 12, 0, 0); }
 
@@ -311,6 +391,7 @@
         });
 
         resetDateBtn.addEventListener('click', () => { startDateInput.value = ""; endDateInput.value = ""; filteredMessages = [...globalMessages]; renderChat(filteredMessages); toggleDrawer(); });
+        meSelector.addEventListener('change', (e) => { currentMe = e.target.value; updateHeaderTitle(); renderChat(filteredMessages); });
 
         searchBtn.addEventListener('click', () => {
             const keyword = searchKeyword.value.trim().toLowerCase(); searchResults.innerHTML = ''; if (!keyword) { searchResults.classList.add('hidden'); return; }
