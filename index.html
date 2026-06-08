@@ -1,0 +1,460 @@
+ 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local LINE Viewer v6 (Drive Link)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <style>
+        .line-bg { background-color: #7493c1; }
+        .line-header-bg { background-color: #ffffff; }
+        .bubble-other { background-color: #ffffff; color: #000000; }
+        .bubble-me { background-color: #85e249; color: #000000; }
+        
+        .bubble-me::after {
+            content: ""; position: absolute; top: 12px; right: -7px;
+            border-width: 5px 0 5px 8px; border-style: solid;
+            border-color: transparent transparent transparent #85e249;
+        }
+        .bubble-other::after {
+            content: ""; position: absolute; top: 12px; left: -7px;
+            border-width: 5px 8px 5px 0; border-style: solid;
+            border-color: transparent #ffffff transparent transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+    <header class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-20 shadow-sm flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <button class="text-gray-700 text-xl hover:opacity-70 cursor-pointer">←</button>
+            <div>
+                <h1 id="talkTitle" class="font-bold text-gray-800 text-base select-text">LINE Talk Viewer</h1>
+                <p id="talkSub" class="text-[10px] text-gray-400">Googleドライブと連携してください</p>
+            </div>
+        </div>
+        <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </header>
+
+    <div id="drawerMenu" class="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-gray-200">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <h2 class="font-bold text-gray-700 text-sm">メニュー & 検索機能</h2>
+            <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
+        </div>
+        
+        <div class="p-4 flex-1 overflow-y-auto space-y-5 text-sm">
+            <div class="space-y-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <label class="block text-xs font-bold text-blue-700">クラウド連携（Google Drive）</label>
+                <button id="authBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer">
+                    Googleドライブと連携する
+                </button>
+                <div id="driveFileZone" class="hidden space-y-1 pt-1">
+                    <label class="block text-[11px] font-bold text-gray-500">ドライブ内のトークファイル (.txt)</label>
+                    <select id="driveFileSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white">
+                        <option value="">-- ファイルを選択 --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-gray-500">ローカルから直接読み込み</label>
+                <input type="file" id="fileInput" accept=".txt" class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-gray-500">「自分」の設定</label>
+                <select id="meSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white" disabled>
+                    <option value="">ファイルを読み込んでください</option>
+                </select>
+            </div>
+
+            <hr class="border-gray-200">
+
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-gray-500">期間指定で絞り込み</label>
+                <div class="grid grid-cols-2 gap-1">
+                    <input type="date" id="startDate" class="border border-gray-300 rounded p-1.5 text-xs">
+                    <input type="date" id="endDate" class="border border-gray-300 rounded p-1.5 text-xs">
+                </div>
+                <div class="flex gap-1 pt-1">
+                    <button id="filterDateBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 rounded font-medium cursor-pointer">適用</button>
+                    <button id="resetDateBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs px-2 rounded cursor-pointer">解除</button>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-gray-500">キーワード検索</label>
+                <div class="flex gap-1">
+                    <input type="text" id="searchKeyword" placeholder="検索ワードを入力..." class="flex-1 border border-gray-300 rounded p-1.5 text-xs">
+                    <button id="searchBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 rounded font-medium cursor-pointer">検索</button>
+                </div>
+                <div id="searchResults" class="mt-2 max-h-48 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity"></div>
+
+    <main id="chatContainer" class="flex-1 overflow-y-auto p-4 line-bg flex flex-col space-y-4 select-text">
+        <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+            <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
+            <p class="text-xs text-white/80">右上の三本線メニューを開き、「Googleドライブと連携する」ボタンを押してください。</p>
+        </div>
+    </main>
+
+    <script>
+        // 🔑 あなたが取得したクライアントIDを自動埋め込み済み
+        const CLIENT_ID = '903007987907-ctng3cio3hdiedu6ckimvtgkf1d5uq6s.apps.googleusercontent.com';
+        // 必要なスコープ（ドライブ内のメタデータ一覧と、ファイル中身の読み取り権限）
+        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+
+        let tokenClient;
+        let accessToken = null;
+
+        let globalMessages = []; 
+        let filteredMessages = []; 
+        let currentMe = "";
+        let globalSenders = [];
+
+        // DOMの取得
+        const menuBtn = document.getElementById('menuBtn');
+        const closeMenuBtn = document.getElementById('closeMenuBtn');
+        const drawerMenu = document.getElementById('drawerMenu');
+        const overlay = document.getElementById('overlay');
+        const fileInput = document.getElementById('fileInput');
+        const meSelector = document.getElementById('meSelector');
+        const chatContainer = document.getElementById('chatContainer');
+        const talkTitle = document.getElementById('talkTitle');
+        const talkSub = document.getElementById('talkSub');
+        const authBtn = document.getElementById('authBtn');
+        const driveFileZone = document.getElementById('driveFileZone');
+        const driveFileSelector = document.getElementById('driveFileSelector');
+
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const filterDateBtn = document.getElementById('filterDateBtn');
+        const resetDateBtn = document.getElementById('resetDateBtn');
+        const searchKeyword = document.getElementById('searchKeyword');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchResults = document.getElementById('searchResults');
+
+        menuBtn.addEventListener('click', toggleDrawer);
+        closeMenuBtn.addEventListener('click', toggleDrawer);
+        overlay.addEventListener('click', toggleDrawer);
+
+        function toggleDrawer() {
+            drawerMenu.classList.toggle('translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        // 🌐 Google APIの初期化
+        window.onload = function() {
+            gapi.load('client', async () => {
+                await gapi.client.init({});
+                // ドライブAPIのメタデータを有効化
+                await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+            });
+
+            // OAuthログインクライアントの準備
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    if (tokenResponse.error !== undefined) {
+                        alert("認証エラーが発生しました");
+                        return;
+                    }
+                    accessToken = tokenResponse.access_token;
+                    authBtn.innerText = "✓ 連携完了";
+                    authBtn.className = "w-full bg-gray-400 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
+                    // ドライブからテキストファイル一覧を取得
+                    listDriveFiles();
+                },
+            });
+        };
+
+        // 連携ボタンのクリックイベント
+        authBtn.addEventListener('click', () => {
+            // ログインポップアップを起動
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        });
+
+        // 📂 Googleドライブから「.txt」ファイルの一覧を検索して引っ張ってくる関数
+        async function listDriveFiles() {
+            try {
+                const response = await gapi.client.drive.files.list({
+                    q: "mimeType = 'text/plain' and trashed = false", // ゴミ箱に入っていないテキストファイル
+                    fields: 'files(id, name)',
+                    pageSize: 100
+                });
+                
+                const files = response.result.files;
+                driveFileSelector.innerHTML = '<option value="">-- ファイルを選択 --</option>';
+                
+                if (files && files.length > 0) {
+                    files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.id;
+                        option.innerText = file.name;
+                        driveFileSelector.appendChild(option);
+                    });
+                    driveFileZone.classList.remove('hidden'); // セレクトボックスを表示
+                } else {
+                    alert("ドライブ内にテキストファイル（.txt）が見つかりませんでした。");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("ファイル一覧の取得に失敗しました。");
+            }
+        }
+
+        // ドライブ内のファイルが選ばれた時、中身をダウンロードして解析する処理
+        driveFileSelector.addEventListener('change', async (e) => {
+            const fileId = e.target.value;
+            if (!fileId) return;
+
+            talkTitle.innerText = "読み込み中...";
+            
+            try {
+                // ファイルのメタデータ（名前）を取得
+                const metaResponse = await gapi.client.drive.files.get({ fileId: fileId, fields: 'name' });
+                const filename = metaResponse.result.name;
+
+                // ファイルの本文（テキストデータ）をバイナリ/テキストとして直接ダウンロード
+                const contentResponse = await gapi.client.drive.files.get({
+                    fileId: fileId,
+                    alt: 'media'
+                });
+                
+                const text = contentResponse.body;
+                processLoadedText(text, filename);
+
+            } catch (err) {
+                console.error(err);
+                alert("ドライブからのファイル読み込みに失敗しました。");
+                talkTitle.innerText = "LINE Talk Viewer";
+            }
+        });
+
+        // 従来通りのローカルファイル読み込み
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => processLoadedText(evt.target.result, file.name);
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        // テキストデータを解析・描画ステージに流し込む共通処理
+        function processLoadedText(text, filename) {
+            const { messages, senderCounts, chatPartner } = parseLineText(text, filename);
+            
+            globalMessages = messages;
+            filteredMessages = [...globalMessages];
+            globalSenders = Object.keys(senderCounts);
+
+            talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件のメッセージ`;
+
+            let assumedMe = "";
+            let maxCount = 0;
+            meSelector.innerHTML = '';
+
+            for (const [sender, count] of Object.entries(senderCounts)) {
+                const option = document.createElement('option');
+                option.value = sender;
+                option.innerText = `${sender} (${count}回)`;
+                meSelector.appendChild(option);
+
+                if (count > maxCount) {
+                    maxCount = count;
+                    assumedMe = sender;
+                }
+            }
+
+            if (assumedMe) {
+                currentMe = assumedMe;
+                meSelector.value = assumedMe;
+                meSelector.disabled = false;
+            }
+
+            updateHeaderTitle();
+            renderChat(filteredMessages);
+            toggleDrawer(); // メニューを閉じる
+        }
+
+        meSelector.addEventListener('change', (e) => {
+            currentMe = e.target.value;
+            updateHeaderTitle();
+            renderChat(filteredMessages);
+        });
+
+        function updateHeaderTitle() {
+            if (globalSenders.length === 0) return;
+            const partners = globalSenders.filter(sender => sender !== currentMe);
+            talkTitle.innerText = partners.length > 0 ? partners.join(', ') : currentMe;
+        }
+
+        function createSafeDate(dateStr) {
+            if (!dateStr) return null;
+            const matches = dateStr.match(/\d+/g);
+            if (!matches || matches.length < 3) return null;
+            return new Date(parseInt(matches[0], 10), parseInt(matches[1], 10) - 1, parseInt(matches[2], 10), 12, 0, 0);
+        }
+
+        filterDateBtn.addEventListener('click', () => {
+            const start = startDateInput.value ? createSafeDate(startDateInput.value) : null;
+            const end = endDateInput.value ? createSafeDate(endDateInput.value) : null;
+            if (!start && !end) return;
+
+            let currentFilterDate = null;
+            let currentFilterDateStr = "";
+            filteredMessages = [];
+
+            globalMessages.forEach(msg => {
+                if (msg.type === 'date') {
+                    currentFilterDate = createSafeDate(msg.text);
+                    currentFilterDateStr = msg.text;
+                } else if (msg.type === 'msg' && currentFilterDate) {
+                    let keep = true;
+                    if (start && currentFilterDate < start) keep = false;
+                    if (end && currentFilterDate > end) keep = false;
+
+                    if (keep) {
+                        const existingDate = filteredMessages.find(m => m.type === 'date' && m.text === currentFilterDateStr);
+                        if (!existingDate) filteredMessages.push({ type: 'date', text: currentFilterDateStr });
+                        filteredMessages.push(msg);
+                    }
+                }
+            });
+            renderChat(filteredMessages);
+            toggleDrawer();
+        });
+
+        resetDateBtn.addEventListener('click', () => {
+            startDateInput.value = "";
+            endDateInput.value = "";
+            filteredMessages = [...globalMessages];
+            renderChat(filteredMessages);
+            toggleDrawer();
+        });
+
+        searchBtn.addEventListener('click', () => {
+            const keyword = searchKeyword.value.trim().toLowerCase();
+            searchResults.innerHTML = '';
+            if (!keyword) { searchResults.classList.add('hidden'); return; }
+
+            let matchCount = 0;
+            globalMessages.forEach((msg, index) => {
+                if (msg.type === 'msg' && msg.body.toLowerCase().includes(keyword)) {
+                    matchCount++;
+                    const item = document.createElement('div');
+                    item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
+                    item.innerHTML = `
+                        <div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div>
+                        <div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>
+                    `;
+                    item.addEventListener('click', () => {
+                        const targetElement = document.getElementById(`msg-${index}`);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            targetElement.classList.add('ring-4', 'ring-yellow-400', 'transition-all');
+                            setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000);
+                            toggleDrawer(); 
+                        }
+                    });
+                    searchResults.appendChild(item);
+                }
+            });
+            searchResults.classList.toggle('hidden', matchCount === 0);
+            if(matchCount === 0) { searchResults.innerHTML = '<div class="p-3 text-center text-gray-400 text-xs">見つかりませんでした</div>'; searchResults.classList.remove('hidden'); }
+        });
+
+        function parseLineText(text, filename) {
+            const lines = text.split(/\r?\n/);
+            const messages = [];
+            const senderCounts = {}; 
+            let chatPartner = "";
+
+            const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/);
+            if (fileTitleMatch) chatPartner = fileTitleMatch[1];
+
+            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})/;
+            const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/;
+            const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
+
+            let currentMsgRef = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+                if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
+                if (dateRegex.test(trimmedLine)) { messages.push({ type: 'date', text: trimmedLine }); currentMsgRef = null; continue; }
+
+                let match = line.match(msgRegex1) || line.match(msgRegex2);
+                if (match) {
+                    const [_, time, sender, body] = match;
+                    const cleanedSender = sender.trim();
+                    senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
+                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: body.replace(/\\n/g, '<br>') };
+                    messages.push(newMsg);
+                    currentMsgRef = newMsg;
+                } else if (currentMsgRef) {
+                    currentMsgRef.body += '<br>' + line;
+                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') {
+                    messages[messages.length - 1].body += '<br>' + line;
+                }
+            }
+            return { messages, senderCounts, chatPartner };
+        }
+
+        function renderChat(messages) {
+            chatContainer.innerHTML = ''; 
+            if (messages.length === 0) { chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-full px-4 py-1 self-center">表示できるメッセージがありません。</div>`; return; }
+
+            globalMessages.forEach((msg, globalIndex) => {
+                if (!messages.includes(msg)) return;
+
+                if (msg.type === 'date') {
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10';
+                    dateDiv.innerText = msg.text;
+                    chatContainer.appendChild(dateDiv);
+                } else if (msg.type === 'msg') {
+                    const isMe = (msg.sender === currentMe);
+                    const msgWrapper = document.createElement('div');
+                    msgWrapper.id = `msg-${globalIndex}`;
+                    
+                    if (isMe) {
+                        msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg';
+                        msgWrapper.innerHTML = `
+                            <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
+                            <div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                        `;
+                    } else {
+                        msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg';
+                        msgWrapper.innerHTML = `
+                            <div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div>
+                            <div class="flex flex-col">
+                                <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
+                                <div class="flex items-end space-x-1.5">
+                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                    <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    chatContainer.appendChild(msgWrapper);
+                }
+            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
