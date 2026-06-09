@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v40 (Fixed Header & Default Image File)</title>
+    <title>LINE Talk Viewer v41 (Dynamic Default Avatar & Fixed Header)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -155,8 +155,10 @@
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
         const REDIRECT_URI = window.location.origin + window.location.pathname;
 
-        // 💡 【修正】同じフォルダの「default.png」ファイルを直接呼び出す設定
-        const DEFAULT_PARTNER_AVATAR = "default.png";
+        // 現在選択中のテーマ名（初期値blue）
+        let currentThemeName = 'blue';
+        // ドライブ内でカスタム画像が発見されたかどうかを追跡するフラグ
+        let hasDriveCustomImage = false;
 
         let globalMessages = []; 
         let filteredMessages = []; 
@@ -177,9 +179,22 @@
         let actualPartnerNames = "LINE Talk Viewer"; 
         let isGapiClientReady = false; 
 
-        let partnerCustomAvatarUrl = DEFAULT_PARTNER_AVATAR;
+        let partnerCustomAvatarUrl = "";
 
         const getEl = (id) => document.getElementById(id);
+
+        // 💡 【新規関数】現在のテーマ設定に合わせてデフォルト画像パスを動的に返す関数
+        function getThemeDefaultAvatar() {
+            return currentThemeName === 'dark' ? 'default-dark.png' : 'default-light.png';
+        }
+
+        // 💡 【新規関数】最終的に適用するアバターURLを決定する（ドライブ画像を最優先）
+        function getFinalAvatarUrl() {
+            if (hasDriveCustomImage && partnerCustomAvatarUrl) {
+                return partnerCustomAvatarUrl;
+            }
+            return getThemeDefaultAvatar();
+        }
 
         // 全体タップ・クリック監視
         document.addEventListener("click", (e) => {
@@ -349,7 +364,8 @@
             clearIndexedDbCache();
             
             globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = ""; 
-            partnerCustomAvatarUrl = DEFAULT_PARTNER_AVATAR;
+            partnerCustomAvatarUrl = "";
+            hasDriveCustomImage = false;
             clearUiToUnauthenticated();
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
@@ -419,11 +435,19 @@
                             binary += String.fromCharCode(bytes[i]);
                         }
                         partnerCustomAvatarUrl = `data:${foundImageFile.mimeType};base64,` + window.btoa(binary);
+                        hasDriveCustomImage = true; // ドライブ優先フラグを立てる
                     } catch(e) {
                         console.error("画像の自動読み込みに失敗しました", e);
+                        hasDriveCustomImage = false;
                     }
                 } else {
-                    partnerCustomAvatarUrl = DEFAULT_PARTNER_AVATAR;
+                    partnerCustomAvatarUrl = "";
+                    hasDriveCustomImage = false; // ドライブ内にないのでフラグを降ろす
+                }
+
+                // タイムラインを最新状態の画像URLで再描画
+                if (globalMessages.length > 0) {
+                    startInfiniteRender();
                 }
 
                 if ((!files || files.length === 0) && getEl('explorerList')) { 
@@ -450,6 +474,7 @@
                                 let binary = '';
                                 for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
                                 partnerCustomAvatarUrl = `data:${file.mimeType};base64,` + window.btoa(binary);
+                                hasDriveCustomImage = true;
                                 startInfiniteRender();
                                 alert("選択した画像を相手のアイコンに設定しました！");
                             } catch(err) { console.error(err); }
@@ -509,12 +534,19 @@
 
         function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames; }
 
+        // 💡 【修正】テーマ着せ替えの変更と同時にアバターの切り替え判定も走らせる
         function changeTheme(themeName) {
+            currentThemeName = themeName; // グローバル変数を更新
             if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} h-full w-full relative`;
             localStorage.setItem('user_theme', themeName);
             const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
             buttons.forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
             const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
+            
+            // テーマ切り替え時にチャットが既にロードされていれば再描画してアバターを反映
+            if (globalMessages.length > 0) {
+                startInfiniteRender();
+            }
         }
 
         function changeFontSize(sizeName) {
@@ -612,7 +644,6 @@
             isLoadingMore = false;
         }
 
-        // 📅 【確実なバグ排除】日付検索ジャンプ（ヘッダーと完全分離）
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
@@ -663,7 +694,6 @@
             currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
             visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
             
-            // ➔ 親子構造を完全分離したため、chatContainerの中身をクリアしても上のメニューバーは絶対に消えません
             const container = getEl('chatContainer');
             if (container) container.innerHTML = ''; 
             
@@ -687,6 +717,10 @@
 
         function renderChatSegment(messages, mode = 'append', baseStartIndex = 0) {
             const fragment = document.createDocumentFragment();
+            // ➔ 描画直前に適用アバターURLの最終決定（ドライブ画像かテーマ別デフォルトか）
+            const activeAvatar = getFinalAvatarUrl();
+            const fallbackAvatar = getThemeDefaultAvatar();
+
             messages.forEach((msg, idx) => {
                 const globalIndex = baseStartIndex + idx;
                 
@@ -711,7 +745,7 @@
                     else { 
                         msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
                         msgWrapper.innerHTML = `
-                            <img src="${partnerCustomAvatarUrl}" class="w-9 h-9 rounded-2xl object-cover flex-shrink-0 select-none shadow-sm mt-0.5" alt="avatar" onerror="this.src='${DEFAULT_PARTNER_AVATAR}'">
+                            <img src="${activeAvatar}" class="w-9 h-9 rounded-2xl object-cover flex-shrink-0 select-none shadow-sm mt-0.5" alt="avatar" onerror="this.src='${fallbackAvatar}'">
                             <div class="flex flex-col">
                                 <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
                                 <div class="flex items-end space-x-1.5">
