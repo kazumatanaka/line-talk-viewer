@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v22 (Final Stable)</title>
+    <title>LINE Talk Viewer v23 (Ultimate Stable)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -34,7 +34,7 @@
             <button class="text-gray-700 text-xl hover:opacity-70 cursor-pointer">←</button>
             <div id="titleArea" class="cursor-pointer hover:bg-gray-50 active:scale-95 transition-all p-1.5 rounded-lg select-none">
                 <h1 id="talkTitle" class="font-bold text-gray-800 text-base">LINE Talk Viewer</h1>
-                <p id="talkSub" class="text-[10px] text-gray-400">自動ログインを準備中...</p>
+                <p id="talkSub" class="text-[10px] text-gray-400">未連携</p>
             </div>
         </div>
         
@@ -70,13 +70,13 @@
                 <div id="driveExplorerZone" class="hidden space-y-1.5 pt-1 flex flex-col min-h-0">
                     <label class="block text-[11px] font-bold text-gray-500">ドライブを探索</label>
                     <div id="breadcrumb" class="text-xs bg-gray-100 p-2 rounded border border-gray-200 text-gray-600 font-medium break-all select-none">
-                        読み込み中...
+                        マイドライブ
                     </div>
                     <button id="batchLoadBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded font-bold shadow-sm transition hidden cursor-pointer">
                         ⚡ このフォルダ内のトークをすべて結合
                     </button>
                     <div id="explorerList" class="border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-40 overflow-y-auto text-xs">
-                        <p class="text-gray-400 text-center py-4">読み込み中...</p>
+                        <p class="text-gray-400 text-center py-4">フォルダを読み込み中...</p>
                     </div>
                 </div>
             </div>
@@ -126,12 +126,12 @@
     <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text">
         <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
             <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-            <p id="guideText" class="text-xs text-white/80">ライブラリをロードしています...</p>
+            <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
         </div>
     </main>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" onload="onGapiLoad()" async defer></script>
+    <script src="https://apis.google.com/js/api.js" onload="gapiLoadedTrig()" async defer></script>
 
     <script>
         const CLIENT_ID = '903007987907-ctng3cio3hdiedu6ckimvtgkf1d5uq6s.apps.googleusercontent.com';
@@ -157,17 +157,26 @@
 
         const getEl = (id) => document.getElementById(id);
 
-        // 🛠️ 【イベント登録コア】HTMLの破壊に負けないよう、何度呼び出されても安全にイベントを紐付ける
-        function bindAllButtonEvents() {
-            const menuBtn = getEl('menuBtn');
-            if (menuBtn) {
-                menuBtn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleDrawer();
-                };
-            }
+        // ⚡ 【起動コア】Googleの状況に一切関わらず、ページが開かれた瞬間にボタン群を強制完全アクティブ化する
+        window.addEventListener("DOMContentLoaded", () => {
+            bindAllButtonEvents();
+            
+            const savedTheme = localStorage.getItem('user_theme') || 'blue';
+            const savedSize = localStorage.getItem('user_font_size') || 'md';
+            changeTheme(savedTheme);
+            changeFontSize(savedSize);
 
+            // ローカルキャッシュの復元に走る
+            openDatabaseAndLoadCache();
+        });
+
+        // Googleスクリプトがロードされた際のトリガー
+        function gapiLoadedTrig() {
+            initGoogleApi();
+        }
+
+        function bindAllButtonEvents() {
+            if (getEl('menuBtn')) { getEl('menuBtn').onclick = (e) => { e.preventDefault(); e.stopPropagation(); toggleDrawer(); }; }
             if (getEl('closeMenuBtn')) getEl('closeMenuBtn').onclick = toggleDrawer;
             if (getEl('overlay')) getEl('overlay').onclick = toggleDrawer;
 
@@ -218,7 +227,6 @@
                     if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
                     
                     if (getEl('chatContainer')) {
-                        // innerHTMLを直接壊さず、中身だけを綺麗に戻す
                         getEl('chatContainer').innerHTML = `
                             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                                 <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
@@ -302,35 +310,19 @@
         }
 
         function toggleDrawer() {
-            const drawer = getEl('drawerMenu');
-            const overlay = getEl('overlay');
-            if (drawer) drawer.classList.toggle('translate-x-full');
-            if (overlay) overlay.classList.toggle('hidden');
+            if (getEl('drawerMenu')) getEl('drawerMenu').classList.toggle('translate-x-full');
+            if (getEl('overlay')) getEl('overlay').classList.toggle('hidden');
         }
 
         function applyTitleDisplay() {
             if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
         }
 
-        // 🎬 アプリ全体の起動エントリポイント
-        function onGapiLoad() {
-            // HTML要素が揃った状態で速攻紐付け
-            bindAllButtonEvents();
-
-            const savedTheme = localStorage.getItem('user_theme') || 'blue';
-            const savedSize = localStorage.getItem('user_font_size') || 'md';
-            changeTheme(savedTheme);
-            changeFontSize(savedSize);
-
-            openDatabaseAndLoadCache(() => {
-                initGoogleApi();
-            });
-        }
-
         function changeTheme(themeName) {
             if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
             localStorage.setItem('user_theme', themeName);
-            [themeBlueBtn, themeDarkBtn, themePinkBtn, themeBeigeBtn].forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
+            const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
+            buttons.forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
             const targetBtn = getEl(`theme-${themeName}`);
             if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
         }
@@ -341,7 +333,8 @@
             if (sizeName === 'md' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-sm');
             if (sizeName === 'lg' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-base');
             localStorage.setItem('user_font_size', sizeName);
-            [sizeSmBtn, sizeMdBtn, sizeLgBtn].forEach(btn => {
+            const sizeButtons = [getEl('size-sm'), getEl('size-md'), getEl('size-lg')];
+            sizeButtons.forEach(btn => {
                 if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer";
             });
             const activeBtn = getEl(`size-${sizeName}`);
@@ -349,10 +342,7 @@
         }
 
         function initGoogleApi() {
-            if (typeof gapi === 'undefined' || typeof gapi.client === 'undefined') {
-                setTimeout(initGoogleApi, 100);
-                return;
-            }
+            if (typeof gapi === 'undefined' || typeof gapi.client === 'undefined') return;
             gapi.load('client', async () => {
                 await gapi.client.init({});
                 await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
@@ -389,7 +379,6 @@
                     }
                 }
                 if(globalMessages.length === 0) clearUiToUnauthenticated();
-                bindAllButtonEvents(); // 再バインドで安全確保
             });
         }
 
@@ -412,7 +401,7 @@
             }
             if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden');
             if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.add('hidden');
-            if (getEl('guideText')) getEl('guideText').innerText = "右上のメニューを開き、Googleドライブと連携してください。";
+            if (getEl('guideText')) getEl('guideText').innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
         }
@@ -608,7 +597,7 @@
             request.onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: dataArray }); };
         }
 
-        function openDatabaseAndLoadCache(done) {
+        function openDatabaseAndLoadCache() {
             const request = indexedDB.open("LineViewerCacheDB", 1);
             request.onupgradeneeded = function(e) {
                 const db = e.target.result;
@@ -637,16 +626,10 @@
                         updateHeaderTitle();
                         startInfiniteRender();
                     } else {
-                        // ヘッダーを壊さず、独立ボックス内だけ書き換える
-                        const initGuide = getEl('guideText');
-                        if(initGuide) initGuide.innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
-                        if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
+                        clearUiToUnauthenticated();
                     }
-                    done(); 
                 };
-                getReq.onerror = function() { done(); };
             };
-            request.onerror = function() { done(); };
         }
 
         function clearIndexedDbCache() { indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); }; }
