@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v16 (Perfect Camouflage)</title>
+    <title>LINE Talk Viewer v17 (Premium Full-Spec)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
-        .line-bg { background-color: #7493c1; }
+        /* 着せ替え用カラー定義 */
+        .bg-theme-blue { background-color: #7493c1; }
+        .bg-theme-dark { background-color: #1f2937; }
+        .bg-theme-pink { background-color: #fbcfe8; }
+        .bg-theme-beige { background-color: #f5f5dc; }
+
         .line-header-bg { background-color: #ffffff; }
         .bubble-other { background-color: #ffffff; color: #000000; }
         .bubble-me { background-color: #85e249; color: #000000; }
+        
         .bubble-me::after {
             content: ""; position: absolute; top: 12px; right: -7px;
             border-width: 5px 0 5px 8px; border-style: solid;
@@ -34,16 +40,25 @@
                 <p id="talkSub" class="text-[10px] text-gray-400">自動ログインを準備中...</p>
             </div>
         </div>
-        <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-        </button>
+        
+        <div class="flex items-center space-x-2">
+            <div id="calendarWrapper" class="relative hidden">
+                <input type="date" id="jumpDatePicker" class="absolute inset-0 opacity-0 w-8 h-8 cursor-pointer z-10">
+                <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition">
+                    📅
+                </button>
+            </div>
+            <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
     </header>
 
     <div id="drawerMenu" class="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-gray-200">
         <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-            <h2 class="font-bold text-gray-700 text-sm">ドライブ探索 & 検索機能</h2>
+            <h2 class="font-bold text-gray-700 text-sm">各種設定 & 検索機能</h2>
             <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
         </div>
         
@@ -65,15 +80,30 @@
                     <button id="batchLoadBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded font-bold shadow-sm transition hidden cursor-pointer">
                         ⚡ このフォルダ内のトークをすべて結合
                     </button>
-                    <div id="explorerList" class="border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-52 overflow-y-auto text-xs">
+                    <div id="explorerList" class="border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-40 overflow-y-auto text-xs">
                         <p class="text-gray-400 text-center py-4">読み込み中...</p>
                     </div>
                 </div>
             </div>
 
-            <div class="space-y-1 flex-shrink-0">
-                <label class="block text-xs font-bold text-gray-500">ローカルから複数読み込み</label>
-                <input type="file" id="fileInput" accept=".txt" multiple class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
+            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 flex-shrink-0">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1.5">🎨 背景着せ替え</label>
+                    <div class="grid grid-cols-4 gap-1">
+                        <button id="theme-blue" class="bg-[#7493c1] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ブルー</button>
+                        <button id="theme-dark" class="bg-[#1f2937] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ダーク</button>
+                        <button id="theme-pink" class="bg-[#fbcfe8] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ピンク</button>
+                        <button id="theme-beige" class="bg-[#f5f5dc] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ベージュ</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1.5">🔍 文字サイズ変更</label>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">小</button>
+                        <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer">中</button>
+                        <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">大</button>
+                    </div>
+                </div>
             </div>
 
             <div class="space-y-1 flex-shrink-0">
@@ -84,18 +114,6 @@
             </div>
 
             <hr class="border-gray-200 flex-shrink-0">
-
-            <div class="space-y-1 flex-shrink-0">
-                <label class="block text-xs font-bold text-gray-500">期間指定で絞り込み</label>
-                <div class="grid grid-cols-2 gap-1">
-                    <input type="date" id="startDate" class="border border-gray-300 rounded p-1.5 text-xs">
-                    <input type="date" id="endDate" class="border border-gray-300 rounded p-1.5 text-xs">
-                </div>
-                <div class="flex gap-1 pt-1">
-                    <button id="filterDateBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 rounded font-medium cursor-pointer">適用</button>
-                    <button id="resetDateBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs px-2 rounded cursor-pointer">解除</button>
-                </div>
-            </div>
 
             <div class="space-y-1 flex-shrink-0">
                 <label class="block text-xs font-bold text-gray-500">キーワード検索</label>
@@ -110,7 +128,7 @@
 
     <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity"></div>
 
-    <main id="chatContainer" class="flex-1 overflow-y-auto p-4 line-bg flex flex-col space-y-4 select-text">
+    <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text">
         <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
             <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
             <p id="guideText" class="text-xs text-white/80">データを復元中...</p>
@@ -122,18 +140,24 @@
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
         const REDIRECT_URI = 'https://kazumatanaka.github.io/line-talk-viewer/';
 
+        // トーク全データ用
         let globalMessages = []; 
         let filteredMessages = []; 
         let currentMe = "";
         let globalSenders = [];
 
+        // 📱 【無限スクロール（②）用】の制御データ
+        const PAGE_SIZE = 300; 
+        let visibleMessages = []; 
+        let currentLoadedIndex = 0; 
+        let isLodingMore = false; 
+
         let currentFolderId = 'root'; 
         let folderHistory = [{ id: 'root', name: 'マイドライブ' }];
         let currentFolderFiles = []; 
 
-        // 🕵️‍♂️ カモフラージュ制御用の変数
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer"; // 実際の名前を控える
+        let actualPartnerNames = "LINE Talk Viewer"; 
 
         // DOM取得
         const menuBtn = document.getElementById('menuBtn');
@@ -153,44 +177,97 @@
         const batchLoadBtn = document.getElementById('batchLoadBtn');
         const explorerList = document.getElementById('explorerList');
         const guideText = document.getElementById('guideText');
+        const calendarWrapper = document.getElementById('calendarWrapper');
+        const jumpDatePicker = document.getElementById('jumpDatePicker');
 
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        const filterDateBtn = document.getElementById('filterDateBtn');
-        const resetDateBtn = document.getElementById('resetDateBtn');
         const searchKeyword = document.getElementById('searchKeyword');
         const searchBtn = document.getElementById('searchBtn');
         const searchResults = document.getElementById('searchResults');
+
+        // 着せ替え＆サイズDOM
+        const themeBlueBtn = document.getElementById('theme-blue');
+        const themeDarkBtn = document.getElementById('theme-dark');
+        const themePinkBtn = document.getElementById('theme-pink');
+        const themeBeigeBtn = document.getElementById('theme-beige');
+        const sizeSmBtn = document.getElementById('size-sm');
+        const sizeMdBtn = document.getElementById('size-md');
+        const sizeLgBtn = document.getElementById('size-lg');
 
         menuBtn.addEventListener('click', toggleDrawer);
         closeMenuBtn.addEventListener('click', toggleDrawer);
         overlay.addEventListener('click', toggleDrawer);
 
-        function toggleDrawer() {
-            drawerMenu.classList.toggle('translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-
-        // 🕵️‍♂️ 左上のエリアがクリックされたら、名前 ⇄ アプリ名 を一瞬で切り替える
         titleArea.addEventListener('click', () => {
-            if (globalMessages.length === 0) return; // トーク未読み込み時は何もしない
+            if (globalMessages.length === 0) return;
             isCamouflageMode = !isCamouflageMode;
             applyTitleDisplay();
         });
 
         function applyTitleDisplay() {
-            if (isCamouflageMode) {
-                talkTitle.innerText = "LINE Talk Viewer";
-            } else {
-                talkTitle.innerText = actualPartnerNames;
-            }
+            talkTitle.innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
         }
 
+        // 📱 【無限スクロール（②）】の監視処理：上部にスクロールしたら過去データを追加
+        chatContainer.addEventListener('scroll', () => {
+            if (globalMessages.length === 0 || isLodingMore) return;
+            
+            // スクロール位置が最上部に近づいた（50px以内）かつ、まだ未読み込みの過去データがある場合
+            if (chatContainer.scrollTop <= 50 && currentLoadedIndex < filteredMessages.length) {
+                isLodingMore = true;
+                loadMorePastMessages();
+            }
+        });
+
+        // 📅 【カレンダー移動（③）】のチェンジイベント
+        jumpDatePicker.addEventListener('change', (e) => {
+            const selectedDateStr = e.target.value; // YYYY-MM-DD
+            if (!selectedDateStr) return;
+            
+            const targetFormat = selectedDateStr.replace(/-/g, '/'); // YYYY/MM/DD
+            jumpToSpecificDate(targetFormat);
+        });
+
+        // 🎨 【着せ替え（⑤）】＆🔍【文字サイズ（④）】イベント
+        themeBlueBtn.addEventListener('click', () => changeTheme('blue'));
+        themeDarkBtn.addEventListener('click', () => changeTheme('dark'));
+        themePinkBtn.addEventListener('click', () => changeTheme('pink'));
+        themeBeigeBtn.addEventListener('click', () => changeTheme('beige'));
+        sizeSmBtn.addEventListener('click', () => changeFontSize('sm'));
+        sizeMdBtn.addEventListener('click', () => changeFontSize('md'));
+        sizeLgBtn.addEventListener('click', () => changeFontSize('lg'));
+
         window.onload = function() {
+            // ローカル保存されていた着せ替えと文字サイズを最初に戻す
+            const savedTheme = localStorage.getItem('user_theme') || 'blue';
+            const savedSize = localStorage.getItem('user_font_size') || 'md';
+            changeTheme(savedTheme);
+            changeFontSize(savedSize);
+
             loadCachedData(() => {
                 initGoogleApi();
             });
         };
+
+        function changeTheme(themeName) {
+            chatContainer.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
+            localStorage.setItem('user_theme', themeName);
+            [themeBlueBtn, themeDarkBtn, themePinkBtn, themeBeigeBtn].forEach(btn => btn.classList.remove('ring-4', 'ring-yellow-400'));
+            document.getElementById(`theme-${themeName}`).classList.add('ring-4', 'ring-yellow-400');
+        }
+
+        function changeFontSize(sizeName) {
+            chatContainer.classList.remove('text-xs', 'text-sm', 'text-base', 'text-lg');
+            if (sizeName === 'sm') chatContainer.classList.add('text-xs');
+            if (sizeName === 'md') chatContainer.classList.add('text-sm');
+            if (sizeName === 'lg') chatContainer.classList.add('text-base');
+            
+            localStorage.setItem('user_font_size', sizeName);
+            [sizeSmBtn, sizeMdBtn, sizeLgBtn].forEach(btn => {
+                btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer";
+            });
+            const activeBtn = document.getElementById(`size-${sizeName}`);
+            activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
+        }
 
         function initGoogleApi() {
             gapi.load('client', async () => {
@@ -203,12 +280,10 @@
                 if (savedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)) {
                     gapi.client.setToken({ access_token: savedToken });
                     setAuthSuccessState();
-                    
                     const savedHistory = localStorage.getItem('explorer_folder_history');
                     if (savedHistory) {
                         folderHistory = JSON.parse(savedHistory);
-                        const lastFolder = folderHistory[folderHistory.length - 1];
-                        renderExplorer(lastFolder.id);
+                        renderExplorer(folderHistory[folderHistory.length - 1].id);
                     } else {
                         renderExplorer('root');
                     }
@@ -230,12 +305,7 @@
                         return;
                     }
                 }
-                if(globalMessages.length === 0) {
-                    clearUiToUnauthenticated();
-                } else {
-                    authBtn.innerText = "Googleドライブと連携する";
-                    authBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
-                }
+                if(globalMessages.length === 0) clearUiToUnauthenticated();
             });
         }
 
@@ -247,27 +317,25 @@
         logoutBtn.addEventListener('click', () => {
             const currentToken = localStorage.getItem('drive_access_token');
             if (currentToken) { google.accounts.oauth2.revokeToken(currentToken, () => {}); }
-            
             localStorage.removeItem('drive_access_token');
             localStorage.removeItem('drive_token_expiry');
             localStorage.removeItem('explorer_folder_history');
             localStorage.removeItem('cached_me_user');
             gapi.client.setToken(null);
-            
             clearIndexedDbCache();
 
             globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = "";
             clearUiToUnauthenticated();
+            calendarWrapper.classList.add('hidden');
             
             chatContainer.innerHTML = `
                 <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                     <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-                    <p class="text-xs text-white/80">すべての連携と内部キャッシュデータを完全に削除しました。</p>
+                    <p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p>
                 </div>
             `;
-            actualPartnerNames = "LINE Talk Viewer";
-            talkTitle.innerText = "LINE Talk Viewer"; talkSub.innerText = "未連携";
-            alert("連携解除とローカルキャッシュのクリアが完了しました。");
+            actualPartnerNames = "LINE Talk Viewer"; talkTitle.innerText = "LINE Talk Viewer"; talkSub.innerText = "未連携";
+            alert("連携情報を完全に削除しました。");
             toggleDrawer();
         });
 
@@ -276,7 +344,7 @@
             authBtn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
             logoutBtn.classList.remove('hidden');
             if(globalMessages.length === 0) {
-                guideText.innerText = "自動ログインに成功しました！右上のメニューから、フォルダを開いてトークを読み込んでください。";
+                guideText.innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。";
                 talkSub.innerText = "フォルダを探してください";
             }
         }
@@ -288,9 +356,7 @@
             driveExplorerZone.classList.add('hidden');
             guideText.innerText = "右上のメニューを開き、Googleドライブと連携してください。";
             talkSub.innerText = "未連携";
-            currentFolderId = 'root';
-            folderHistory = [{ id: 'root', name: 'マイドライブ' }];
-            currentFolderFiles = [];
+            currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
         }
 
         async function renderExplorer(folderId) {
@@ -299,7 +365,6 @@
             batchLoadBtn.classList.add('hidden');
             driveExplorerZone.classList.remove('hidden');
             updateBreadcrumb();
-            
             localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
 
             try {
@@ -309,32 +374,29 @@
                 });
                 const files = response.result.files;
                 explorerList.innerHTML = ''; currentFolderFiles = [];
-                if (!files || files.length === 0) { explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">📁 このフォルダは空っぽです</p>'; return; }
+                if (!files || files.length === 0) { explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; return; }
 
                 let textFileCount = 0;
                 files.forEach(file => {
                     const isFolder = (file.mimeType === 'application/vnd.google-apps.folder');
                     const item = document.createElement('div');
                     item.className = 'p-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer transition select-none';
-                    
                     if (isFolder) {
-                        item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span><span class="text-gray-400 text-[10px] ml-2">開く →</span>`;
+                        item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`;
                         item.addEventListener('click', () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); });
                     } else {
                         item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`;
                         currentFolderFiles.push(file); textFileCount++;
-                        item.addEventListener('click', () => { talkTitle.innerText = "単一ファイルをロード中..."; processSingleDriveFile(file.id, file.name); });
+                        item.addEventListener('click', () => processSingleDriveFile(file.id, file.name));
                     }
                     explorerList.appendChild(item);
                 });
-
                 if (textFileCount > 0) {
-                    batchLoadBtn.innerText = `⚡ このフォルダ内のトーク (${textFileCount}個) を一括結合`;
+                    batchLoadBtn.innerText = `⚡ このフォルダ内の一括結合 (${textFileCount}個)`;
                     batchLoadBtn.classList.remove('hidden');
                 }
             } catch (err) {
                 console.error(err);
-                explorerList.innerHTML = '<p class="text-red-500 text-center py-4">データの取得に失敗しました</p>';
             }
         }
 
@@ -351,7 +413,7 @@
 
         batchLoadBtn.addEventListener('click', async () => {
             if (currentFolderFiles.length === 0) return;
-            talkTitle.innerText = "フォルダ内を全自動結合中...";
+            talkTitle.innerText = "全自動結合中...";
             let combinedTexts = [];
             for (let file of currentFolderFiles) {
                 try { const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' }); combinedTexts.push({ text: contentResponse.body, name: file.name }); }
@@ -362,18 +424,8 @@
 
         async function processSingleDriveFile(fileId, filename) {
             try { const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); processMultipleTexts([{ text: contentResponse.body, name: filename }]); }
-            catch (err) { console.error(err); alert("ファイルの取得に失敗しました。"); }
+            catch (err) { console.error(err); }
         }
-
-        fileInput.addEventListener('change', async (e) => {
-            const files = e.target.files; if (files.length === 0) return;
-            talkTitle.innerText = "ファイルを結合中..."; let combinedTexts = [];
-            for (let file of files) {
-                const text = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsText(file, 'UTF-8'); });
-                combinedTexts.push({ text: text, name: file.name });
-            }
-            processMultipleTexts(combinedTexts);
-        });
 
         function processMultipleTexts(fileObjects) {
             let allRawMessages = []; let senderCounts = {};
@@ -391,7 +443,9 @@
                     senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1;
                 }
             });
-            globalMessages = structuredTimeline; filteredMessages = [...globalMessages]; globalSenders = Object.keys(senderCounts);
+            globalMessages = structuredTimeline; 
+            filteredMessages = [...globalMessages]; 
+            globalSenders = Object.keys(senderCounts);
 
             saveDataToIndexedDb(globalMessages);
 
@@ -400,117 +454,169 @@
                 const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; meSelector.appendChild(option);
                 if (count > maxCount) { maxCount = count; assumedMe = sender; }
             }
-            
             const savedMe = localStorage.getItem('cached_me_user');
-            if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } 
-            else if (assumedMe) { currentMe = assumedMe; }
+            if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
+            if(currentMe) { meSelector.value = currentMe; meSelector.disabled = false; localStorage.setItem('cached_me_user', currentMe); }
+
+            talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+            updateHeaderTitle();
             
-            if(currentMe) {
-                meSelector.value = currentMe; meSelector.disabled = false;
-                localStorage.setItem('cached_me_user', currentMe);
+            // 📱 【無限スクロール用（②）】初期の切り出しレンダリング開始
+            startInfiniteRender();
+            toggleDrawer();
+        }
+
+        // 📱 【無限スクロール用（②）】初期描画（未来の直近300件を切り出し）
+        function startInfiniteRender() {
+            chatContainer.innerHTML = '';
+            calendarWrapper.classList.remove('hidden'); // カレンダー表示
+            
+            if (filteredMessages.length === 0) {
+                chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-full px-4 py-1 self-center">メッセージがありません。</div>`;
+                return;
             }
 
-            talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件 (結合・重複排除済)`;
-            updateHeaderTitle(); renderChat(filteredMessages); toggleDrawer();
+            // 未来側（配列の末尾）からPAGE_SIZE分だけ切り出す
+            currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE);
+            visibleMessages = filteredMessages.slice(currentLoadedIndex);
+            
+            renderChatSegment(visibleMessages, 'append');
+            chatContainer.scrollTop = chatContainer.scrollHeight; // 最下部にスクロール
+        }
+
+        // 📱 【無限スクロール用（②）】上部スクロール時の過去ログ追加
+        function loadMorePastMessages() {
+            if (currentLoadedIndex <= 0) { isLodingMore = false; return; }
+
+            // 次に読み込む過去データの開始位置
+            const nextStartIndex = Math.max(0, currentLoadedIndex - PAGE_SIZE);
+            const additionalSegment = filteredMessages.slice(nextStartIndex, currentLoadedIndex);
+            
+            // スクロール位置のガタつきを防ぐために、現在の高さを控える
+            const oldScrollHeight = chatContainer.scrollHeight;
+            const oldScrollTop = chatContainer.scrollTop;
+
+            currentLoadedIndex = nextStartIndex;
+            
+            // 過去ログを上部に挿入（prepend）
+            renderChatSegment(additionalSegment, 'prepend');
+
+            // スクロール位置の補正（ガタつき防止）
+            const newScrollHeight = chatContainer.scrollHeight;
+            chatContainer.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+
+            isLodingMore = false;
+        }
+
+        // 📅 【カレンダー移動（③）】指定された日付（例: "2026/06/09"）のメッセージを強制検索してタイムラインを再編成
+        function jumpToSpecificDate(dateString) {
+            // 全データから、その日付に最も近い、または合致する日付スタンプを探索
+            let foundIndex = -1;
+            for (let i = 0; i < filteredMessages.length; i++) {
+                if (filteredMessages[i].type === 'date' && filteredMessages[i].text.includes(dateString)) {
+                    foundIndex = i;
+                    break;
+                }
+            }
+
+            if (foundIndex === -1) {
+                alert(`${dateString} 付近のトーク履歴が見つかりませんでした。`);
+                return;
+            }
+
+            // ジャンプ先の日付スタンプを中心に、前後300件を切り出して表示枠を強制再構築！
+            currentLoadedIndex = Math.max(0, foundIndex - 50); // 少し上に余白を持たせる
+            const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
+            
+            visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
+            chatContainer.innerHTML = '';
+            renderChatSegment(visibleMessages, 'append');
+
+            // ターゲットの日付スタンプ要素を見つけてそこへスクロール
+            setTimeout(() => {
+                const dayElements = chatContainer.querySelectorAll('.date-stamp-node');
+                for (let el of dayElements) {
+                    if (el.innerText.includes(dateString)) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        el.classList.add('ring-4', 'ring-yellow-400');
+                        setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000);
+                        break;
+                    }
+                }
+            }, 100);
+        }
+
+        // 部分レンダリング用のコア
+        function renderChatSegment(messages, mode = 'append') {
+            const fragment = document.createDocumentFragment();
+
+            messages.forEach((msg, idx) => {
+                // グローバルインデックスの特定
+                const globalIndex = currentLoadedIndex + idx;
+
+                if (msg.type === 'date') {
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'date-stamp-node text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10';
+                    dateDiv.innerText = msg.text;
+                    fragment.appendChild(dateDiv);
+                } else if (msg.type === 'msg') {
+                    const isMe = (msg.sender === currentMe);
+                    const msgWrapper = document.createElement('div');
+                    msgWrapper.id = `msg-${globalIndex}`;
+                    
+                    if (isMe) {
+                        msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg';
+                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`;
+                    } else {
+                        msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg';
+                        msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`;
+                    }
+                    fragment.appendChild(msgWrapper);
+                }
+            });
+
+            if (mode === 'prepend') {
+                chatContainer.insertBefore(fragment, chatContainer.firstChild);
+            } else {
+                chatContainer.appendChild(fragment);
+            }
         }
 
         function saveDataToIndexedDb(dataArray) {
             const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onupgradeneeded = function(e) {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains("timeline")) { db.createObjectStore("timeline", { keyPath: "id" }); }
-            };
-            request.onsuccess = function(e) {
-                const db = e.target.result;
-                const tx = db.transaction("timeline", "readwrite");
-                tx.objectStore("timeline").put({ id: "last_timeline", data: dataArray });
-            };
+            request.onupgradeneeded = function(e) { e.target.result.createObjectStore("timeline", { keyPath: "id" }); };
+            request.onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: dataArray }); };
         }
 
         function loadCachedData(callback) {
             const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onupgradeneeded = function(e) {
-                const db = e.target.result;
-                db.createObjectStore("timeline", { keyPath: "id" });
-            };
+            request.onupgradeneeded = function(e) { e.target.result.createObjectStore("timeline", { keyPath: "id" }); };
             request.onsuccess = function(e) {
-                const db = e.target.result;
-                const tx = db.transaction("timeline", "readonly");
-                const getReq = tx.objectStore("timeline").get("last_timeline");
-                
-                getReq.onsuccess = function() {
-                    if (getReq.result && getReq.result.data && getReq.result.data.length > 0) {
-                        globalMessages = getReq.result.data;
-                        filteredMessages = [...globalMessages];
-                        
-                        let senderCounts = {};
-                        globalMessages.forEach(m => { if(m.type === 'msg') { senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; } });
+                const tx = e.target.result.transaction("timeline", "readonly");
+                tx.objectStore("timeline").get("last_timeline").onsuccess = function(getEvent) {
+                    const res = getEvent.target.result;
+                    if (res && res.data && res.data.length > 0) {
+                        globalMessages = res.data; filteredMessages = [...globalMessages];
+                        let senderCounts = {}; globalMessages.forEach(m => { if(m.type === 'msg') { senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; } });
                         globalSenders = Object.keys(senderCounts);
-                        
                         meSelector.innerHTML = '';
                         for (const [sender, count] of Object.entries(senderCounts)) {
                             const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; meSelector.appendChild(option);
                         }
-                        
                         const savedMe = localStorage.getItem('cached_me_user');
                         if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; meSelector.value = savedMe; meSelector.disabled = false; }
-                        
-                        talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件 (キャッシュから即時復元)`;
+                        talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         updateHeaderTitle();
-                        renderChat(filteredMessages);
+                        startInfiniteRender(); // 📱 無限スクロールで展開
                     }
                     callback();
                 };
-                getReq.onerror = function() { callback(); };
-            };
-            request.onerror = function() { callback(); };
-        }
-
-        function clearIndexedDbCache() {
-            const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onsuccess = function(e) {
-                const db = e.target.result;
-                const tx = db.transaction("timeline", "readwrite");
-                tx.objectStore("timeline").delete("last_timeline");
             };
         }
 
-        function parseToTimestamp(dateStr, timeStr) {
-            const dMatches = dateStr.match(/\d+/g); const tMatches = timeStr.match(/\d+/g);
-            if (!dMatches || dMatches.length < 3) return 0;
-            const hour = tMatches ? parseInt(tMatches[0], 10) : 0; const min = tMatches ? parseInt(tMatches[1], 10) : 0;
-            return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime();
-        }
-
-        function updateHeaderTitle() { 
-            if (globalSenders.length === 0) return; 
-            const partners = globalSenders.filter(sender => sender !== currentMe); 
-            actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; 
-            applyTitleDisplay(); 
-        }
-        
-        function createSafeDate(dateStr) { if (!dateStr) return null; const matches = dateStr.match(/\d+/g); if (!matches || matches.length < 3) return null; return new Date(parseInt(matches[0], 10), parseInt(matches[1], 10) - 1, parseInt(matches[2], 10), 12, 0, 0); }
-
-        meSelector.addEventListener('change', (e) => { currentMe = e.target.value; localStorage.setItem('cached_me_user', currentMe); updateHeaderTitle(); renderChat(filteredMessages); });
-
-        filterDateBtn.addEventListener('click', () => {
-            const start = startDateInput.value ? createSafeDate(startDateInput.value) : null; const end = endDateInput.value ? createSafeDate(endDateInput.value) : null; if (!start && !end) return;
-            let currentFilterDate = null, currentFilterDateStr = ""; filteredMessages = [];
-            globalMessages.forEach(msg => {
-                if (msg.type === 'date') { currentFilterDate = createSafeDate(msg.text); currentFilterDateStr = msg.text; }
-                else if (msg.type === 'msg' && currentFilterDate) {
-                    let keep = true; if (start && currentFilterDate < start) keep = false; if (end && currentFilterDate > end) keep = false;
-                    if (keep) {
-                        const existingDate = filteredMessages.find(m => m.type === 'date' && m.text === currentFilterDateStr);
-                        if (!existingDate) filteredMessages.push({ type: 'date', text: currentFilterDateStr });
-                        filteredMessages.push(msg);
-                    }
-                }
-            });
-            renderChat(filteredMessages); toggleDrawer();
-        });
-
-        resetDateBtn.addEventListener('click', () => { startDateInput.value = ""; endDateInput.value = ""; filteredMessages = [...globalMessages]; renderChat(filteredMessages); toggleDrawer(); });
+        function clearIndexedDbCache() { indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); }; }
+        function parseToTimestamp(dateStr, timeStr) { const dMatches = dateStr.match(/\d+/g); const tMatches = timeStr.match(/\d+/g); if (!dMatches || dMatches.length < 3) return 0; const hour = tMatches ? parseInt(tMatches[0], 10) : 0; const min = tMatches ? parseInt(tMatches[1], 10) : 0; return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime(); }
+        function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; applyTitleDisplay(); }
 
         searchBtn.addEventListener('click', () => {
             const keyword = searchKeyword.value.trim().toLowerCase(); searchResults.innerHTML = ''; if (!keyword) { searchResults.classList.add('hidden'); return; }
@@ -520,8 +626,18 @@
                     matchCount++; const item = document.createElement('div'); item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
                     item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div><div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>`;
                     item.addEventListener('click', () => {
-                        const targetElement = document.getElementById(`msg-${index}`);
-                        if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
+                        // 📱 【無限スクロール対応の検索ジャンプ】
+                        // 検索対象のメッセージが含まれるように表示インデックスを強制再編成
+                        currentLoadedIndex = Math.max(0, index - 50);
+                        const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
+                        visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
+                        chatContainer.innerHTML = '';
+                        renderChatSegment(visibleMessages, 'append');
+
+                        setTimeout(() => {
+                            const targetElement = document.getElementById(`msg-${index}`);
+                            if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
+                        }, 100);
                     });
                     searchResults.appendChild(item);
                 }
@@ -543,36 +659,16 @@
                     const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
                     
                     let cleanBody = body.replace(/\\n/g, '<br>');
-                    if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') {
-                        cleanBody = '🎨 [スタンプ]';
-                    }
+                    if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; }
+                    // ①ついでに写真と動画の装飾もここにこっそり追加！
+                    else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; }
+                    else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
 
                     const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; messages.push(newMsg); currentMsgRef = newMsg;
                 } else if (currentMsgRef) { currentMsgRef.body += '<br>' + line; }
                 else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { messages[messages.length - 1].body += '<br>' + line; }
             }
             return { messages, senderCounts, chatPartner };
-        }
-
-        function renderChat(messages) {
-            chatContainer.innerHTML = ''; if (messages.length === 0) { chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-full px-4 py-1 self-center">表示できるメッセージがありません。</div>`; return; }
-            globalMessages.forEach((msg, globalIndex) => {
-                if (!messages.includes(msg)) return;
-                if (msg.type === 'date') {
-                    const dateDiv = document.createElement('div'); dateDiv.className = 'text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10'; dateDiv.innerText = msg.text; chatContainer.appendChild(dateDiv);
-                } else if (msg.type === 'msg') {
-                    const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
-                    if (isMe) {
-                        msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg';
-                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`;
-                    } else {
-                        msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg';
-                        msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`;
-                    }
-                    chatContainer.appendChild(msgWrapper);
-                }
-            });
-            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     </script>
 </body>
