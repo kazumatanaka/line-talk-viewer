@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v20 (Perfect Event Fix)</title>
+    <title>LINE Talk Viewer v21 (Perfect Event Bind)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -155,77 +155,175 @@
         let isCamouflageMode = false;
         let actualPartnerNames = "LINE Talk Viewer"; 
 
-        // DOM取得
-        const menuBtn = document.getElementById('menuBtn');
-        const closeMenuBtn = document.getElementById('closeMenuBtn');
-        const drawerMenu = document.getElementById('drawerMenu');
-        const overlay = document.getElementById('overlay');
-        const fileInput = document.getElementById('fileInput');
-        const meSelector = document.getElementById('meSelector');
-        const chatContainer = document.getElementById('chatContainer');
-        const titleArea = document.getElementById('titleArea'); 
-        const talkTitle = document.getElementById('talkTitle');
-        const talkSub = document.getElementById('talkSub');
-        const authBtn = document.getElementById('authBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const driveExplorerZone = document.getElementById('driveExplorerZone');
-        const breadcrumb = document.getElementById('breadcrumb');
-        const batchLoadBtn = document.getElementById('batchLoadBtn');
-        const explorerList = document.getElementById('explorerList');
-        const guideText = document.getElementById('guideText');
-        const calendarWrapper = document.getElementById('calendarWrapper');
-        const jumpDatePicker = document.getElementById('jumpDatePicker');
+        // DOMの取得関数（毎回確実に生きている要素を捕まえる）
+        const getEl = (id) => document.getElementById(id);
 
-        const searchKeyword = document.getElementById('searchKeyword');
-        const searchBtn = document.getElementById('searchBtn');
-        const searchResults = document.getElementById('searchResults');
-
-        const themeBlueBtn = document.getElementById('theme-blue');
-        const themeDarkBtn = document.getElementById('theme-dark');
-        const themePinkBtn = document.getElementById('theme-pink');
-        const themeBeigeBtn = document.getElementById('theme-beige');
-        const sizeSmBtn = document.getElementById('size-sm');
-        const sizeMdBtn = document.getElementById('size-md');
-        const sizeLgBtn = document.getElementById('size-lg');
-
-        // ⚡ 【ここを完全修復】確実ボタン動作が紐づくように初期配置
-        menuBtn.addEventListener('click', toggleDrawer);
-        closeMenuBtn.addEventListener('click', toggleDrawer);
-        overlay.addEventListener('click', toggleDrawer);
-
-        titleArea.addEventListener('click', () => {
-            if (globalMessages.length === 0) return;
-            isCamouflageMode = !isCamouflageMode;
-            applyTitleDisplay();
+        // ⚡【超重要】画面のHTMLが完成した瞬間に「最優先」でボタン機能をガチガチに固定する
+        document.addEventListener("DOMContentLoaded", () => {
+            bindAllButtonEvents();
         });
 
-        function applyTitleDisplay() {
-            talkTitle.innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
+        function bindAllButtonEvents() {
+            // ハンバーガーメニューを開く
+            if (getEl('menuBtn')) {
+                getEl('menuBtn').onclick = (e) => {
+                    e.stopPropagation();
+                    toggleDrawer();
+                };
+            }
+            // ✕ボタンで閉じる
+            if (getEl('closeMenuBtn')) getEl('closeMenuBtn').onclick = toggleDrawer;
+            // 背景タップで閉じる
+            if (getEl('overlay')) getEl('overlay').onclick = toggleDrawer;
+
+            // カモフラージュ切り替え
+            if (getEl('titleArea')) {
+                getEl('titleArea').onclick = () => {
+                    if (globalMessages.length === 0) return;
+                    isCamouflageMode = !isCamouflageMode;
+                    applyTitleDisplay();
+                };
+            }
+
+            // カレンダーの日付変更
+            if (getEl('jumpDatePicker')) {
+                getEl('jumpDatePicker').onchange = (e) => {
+                    const selectedDateStr = e.target.value;
+                    if (!selectedDateStr) return;
+                    jumpToSpecificDate(selectedDateStr.replace(/-/g, '/'));
+                };
+            }
+
+            // 着せ替え & 文字サイズ
+            if (getEl('theme-blue')) getEl('theme-blue').onclick = () => changeTheme('blue');
+            if (getEl('theme-dark')) getEl('theme-dark').onclick = () => changeTheme('dark');
+            if (getEl('theme-pink')) getEl('theme-pink').onclick = () => changeTheme('pink');
+            if (getEl('theme-beige')) getEl('theme-beige').onclick = () => changeTheme('beige');
+            if (getEl('size-sm')) getEl('size-sm').onclick = () => changeFontSize('sm');
+            if (getEl('size-md')) getEl('size-md').onclick = () => changeFontSize('md');
+            if (getEl('size-lg')) getEl('size-lg').onclick = () => changeFontSize('lg');
+
+            // 認証 & ログアウト
+            if (getEl('authBtn')) {
+                getEl('authBtn').onclick = () => {
+                    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`;
+                    window.location.href = authUrl;
+                };
+            }
+            if (getEl('logoutBtn')) {
+                getEl('logoutBtn').onclick = () => {
+                    const currentToken = localStorage.getItem('drive_access_token');
+                    if (currentToken) { google.accounts.oauth2.revokeToken(currentToken, () => {}); }
+                    localStorage.removeItem('drive_access_token');
+                    localStorage.removeItem('drive_token_expiry');
+                    localStorage.removeItem('explorer_folder_history');
+                    localStorage.removeItem('cached_me_user');
+                    gapi.client.setToken(null);
+                    clearIndexedDbCache();
+
+                    globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = "";
+                    clearUiToUnauthenticated();
+                    if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
+                    
+                    if (getEl('chatContainer')) {
+                        getEl('chatContainer').innerHTML = `
+                            <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+                                <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
+                                <p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p>
+                            </div>
+                        `;
+                    }
+                    actualPartnerNames = "LINE Talk Viewer"; 
+                    if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer"; 
+                    if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
+                    alert("連携情報を完全に削除しました。");
+                    toggleDrawer();
+                };
+            }
+
+            // フォルダ一括結合
+            if (getEl('batchLoadBtn')) {
+                getEl('batchLoadBtn').onclick = async () => {
+                    if (currentFolderFiles.length === 0) return;
+                    if (getEl('talkTitle')) getEl('talkTitle').innerText = "全自動結合中...";
+                    let combinedTexts = [];
+                    for (let file of currentFolderFiles) {
+                        try { const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' }); combinedTexts.push({ text: contentResponse.body, name: file.name }); }
+                        catch (err) { console.error(err); }
+                    }
+                    processMultipleTexts(combinedTexts);
+                };
+            }
+
+            // 検索ボタン
+            if (getEl('searchBtn')) {
+                getEl('searchBtn').onclick = () => {
+                    const keyword = getEl('searchKeyword').value.trim().toLowerCase(); 
+                    if (getEl('searchResults')) getEl('searchResults').innerHTML = ''; 
+                    if (!keyword) { getEl('searchResults').classList.add('hidden'); return; }
+                    let matchCount = 0;
+                    globalMessages.forEach((msg, index) => {
+                        if (msg.type === 'msg' && msg.body.toLowerCase().includes(keyword)) {
+                            matchCount++; 
+                            const item = document.createElement('div'); 
+                            item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
+                            item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div><div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>`;
+                            item.onclick = () => {
+                                currentLoadedIndex = Math.max(0, index - 50);
+                                const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
+                                visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
+                                if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
+                                renderChatSegment(visibleMessages, 'append');
+                                setTimeout(() => {
+                                    const targetElement = getEl(`msg-${index}`);
+                                    if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
+                        }, 100);
+                            };
+                            if (getEl('searchResults')) getEl('searchResults').appendChild(item);
+                        }
+                    });
+                    if (getEl('searchResults')) {
+                        getEl('searchResults').classList.toggle('hidden', matchCount === 0);
+                        if(matchCount === 0) { getEl('searchResults').innerHTML = '<div class="p-3 text-center text-gray-400 text-xs">見つかりませんでした</div>'; getEl('searchResults').classList.remove('hidden'); }
+                    }
+                };
+            }
+
+            // 自分選択セレクトボックス
+            if (getEl('meSelector')) {
+                getEl('meSelector').onchange = (e) => {
+                    currentMe = e.target.value; 
+                    localStorage.setItem('cached_me_user', currentMe); 
+                    updateHeaderTitle(); 
+                    renderChatSegment(visibleMessages, 'append'); 
+                };
+            }
+
+            // スクロール時の無限読み込み紐付け
+            if (getEl('chatContainer')) {
+                getEl('chatContainer').onscroll = () => {
+                    if (globalMessages.length === 0 || isLodingMore) return;
+                    if (getEl('chatContainer').scrollTop <= 50 && currentLoadedIndex < filteredMessages.length) {
+                        isLodingMore = true;
+                        loadMorePastMessages();
+                    }
+                };
+            }
         }
 
-        chatContainer.addEventListener('scroll', () => {
-            if (globalMessages.length === 0 || isLodingMore) return;
-            if (chatContainer.scrollTop <= 50 && currentLoadedIndex < filteredMessages.length) {
-                isLodingMore = true;
-                loadMorePastMessages();
-            }
-        });
+        function toggleDrawer() {
+            if (getEl('drawerMenu')) getEl('drawerMenu').classList.toggle('translate-x-full');
+            if (getEl('overlay')) getEl('overlay').classList.toggle('hidden');
+        }
 
-        jumpDatePicker.addEventListener('change', (e) => {
-            const selectedDateStr = e.target.value;
-            if (!selectedDateStr) return;
-            jumpToSpecificDate(selectedDateStr.replace(/-/g, '/'));
-        });
-
-        themeBlueBtn.addEventListener('click', () => changeTheme('blue'));
-        themeDarkBtn.addEventListener('click', () => changeTheme('dark'));
-        themePinkBtn.addEventListener('click', () => changeTheme('pink'));
-        themeBeigeBtn.addEventListener('click', () => changeTheme('beige'));
-        sizeSmBtn.addEventListener('click', () => changeFontSize('sm'));
-        sizeMdBtn.addEventListener('click', () => changeFontSize('md'));
-        sizeLgBtn.addEventListener('click', () => changeFontSize('lg'));
+        function applyTitleDisplay() {
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
+        }
 
         function onGapiLoad() {
+            // 万が一HTML読み込みより先にここに来ても大丈夫なように再度ボタン紐付けを実行
+            bindAllButtonEvents();
+
             const savedTheme = localStorage.getItem('user_theme') || 'blue';
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             changeTheme(savedTheme);
@@ -237,23 +335,23 @@
         }
 
         function changeTheme(themeName) {
-            chatContainer.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
+            if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
             localStorage.setItem('user_theme', themeName);
-            [themeBlueBtn, themeDarkBtn, themePinkBtn, themeBeigeBtn].forEach(btn => btn.classList.remove('ring-4', 'ring-yellow-400'));
-            const targetBtn = document.getElementById(`theme-${themeName}`);
+            [themeBlueBtn, themeDarkBtn, themePinkBtn, themeBeigeBtn].forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
+            const targetBtn = getEl(`theme-${themeName}`);
             if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
         }
 
         function changeFontSize(sizeName) {
-            chatContainer.classList.remove('text-xs', 'text-sm', 'text-base', 'text-lg');
-            if (sizeName === 'sm') chatContainer.classList.add('text-xs');
-            if (sizeName === 'md') chatContainer.classList.add('text-sm');
-            if (sizeName === 'lg') chatContainer.classList.add('text-base');
+            if (getEl('chatContainer')) getEl('chatContainer').classList.remove('text-xs', 'text-sm', 'text-base', 'text-lg');
+            if (sizeName === 'sm' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-xs');
+            if (sizeName === 'md' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-sm');
+            if (sizeName === 'lg' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-base');
             localStorage.setItem('user_font_size', sizeName);
             [sizeSmBtn, sizeMdBtn, sizeLgBtn].forEach(btn => {
-                btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer";
+                if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer";
             });
-            const activeBtn = document.getElementById(`size-${sizeName}`);
+            const activeBtn = getEl(`size-${sizeName}`);
             if(activeBtn) activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
         }
 
@@ -262,7 +360,6 @@
                 setTimeout(initGoogleApi, 100);
                 return;
             }
-            
             gapi.load('client', async () => {
                 await gapi.client.init({});
                 await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
@@ -302,61 +399,35 @@
             });
         }
 
-        authBtn.addEventListener('click', () => {
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`;
-            window.location.href = authUrl;
-        });
-
-        logoutBtn.addEventListener('click', () => {
-            const currentToken = localStorage.getItem('drive_access_token');
-            if (currentToken) { google.accounts.oauth2.revokeToken(currentToken, () => {}); }
-            localStorage.removeItem('drive_access_token');
-            localStorage.removeItem('drive_token_expiry');
-            localStorage.removeItem('explorer_folder_history');
-            localStorage.removeItem('cached_me_user');
-            gapi.client.setToken(null);
-            clearIndexedDbCache();
-
-            globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = "";
-            clearUiToUnauthenticated();
-            calendarWrapper.classList.add('hidden');
-            
-            chatContainer.innerHTML = `
-                <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                    <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-                    <p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p>
-                </div>
-            `;
-            actualPartnerNames = "LINE Talk Viewer"; talkTitle.innerText = "LINE Talk Viewer"; talkSub.innerText = "未連携";
-            alert("連携情報を完全に削除しました。");
-            toggleDrawer();
-        });
-
         function setAuthSuccessState() {
-            authBtn.innerText = "✓ 連携完了";
-            authBtn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
-            logoutBtn.classList.remove('hidden');
-            if(globalMessages.length === 0) {
-                guideText.innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。";
-                talkSub.innerText = "フォルダを探してください";
+            if (getEl('authBtn')) {
+                getEl('authBtn').innerText = "✓ 連携完了";
+                getEl('authBtn').className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
+            }
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.remove('hidden');
+            if(globalMessages.length === 0 && getEl('guideText')) {
+                getEl('guideText').innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。";
+                if (getEl('talkSub')) getEl('talkSub').innerText = "フォルダを探してください";
             }
         }
 
         function clearUiToUnauthenticated() {
-            authBtn.innerText = "Googleドライブと連携する";
-            authBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
-            logoutBtn.classList.add('hidden');
-            driveExplorerZone.classList.add('hidden');
-            guideText.innerText = "右上のメニューを開き、Googleドライブと連携してください。";
-            talkSub.innerText = "未連携";
+            if (getEl('authBtn')) {
+                getEl('authBtn').innerText = "Googleドライブと連携する";
+                getEl('authBtn').className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
+            }
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden');
+            if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.add('hidden');
+            if (getEl('guideText')) getEl('guideText').innerText = "右上のメニューを開き、Googleドライブと連携してください。";
+            if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
         }
 
         async function renderExplorer(folderId) {
             currentFolderId = folderId;
-            explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
-            batchLoadBtn.classList.add('hidden');
-            driveExplorerZone.classList.remove('hidden');
+            if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
+            if (getEl('batchLoadBtn')) getEl('batchLoadBtn').classList.add('hidden');
+            if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.remove('hidden');
             updateBreadcrumb();
             localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
 
@@ -366,8 +437,9 @@
                     fields: 'files(id, name, mimeType)', pageSize: 100, orderBy: 'folder,name'
                 });
                 const files = response.result.files;
-                explorerList.innerHTML = ''; currentFolderFiles = [];
-                if (!files || files.length === 0) { explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; return; }
+                if (getEl('explorerList')) getEl('explorerList').innerHTML = ''; 
+                currentFolderFiles = [];
+                if ((!files || files.length === 0) && getEl('explorerList')) { getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; return; }
 
                 let textFileCount = 0;
                 files.forEach(file => {
@@ -376,17 +448,17 @@
                     item.className = 'p-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer transition select-none';
                     if (isFolder) {
                         item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`;
-                        item.addEventListener('click', () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); });
+                        item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); };
                     } else {
                         item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`;
                         currentFolderFiles.push(file); textFileCount++;
-                        item.addEventListener('click', () => processSingleDriveFile(file.id, file.name));
+                        item.onclick = () => processSingleDriveFile(file.id, file.name);
                     }
-                    explorerList.appendChild(item);
+                    if (getEl('explorerList')) getEl('explorerList').appendChild(item);
                 });
-                if (textFileCount > 0) {
-                    batchLoadBtn.innerText = `⚡ このフォルダ内の一括結合 (${textFileCount}個)`;
-                    batchLoadBtn.classList.remove('hidden');
+                if (textFileCount > 0 && getEl('batchLoadBtn')) {
+                    getEl('batchLoadBtn').innerText = `⚡ このフォルダ内の一括結合 (${textFileCount}個)`;
+                    getEl('batchLoadBtn').classList.remove('hidden');
                 }
             } catch (err) {
                 console.error(err);
@@ -394,26 +466,16 @@
         }
 
         function updateBreadcrumb() {
-            breadcrumb.innerHTML = '';
+            if (!getEl('breadcrumb')) return;
+            getEl('breadcrumb').innerHTML = '';
             folderHistory.forEach((f, idx) => {
-                if (idx > 0) { const arrow = document.createElement('span'); arrow.className = 'mx-1 text-gray-300'; arrow.innerText = '>'; breadcrumb.appendChild(arrow); }
+                if (idx > 0) { const arrow = document.createElement('span'); arrow.className = 'mx-1 text-gray-300'; arrow.innerText = '>'; getEl('breadcrumb').appendChild(arrow); }
                 const node = document.createElement('span'); const isLast = (idx === folderHistory.length - 1);
                 node.className = isLast ? 'font-bold text-gray-800' : 'text-blue-600 hover:underline cursor-pointer'; node.innerText = f.name;
-                if (!isLast) { node.addEventListener('click', () => { folderHistory = folderHistory.slice(0, idx + 1); renderExplorer(f.id); }); }
-                breadcrumb.appendChild(node);
+                if (!isLast) { node.onclick = () => { folderHistory = folderHistory.slice(0, idx + 1); renderExplorer(f.id); }; }
+                getEl('breadcrumb').appendChild(node);
             });
         }
-
-        batchLoadBtn.addEventListener('click', async () => {
-            if (currentFolderFiles.length === 0) return;
-            talkTitle.innerText = "全自動結合中...";
-            let combinedTexts = [];
-            for (let file of currentFolderFiles) {
-                try { const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' }); combinedTexts.push({ text: contentResponse.body, name: file.name }); }
-                catch (err) { console.error(err); }
-            }
-            processMultipleTexts(combinedTexts);
-        });
 
         async function processSingleDriveFile(fileId, filename) {
             try { const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); processMultipleTexts([{ text: contentResponse.body, name: filename }]); }
@@ -436,72 +498,70 @@
                     senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1;
                 }
             });
-            globalMessages = structuredTimeline; 
-            filteredMessages = [...globalMessages]; 
-            globalSenders = Object.keys(senderCounts);
+            globalMessages = structuredTimeline; filteredMessages = [...globalMessages]; globalSenders = Object.keys(senderCounts);
 
             saveDataToIndexedDb(globalMessages);
 
-            let assumedMe = "", maxCount = 0; meSelector.innerHTML = '';
+            let assumedMe = "", maxCount = 0; 
+            if (getEl('meSelector')) getEl('meSelector').innerHTML = '';
             for (const [sender, count] of Object.entries(senderCounts)) {
-                const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; meSelector.appendChild(option);
+                const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; 
+                if (getEl('meSelector')) getEl('meSelector').appendChild(option);
                 if (count > maxCount) { maxCount = count; assumedMe = sender; }
             }
             const savedMe = localStorage.getItem('cached_me_user');
             if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
-            if(currentMe) { meSelector.value = currentMe; meSelector.disabled = false; localStorage.setItem('cached_me_user', currentMe); }
+            if(currentMe && getEl('meSelector')) { getEl('meSelector').value = currentMe; getEl('meSelector').disabled = false; localStorage.setItem('cached_me_user', currentMe); }
 
-            talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+            if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             updateHeaderTitle();
             startInfiniteRender();
             toggleDrawer();
         }
 
         function startInfiniteRender() {
-            chatContainer.innerHTML = '';
-            calendarWrapper.classList.remove('hidden'); 
+            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
+            if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             
             if (filteredMessages.length === 0) {
-                chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`;
+                if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`;
                 return;
             }
 
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE);
             visibleMessages = filteredMessages.slice(currentLoadedIndex);
             renderChatSegment(visibleMessages, 'append');
-            chatContainer.scrollTop = chatContainer.scrollHeight; 
+            if (getEl('chatContainer')) getEl('chatContainer').scrollTop = getEl('chatContainer').scrollHeight; 
         }
 
         function loadMorePastMessages() {
             if (currentLoadedIndex <= 0) { isLodingMore = false; return; }
             const nextStartIndex = Math.max(0, currentLoadedIndex - PAGE_SIZE);
             const additionalSegment = filteredMessages.slice(nextStartIndex, currentLoadedIndex);
-            const oldScrollHeight = chatContainer.scrollHeight;
-            const oldScrollTop = chatContainer.scrollTop;
+            const oldScrollHeight = getEl('chatContainer').scrollHeight;
+            const oldScrollTop = getEl('chatContainer').scrollTop;
             currentLoadedIndex = nextStartIndex;
             renderChatSegment(additionalSegment, 'prepend');
-            const newScrollHeight = chatContainer.scrollHeight;
-            chatContainer.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+            const newScrollHeight = getEl('chatContainer').scrollHeight;
+            if (getEl('chatContainer')) getEl('chatContainer').scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
             isLodingMore = false;
         }
 
         function jumpToSpecificDate(dateString) {
             let foundIndex = -1;
             for (let i = 0; i < filteredMessages.length; i++) {
-                if (filteredMessages[i].type === 'date' && filteredMessages[i].text.includes(dateString)) {
-                    foundIndex = i;
-                    break;
-                }
+                if (filteredMessages[i].type === 'date' && filteredMessages[i].text.includes(dateString)) { foundIndex = i; break; }
             }
             if (foundIndex === -1) { alert(`${dateString} 付近のトーク履歴が見つかりませんでした。`); return; }
             currentLoadedIndex = Math.max(0, foundIndex - 50);
             const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
             visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
-            chatContainer.innerHTML = '';
+            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
             renderChatSegment(visibleMessages, 'append');
 
             setTimeout(() => {
-                const dayElements = chatContainer.querySelectorAll('.date-stamp-node');
+                if (!getEl('chatContainer')) return;
+                const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
                 for (let el of dayElements) {
                     if (el.innerText.includes(dateString)) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -536,8 +596,10 @@
                     fragment.appendChild(msgWrapper);
                 }
             });
-            if (mode === 'prepend') { chatContainer.insertBefore(fragment, chatContainer.firstChild); } 
-            else { chatContainer.appendChild(fragment); }
+            if (getEl('chatContainer')) {
+                if (mode === 'prepend') { getEl('chatContainer').insertBefore(fragment, getEl('chatContainer').firstChild); } 
+                else { getEl('chatContainer').appendChild(fragment); }
+            }
         }
 
         function saveDataToIndexedDb(dataArray) {
@@ -547,14 +609,10 @@
 
         function openDatabaseAndLoadCache(done) {
             const request = indexedDB.open("LineViewerCacheDB", 1);
-            
             request.onupgradeneeded = function(e) {
                 const db = e.target.result;
-                if (!db.objectStoreNames.contains("timeline")) {
-                    db.createObjectStore("timeline", { keyPath: "id" });
-                }
+                if (!db.objectStoreNames.contains("timeline")) db.createObjectStore("timeline", { keyPath: "id" });
             };
-            
             request.onsuccess = function(e) {
                 const db = e.target.result;
                 const tx = db.transaction("timeline", "readonly");
@@ -566,22 +624,20 @@
                         globalMessages = getReq.result.data;
                         filteredMessages = [...globalMessages];
                         let senderCounts = {}; 
-                        globalMessages.forEach(m => { if(m.type === 'msg') { senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; } });
+                        globalMessages.forEach(m => { if(m.type === 'msg') senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; });
                         globalSenders = Object.keys(senderCounts);
-                        meSelector.innerHTML = '';
+                        if (getEl('meSelector')) getEl('meSelector').innerHTML = '';
                         for (const [sender, count] of Object.entries(senderCounts)) {
-                            const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; meSelector.appendChild(option);
+                            const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; if (getEl('meSelector')) getEl('meSelector').appendChild(option);
                         }
                         const savedMe = localStorage.getItem('cached_me_user');
-                        if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; meSelector.value = savedMe; meSelector.disabled = false; }
-                        talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+                        if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; if(getEl('meSelector')) { getEl('meSelector').value = savedMe; getEl('meSelector').disabled = false; } }
+                        if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         updateHeaderTitle();
                         startInfiniteRender();
                     } else {
-                        const initGuide = document.getElementById('guideText');
-                        if(initGuide) initGuide.innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
-                        const initSub = document.getElementById('talkSub');
-                        if(initSub) initSub.innerText = "未連携";
+                        if (getEl('guideText')) getEl('guideText').innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
+                        if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
                     }
                     done(); 
                 };
@@ -593,31 +649,6 @@
         function clearIndexedDbCache() { indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); }; }
         function parseToTimestamp(dateStr, timeStr) { const dMatches = dateStr.match(/\d+/g); const tMatches = timeStr.match(/\d+/g); if (!dMatches || dMatches.length < 3) return 0; const hour = tMatches ? parseInt(tMatches[0], 10) : 0; const min = tMatches ? parseInt(tMatches[1], 10) : 0; return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime(); }
         function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; applyTitleDisplay(); }
-
-        searchBtn.addEventListener('click', () => {
-            const keyword = searchKeyword.value.trim().toLowerCase(); searchResults.innerHTML = ''; if (!keyword) { searchResults.classList.add('hidden'); return; }
-            let matchCount = 0;
-            globalMessages.forEach((msg, index) => {
-                if (msg.type === 'msg' && msg.body.toLowerCase().includes(keyword)) {
-                    matchCount++; const item = document.createElement('div'); item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
-                    item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div><div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>`;
-                    item.addEventListener('click', () => {
-                        currentLoadedIndex = Math.max(0, index - 50);
-                        const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
-                        visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
-                        chatContainer.innerHTML = '';
-                        renderChatSegment(visibleMessages, 'append');
-                        setTimeout(() => {
-                            const targetElement = document.getElementById(`msg-${index}`);
-                            if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
-                        }, 100);
-                    });
-                    searchResults.appendChild(item);
-                }
-            });
-            searchResults.classList.toggle('hidden', matchCount === 0);
-            if(matchCount === 0) { searchResults.innerHTML = '<div class="p-3 text-center text-gray-400 text-xs">見つかりませんでした</div>'; searchResults.classList.remove('hidden'); }
-        });
 
         function parseLineText(text, filename) {
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
