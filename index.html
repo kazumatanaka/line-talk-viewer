@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v26 (Perfect Picker)</title>
+    <title>LINE Talk Viewer v27 (UI Restored)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -67,7 +67,7 @@
                     連携を解除する
                 </button>
                 
-                <div id="driveExplorerZone" class="hidden space-y-1.5 pt-1 flex flex-col min-h-0">
+                <div id="driveExplorerZone" class="space-y-1.5 pt-1 flex flex-col min-h-0">
                     <label class="block text-[11px] font-bold text-gray-500">ドライブを探索</label>
                     <div id="breadcrumb" class="text-xs bg-gray-100 p-2 rounded border border-gray-200 text-gray-600 font-medium break-all select-none">
                         マイドライブ
@@ -76,9 +76,14 @@
                         ⚡ このフォルダ内のトークをすべて結合
                     </button>
                     <div id="explorerList" class="border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-40 overflow-y-auto text-xs">
-                        <p class="text-gray-400 text-center py-4">フォルダを読み込み中...</p>
+                        <p id="explorerPlaceholder" class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="space-y-1 flex-shrink-0">
+                <label class="block text-xs font-bold text-gray-500">ローカルから複数読み込み</label>
+                <input type="file" id="fileInput" accept=".txt" multiple class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
             </div>
 
             <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 flex-shrink-0">
@@ -157,19 +162,16 @@
 
         const getEl = (id) => document.getElementById(id);
 
-        // 最上層タップ監視
+        // 全体タップ監視（新防衛システム）
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
             if (targetId === "menuBtn") { e.preventDefault(); e.stopPropagation(); toggleDrawer(); return; }
             if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(); return; }
             
-            // ⚡【ここを完全最適化】カレンダーのイラスト部分や隙間、どこが押されても確実に起動する処理
             if (targetId === "calendarBtn" || e.target.closest("#calendarBtn")) {
                 const picker = getEl('jumpDatePicker');
-                if (picker && typeof picker.showPicker === 'function') {
-                    picker.showPicker(); // ブラウザ標準のカレンダーをプログラムで直接引き出す！
-                }
+                if (picker && typeof picker.showPicker === 'function') picker.showPicker();
                 return;
             }
 
@@ -202,6 +204,20 @@
                 getEl('jumpDatePicker').onchange = (e) => {
                     if (!e.target.value) return;
                     jumpToSpecificDate(e.target.value);
+                };
+            }
+
+            // ローカルファイル選択イベント（復活！）
+            if (getEl('fileInput')) {
+                getEl('fileInput').onchange = async (e) => {
+                    const files = e.target.files; if (!files || files.length === 0) return;
+                    if (getEl('talkTitle')) getEl('talkTitle').innerText = "ファイルを結合中...";
+                    let combinedTexts = [];
+                    for (let file of files) {
+                        const text = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = (evt) => resolve(evt.target.result); reader.readAsText(file, 'UTF-8'); });
+                        combinedTexts.push({ text: text, name: file.name });
+                    }
+                    processMultipleTexts(combinedTexts);
                 };
             }
 
@@ -277,14 +293,16 @@
 
         function clearUiToUnauthenticated() {
             if (getEl('authBtn')) { getEl('authBtn').innerText = "Googleドライブと連携する"; getEl('authBtn').className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer"; }
-            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden'); if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.add('hidden');
-            if (getEl('guideText')) getEl('guideText').innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。"; if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden');
+            if (getEl('explorerPlaceholder')) getEl('explorerPlaceholder').innerText = "連携するとフォルダが表示されます";
+            if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>';
+            if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
         }
 
         async function renderExplorer(folderId) {
             currentFolderId = folderId; if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
-            if (getEl('batchLoadBtn')) getEl('batchLoadBtn').classList.add('hidden'); if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.remove('hidden');
+            if (getEl('batchLoadBtn')) getEl('batchLoadBtn').classList.add('hidden');
             updateBreadcrumb(); localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
             try {
                 const response = await gapi.client.drive.files.list({ q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain') and trashed = false`, fields: 'files(id, name, mimeType)', pageSize: 100, orderBy: 'folder,name' });
