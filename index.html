@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v14 (Data Persistent Cache)</title>
+    <title>LINE Talk Viewer v16 (Perfect Camouflage)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -29,8 +29,8 @@
     <header class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-20 shadow-sm flex-shrink-0">
         <div class="flex items-center space-x-3">
             <button class="text-gray-700 text-xl hover:opacity-70 cursor-pointer">←</button>
-            <div>
-                <h1 id="talkTitle" class="font-bold text-gray-800 text-base select-text">LINE Talk Viewer</h1>
+            <div id="titleArea" class="cursor-pointer hover:bg-gray-50 active:scale-95 transition-all p-1.5 rounded-lg select-none">
+                <h1 id="talkTitle" class="font-bold text-gray-800 text-base">LINE Talk Viewer</h1>
                 <p id="talkSub" class="text-[10px] text-gray-400">自動ログインを準備中...</p>
             </div>
         </div>
@@ -131,6 +131,10 @@
         let folderHistory = [{ id: 'root', name: 'マイドライブ' }];
         let currentFolderFiles = []; 
 
+        // 🕵️‍♂️ カモフラージュ制御用の変数
+        let isCamouflageMode = false;
+        let actualPartnerNames = "LINE Talk Viewer"; // 実際の名前を控える
+
         // DOM取得
         const menuBtn = document.getElementById('menuBtn');
         const closeMenuBtn = document.getElementById('closeMenuBtn');
@@ -139,6 +143,7 @@
         const fileInput = document.getElementById('fileInput');
         const meSelector = document.getElementById('meSelector');
         const chatContainer = document.getElementById('chatContainer');
+        const titleArea = document.getElementById('titleArea'); 
         const talkTitle = document.getElementById('talkTitle');
         const talkSub = document.getElementById('talkSub');
         const authBtn = document.getElementById('authBtn');
@@ -166,11 +171,23 @@
             overlay.classList.toggle('hidden');
         }
 
-        // 🏠 起動時にIndexedDBからキャッシュデータを最速で取り出す処理
+        // 🕵️‍♂️ 左上のエリアがクリックされたら、名前 ⇄ アプリ名 を一瞬で切り替える
+        titleArea.addEventListener('click', () => {
+            if (globalMessages.length === 0) return; // トーク未読み込み時は何もしない
+            isCamouflageMode = !isCamouflageMode;
+            applyTitleDisplay();
+        });
+
+        function applyTitleDisplay() {
+            if (isCamouflageMode) {
+                talkTitle.innerText = "LINE Talk Viewer";
+            } else {
+                talkTitle.innerText = actualPartnerNames;
+            }
+        }
+
         window.onload = function() {
-            // まずブラウザに記憶されている前回のキャッシュデータを復元
             loadCachedData(() => {
-                // キャッシュ展開完了後にGoogle APIの初期化へ進む（裏側で滑らかに接続）
                 initGoogleApi();
             });
         };
@@ -187,7 +204,6 @@
                     gapi.client.setToken({ access_token: savedToken });
                     setAuthSuccessState();
                     
-                    // 📁 前回見ていたフォルダの歴史（階層構造）が記憶されていれば復元
                     const savedHistory = localStorage.getItem('explorer_folder_history');
                     if (savedHistory) {
                         folderHistory = JSON.parse(savedHistory);
@@ -217,7 +233,6 @@
                 if(globalMessages.length === 0) {
                     clearUiToUnauthenticated();
                 } else {
-                    // キャッシュが既に出ている場合はボタン表示だけ調整
                     authBtn.innerText = "Googleドライブと連携する";
                     authBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
                 }
@@ -229,7 +244,6 @@
             window.location.href = authUrl;
         });
 
-        // 🔓 連携解除ボタンが押されたら、Google認証情報もローカルキャッシュも完全クリア！
         logoutBtn.addEventListener('click', () => {
             const currentToken = localStorage.getItem('drive_access_token');
             if (currentToken) { google.accounts.oauth2.revokeToken(currentToken, () => {}); }
@@ -240,7 +254,6 @@
             localStorage.removeItem('cached_me_user');
             gapi.client.setToken(null);
             
-            // 💾 IndexedDBのキャッシュトーク履歴も完全に抹消
             clearIndexedDbCache();
 
             globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = "";
@@ -252,6 +265,7 @@
                     <p class="text-xs text-white/80">すべての連携と内部キャッシュデータを完全に削除しました。</p>
                 </div>
             `;
+            actualPartnerNames = "LINE Talk Viewer";
             talkTitle.innerText = "LINE Talk Viewer"; talkSub.innerText = "未連携";
             alert("連携解除とローカルキャッシュのクリアが完了しました。");
             toggleDrawer();
@@ -279,7 +293,6 @@
             currentFolderFiles = [];
         }
 
-        // 📁 エクスプローラー描画とフォルダ階層履歴の自動セーブ
         async function renderExplorer(folderId) {
             currentFolderId = folderId;
             explorerList.innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
@@ -287,7 +300,6 @@
             driveExplorerZone.classList.remove('hidden');
             updateBreadcrumb();
             
-            // 📂 次回起動時のために、今いるフォルダ階層構造をセーブ！
             localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
 
             try {
@@ -363,7 +375,6 @@
             processMultipleTexts(combinedTexts);
         });
 
-        // 🧠 アルゴリズム：結合・ソート・重複完全カット
         function processMultipleTexts(fileObjects) {
             let allRawMessages = []; let senderCounts = {};
             fileObjects.forEach(obj => { const { messages } = parseLineText(obj.text, obj.name); allRawMessages = allRawMessages.concat(messages); });
@@ -382,7 +393,6 @@
             });
             globalMessages = structuredTimeline; filteredMessages = [...globalMessages]; globalSenders = Object.keys(senderCounts);
 
-            // 💾 【新コア機能】生成した綺麗な一本のタイムラインデータをIndexedDBへ非同期でセーブ！
             saveDataToIndexedDb(globalMessages);
 
             let assumedMe = "", maxCount = 0; meSelector.innerHTML = '';
@@ -391,13 +401,9 @@
                 if (count > maxCount) { maxCount = count; assumedMe = sender; }
             }
             
-            // 前回の「自分」の設定が残っていればそっちを優先、なければ自動判定
             const savedMe = localStorage.getItem('cached_me_user');
-            if (savedMe && senderCounts[savedMe]) {
-                currentMe = savedMe;
-            } else if (assumedMe) {
-                currentMe = assumedMe;
-            }
+            if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } 
+            else if (assumedMe) { currentMe = assumedMe; }
             
             if(currentMe) {
                 meSelector.value = currentMe; meSelector.disabled = false;
@@ -408,7 +414,6 @@
             updateHeaderTitle(); renderChat(filteredMessages); toggleDrawer();
         }
 
-        // 💾 超大容量保存庫 IndexedDB を使った高速キャッシュシステムの実装
         function saveDataToIndexedDb(dataArray) {
             const request = indexedDB.open("LineViewerCacheDB", 1);
             request.onupgradeneeded = function(e) {
@@ -418,9 +423,7 @@
             request.onsuccess = function(e) {
                 const db = e.target.result;
                 const tx = db.transaction("timeline", "readwrite");
-                const store = tx.objectStore("timeline");
-                // 1つの巨大オブジェクトとしてまるごと格納
-                store.put({ id: "last_timeline", data: dataArray });
+                tx.objectStore("timeline").put({ id: "last_timeline", data: dataArray });
             };
         }
 
@@ -433,15 +436,13 @@
             request.onsuccess = function(e) {
                 const db = e.target.result;
                 const tx = db.transaction("timeline", "readonly");
-                const store = tx.objectStore("timeline");
-                const getReq = store.get("last_timeline");
+                const getReq = tx.objectStore("timeline").get("last_timeline");
                 
                 getReq.onsuccess = function() {
                     if (getReq.result && getReq.result.data && getReq.result.data.length > 0) {
                         globalMessages = getReq.result.data;
                         filteredMessages = [...globalMessages];
                         
-                        // 発言者リストと「自分」を復元
                         let senderCounts = {};
                         globalMessages.forEach(m => { if(m.type === 'msg') { senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; } });
                         globalSenders = Object.keys(senderCounts);
@@ -481,7 +482,13 @@
             return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime();
         }
 
-        function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); talkTitle.innerText = partners.length > 0 ? partners.join(', ') : currentMe; }
+        function updateHeaderTitle() { 
+            if (globalSenders.length === 0) return; 
+            const partners = globalSenders.filter(sender => sender !== currentMe); 
+            actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; 
+            applyTitleDisplay(); 
+        }
+        
         function createSafeDate(dateStr) { if (!dateStr) return null; const matches = dateStr.match(/\d+/g); if (!matches || matches.length < 3) return null; return new Date(parseInt(matches[0], 10), parseInt(matches[1], 10) - 1, parseInt(matches[2], 10), 12, 0, 0); }
 
         meSelector.addEventListener('change', (e) => { currentMe = e.target.value; localStorage.setItem('cached_me_user', currentMe); updateHeaderTitle(); renderChat(filteredMessages); });
@@ -534,7 +541,13 @@
                 let match = line.match(msgRegex1) || line.match(msgRegex2);
                 if (match) {
                     const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
-                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: body.replace(/\\n/g, '<br>') }; messages.push(newMsg); currentMsgRef = newMsg;
+                    
+                    let cleanBody = body.replace(/\\n/g, '<br>');
+                    if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') {
+                        cleanBody = '🎨 [スタンプ]';
+                    }
+
+                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; messages.push(newMsg); currentMsgRef = newMsg;
                 } else if (currentMsgRef) { currentMsgRef.body += '<br>' + line; }
                 else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { messages[messages.length - 1].body += '<br>' + line; }
             }
