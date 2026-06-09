@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v42 (Absolute Fixed Header & Theme Sync)</title>
+    <title>LINE Talk Viewer v43 (Strict Date Parsing & Fixed Header)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -12,13 +12,13 @@
         .bg-theme-pink { background-color: #fbcfe8; }
         .bg-theme-beige { background-color: #f5f5dc; }
 
-        /* 💡 テーマ連動型のヘッダー（メニューバー）の背景色設定 */
+        /* テーマ連動型のヘッダー（メニューバー）の背景色設定 */
         .header-blue { background-color: #6582ab; color: #ffffff; }
         .header-dark { background-color: #111827; color: #ffffff; }
         .header-pink { background-color: #f9a8d4; color: #ffffff; }
         .header-beige { background-color: #e5e5cc; color: #374151; }
 
-        /* 💡 テーマ連動型のヘッダーサブテキスト（未連携・件数など）の文字色設定 */
+        /* テーマ連動型のヘッダーサブテキストの文字色設定 */
         .sub-blue { color: #dbeafe; }
         .sub-dark { color: #9ca3af; }
         .sub-pink { color: #fdf2f8; }
@@ -545,21 +545,16 @@
 
         function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames; }
 
-        // 💡 【修正】着せ替えテーマに合わせてメニューバーの色も同期的に変更
         function changeTheme(themeName) {
             currentThemeName = themeName; 
-            
-            // 1. チャット背景の変更
             if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} h-full w-full relative`;
             localStorage.setItem('user_theme', themeName);
             
-            // 2. メニューバー（ヘッダー）のクラス切り替え
             const header = getEl('mainHeader');
             if (header) {
                 header.className = `h-14 flex items-center justify-between px-4 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200 header-${themeName}`;
             }
 
-            // 3. ヘッダー内のサブテキスト（未連携などの文字）の色切り替え
             const subText = getEl('talkSub');
             if (subText) {
                 subText.className = `text-[10px] sub-${themeName}`;
@@ -623,7 +618,6 @@
             const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
             if(currentMe && getEl('meSelector')) { getEl('meSelector').value = currentMe; getEl('meSelector').disabled = false; localStorage.setItem('cached_me_user', currentMe); }
             
-            // トーク件数を更新
             if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             
             updateHeaderTitle(); startInfiniteRender(); toggleDrawer(false);
@@ -672,7 +666,6 @@
             isLoadingMore = false;
         }
 
-        // 📅 日付検索ジャンプ処理（メニューバーの消失を永久防御）
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
@@ -728,7 +721,6 @@
             
             renderChatSegment(visibleMessages, 'append', currentLoadedIndex);
             
-            // 💡 スクロール位置のズレによりヘッダーが引きずり上げられるのを防ぐため、タイマータスクで安全に位置を合わせる
             setTimeout(() => {
                 if (!getEl('chatContainer')) return; 
                 const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
@@ -736,7 +728,6 @@
                 
                 for (let el of dayElements) { 
                     if (el.innerText.trim() === targetText.trim()) { 
-                        // メニューバーを固定化したため、スムーズスクロールが綺麗に動作します
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
                         el.classList.add('ring-4', 'ring-yellow-400'); 
                         setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000); 
@@ -840,7 +831,6 @@
                         for (const [sender, count] of Object.entries(senderCounts)) { const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; if (getEl('meSelector')) getEl('meSelector').appendChild(option); }
                         const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; if(getEl('meSelector')) { getEl('meSelector').value = savedMe; getEl('meSelector').disabled = false; } }
                         
-                        // トーク件数を復元表示
                         if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         
                         updateHeaderTitle(); startInfiniteRender();
@@ -853,20 +843,49 @@
         function parseToTimestamp(dateStr, timeStr) { const dMatches = dateStr.match(/\d+/g); const tMatches = timeStr.match(/\d+/g); if (!dMatches || dMatches.length < 3) return 0; const hour = tMatches ? parseInt(tMatches[0], 10) : 0; const min = tMatches ? parseInt(tMatches[1], 10) : 0; return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime(); }
         function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; applyTitleDisplay(); }
 
+        // 💡 【不具合修正】会話内の日付テキスト誤認識バグを厳格に防ぐ新・解析ロジック
         function parseLineText(text, filename) {
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
             const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
-            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})/; const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
+            
+            // 📅 曜日条件(月〜日、または英字3文字)を必須化し、メッセージ本文の誤検知を防ぐ厳格な正規表現
+            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})\s*\(?([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)\)?/i; 
+            
+            // メッセージ判定用の正規表現
+            const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
+            const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
+            
             let currentMsgRef = null;
+            
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i]; const trimmedLine = line.trim(); if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
-                if (dateRegex.test(trimmedLine)) { messages.push({ type: 'date', text: trimmedLine }); currentMsgRef = null; continue; }
+                const line = lines[i]; const trimmedLine = line.trim(); 
+                if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
+                
+                // ➔ 先に「通常のメッセージ構造」を満たしているかチェック（メッセージ優先ルール）
                 let match = line.match(msgRegex1) || line.match(msgRegex2);
+                
                 if (match) {
                     const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
-                    let cleanBody = body.replace(/\\n/g, '<br>'); if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; } else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; } else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
-                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; messages.push(newMsg); currentMsgRef = newMsg;
-                } else if (currentMsgRef) { currentMsgRef.body += '<br>' + line; } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { messages[messages.length - 1].body += '<br>' + line; }
+                    let cleanBody = body.replace(/\\n/g, '<br>'); 
+                    if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; } 
+                    else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; } 
+                    else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
+                    
+                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; 
+                    messages.push(newMsg); 
+                    currentMsgRef = newMsg;
+                } 
+                // ➔ メッセージ構造を満たしておらず、曜日付きの日付パターンであるときだけ、正式に「日付スタンプ」と認定
+                else if (dateRegex.test(trimmedLine)) { 
+                    messages.push({ type: 'date', text: trimmedLine }); 
+                    currentMsgRef = null; 
+                } 
+                // ➔ それ以外の不一致行は、直前のメッセージの改行（続き）としてセーフティに結合
+                else if (currentMsgRef) { 
+                    currentMsgRef.body += '<br>' + line; 
+                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
+                    messages[messages.length - 1].body += '<br>' + line; 
+                }
             }
             return { messages, senderCounts, chatPartner };
         }
