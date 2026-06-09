@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v31 (Logout Restored)</title>
+    <title>LINE Talk Viewer v32 (Auto URI Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -150,7 +150,9 @@
     <script>
         const CLIENT_ID = '903007987907-ctng3cio3hdiedu6ckimvtgkf1d5uq6s.apps.googleusercontent.com';
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
-        const REDIRECT_URI = 'https://kazumatanaka.github.io/line-talk-viewer/';
+        
+        // 🛠️ 【超重要修正】URLの間違いを防ぐため、現在のブラウザのURLを自動で動的に100%一致させて取得する
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
 
         let globalMessages = []; 
         let filteredMessages = []; 
@@ -332,7 +334,7 @@
 
         function setAuthSuccessState() {
             if (getEl('authBtn')) { getEl('authBtn').innerText = "✓ 連携完了"; getEl('authBtn').className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none"; }
-            if (getEl('logoutBtn')) getEl('logoutBtn').classList.remove('hidden'); // 🛠️ 連携成功時にログアウトを表示
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.remove('hidden');
             if(globalMessages.length === 0 && getEl('guideText')) {
                 getEl('guideText').innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。";
                 if (getEl('talkSub')) getEl('talkSub').innerText = "フォルダを探してください";
@@ -341,7 +343,7 @@
 
         function clearUiToUnauthenticated() {
             if (getEl('authBtn')) { getEl('authBtn').innerText = "Googleドライブと連携する"; getEl('authBtn').className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer"; }
-            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden'); // 🛠️ 未連携時は隠す
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden');
             if (getEl('explorerPlaceholder')) getEl('explorerPlaceholder').innerText = "連携するとフォルダが表示されます";
             if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>';
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
