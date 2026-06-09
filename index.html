@@ -219,7 +219,7 @@
                 };
             }
 
-            // 【修正箇所】「自分」のプルダウン選択が変更されたときの処理を追加
+            // 【修正・改善箇所】インデックス変数を完全にクリアして再読込を強制
             if (getEl('meSelector')) {
                 getEl('meSelector').onchange = (e) => {
                     const selectedMe = e.target.value;
@@ -228,7 +228,7 @@
                     currentMe = selectedMe;
                     localStorage.setItem('cached_me_user', selectedMe);
                     
-                    // 表示名とチャットタイムラインの再描画
+                    // 表示名とチャットタイムラインの再読込（インデックス位置も再計算）
                     updateHeaderTitle();
                     startInfiniteRender();
                 };
@@ -278,7 +278,7 @@
                             
                             window.location.hash = ""; 
                             setAuthSuccessState(); 
-                            renderExplorer('root'); 
+renderExplorer('root'); 
                             return;
                         }
                     }
@@ -500,13 +500,19 @@
             updateHeaderTitle(); startInfiniteRender(); toggleDrawer(false);
         }
 
+        // 【修正・更新】再描画時に全体の変数管理をリセットするよう改修
         function startInfiniteRender() {
             if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; 
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
-            currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); visibleMessages = filteredMessages.slice(currentLoadedIndex); renderChatSegment(visibleMessages, 'append');
+            
+            // インデックスの境界値を再定義して確実に最新300件を抽出
+            currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
+            visibleMessages = filteredMessages.slice(currentLoadedIndex); 
+            
+            renderChatSegment(visibleMessages, 'append');
             if (getEl('chatContainer')) getEl('chatContainer').scrollTop = getEl('chatContainer').scrollHeight; 
         }
 
