@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v21 (Perfect Event Bind)</title>
+    <title>LINE Talk Viewer v22 (Final Stable)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -38,12 +38,12 @@
             </div>
         </div>
         
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2 select-none">
             <div id="calendarWrapper" class="relative hidden">
                 <input type="date" id="jumpDatePicker" class="absolute inset-0 opacity-0 w-8 h-8 cursor-pointer z-10">
                 <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition">📅</button>
             </div>
-            <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer z-10">
+            <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer z-10" style="display: block !important;">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
@@ -124,9 +124,9 @@
     <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity"></div>
 
     <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text">
-        <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+        <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
             <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-            <p id="guideText" class="text-xs text-white/80">APIを読み込んでいます...</p>
+            <p id="guideText" class="text-xs text-white/80">ライブラリをロードしています...</p>
         </div>
     </main>
 
@@ -155,28 +155,22 @@
         let isCamouflageMode = false;
         let actualPartnerNames = "LINE Talk Viewer"; 
 
-        // DOMの取得関数（毎回確実に生きている要素を捕まえる）
         const getEl = (id) => document.getElementById(id);
 
-        // ⚡【超重要】画面のHTMLが完成した瞬間に「最優先」でボタン機能をガチガチに固定する
-        document.addEventListener("DOMContentLoaded", () => {
-            bindAllButtonEvents();
-        });
-
+        // 🛠️ 【イベント登録コア】HTMLの破壊に負けないよう、何度呼び出されても安全にイベントを紐付ける
         function bindAllButtonEvents() {
-            // ハンバーガーメニューを開く
-            if (getEl('menuBtn')) {
-                getEl('menuBtn').onclick = (e) => {
+            const menuBtn = getEl('menuBtn');
+            if (menuBtn) {
+                menuBtn.onclick = (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     toggleDrawer();
                 };
             }
-            // ✕ボタンで閉じる
+
             if (getEl('closeMenuBtn')) getEl('closeMenuBtn').onclick = toggleDrawer;
-            // 背景タップで閉じる
             if (getEl('overlay')) getEl('overlay').onclick = toggleDrawer;
 
-            // カモフラージュ切り替え
             if (getEl('titleArea')) {
                 getEl('titleArea').onclick = () => {
                     if (globalMessages.length === 0) return;
@@ -185,7 +179,6 @@
                 };
             }
 
-            // カレンダーの日付変更
             if (getEl('jumpDatePicker')) {
                 getEl('jumpDatePicker').onchange = (e) => {
                     const selectedDateStr = e.target.value;
@@ -194,7 +187,6 @@
                 };
             }
 
-            // 着せ替え & 文字サイズ
             if (getEl('theme-blue')) getEl('theme-blue').onclick = () => changeTheme('blue');
             if (getEl('theme-dark')) getEl('theme-dark').onclick = () => changeTheme('dark');
             if (getEl('theme-pink')) getEl('theme-pink').onclick = () => changeTheme('pink');
@@ -203,13 +195,13 @@
             if (getEl('size-md')) getEl('size-md').onclick = () => changeFontSize('md');
             if (getEl('size-lg')) getEl('size-lg').onclick = () => changeFontSize('lg');
 
-            // 認証 & ログアウト
             if (getEl('authBtn')) {
                 getEl('authBtn').onclick = () => {
                     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`;
                     window.location.href = authUrl;
                 };
             }
+
             if (getEl('logoutBtn')) {
                 getEl('logoutBtn').onclick = () => {
                     const currentToken = localStorage.getItem('drive_access_token');
@@ -226,10 +218,11 @@
                     if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
                     
                     if (getEl('chatContainer')) {
+                        // innerHTMLを直接壊さず、中身だけを綺麗に戻す
                         getEl('chatContainer').innerHTML = `
-                            <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+                            <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                                 <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-                                <p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p>
+                                <p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p>
                             </div>
                         `;
                     }
@@ -241,7 +234,6 @@
                 };
             }
 
-            // フォルダ一括結合
             if (getEl('batchLoadBtn')) {
                 getEl('batchLoadBtn').onclick = async () => {
                     if (currentFolderFiles.length === 0) return;
@@ -255,7 +247,6 @@
                 };
             }
 
-            // 検索ボタン
             if (getEl('searchBtn')) {
                 getEl('searchBtn').onclick = () => {
                     const keyword = getEl('searchKeyword').value.trim().toLowerCase(); 
@@ -277,7 +268,7 @@
                                 setTimeout(() => {
                                     const targetElement = getEl(`msg-${index}`);
                                     if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
-                        }, 100);
+                                }, 100);
                             };
                             if (getEl('searchResults')) getEl('searchResults').appendChild(item);
                         }
@@ -289,17 +280,16 @@
                 };
             }
 
-            // 自分選択セレクトボックス
             if (getEl('meSelector')) {
                 getEl('meSelector').onchange = (e) => {
                     currentMe = e.target.value; 
                     localStorage.setItem('cached_me_user', currentMe); 
                     updateHeaderTitle(); 
+                    if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
                     renderChatSegment(visibleMessages, 'append'); 
                 };
             }
 
-            // スクロール時の無限読み込み紐付け
             if (getEl('chatContainer')) {
                 getEl('chatContainer').onscroll = () => {
                     if (globalMessages.length === 0 || isLodingMore) return;
@@ -312,16 +302,19 @@
         }
 
         function toggleDrawer() {
-            if (getEl('drawerMenu')) getEl('drawerMenu').classList.toggle('translate-x-full');
-            if (getEl('overlay')) getEl('overlay').classList.toggle('hidden');
+            const drawer = getEl('drawerMenu');
+            const overlay = getEl('overlay');
+            if (drawer) drawer.classList.toggle('translate-x-full');
+            if (overlay) overlay.classList.toggle('hidden');
         }
 
         function applyTitleDisplay() {
             if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
         }
 
+        // 🎬 アプリ全体の起動エントリポイント
         function onGapiLoad() {
-            // 万が一HTML読み込みより先にここに来ても大丈夫なように再度ボタン紐付けを実行
+            // HTML要素が揃った状態で速攻紐付け
             bindAllButtonEvents();
 
             const savedTheme = localStorage.getItem('user_theme') || 'blue';
@@ -396,6 +389,7 @@
                     }
                 }
                 if(globalMessages.length === 0) clearUiToUnauthenticated();
+                bindAllButtonEvents(); // 再バインドで安全確保
             });
         }
 
@@ -524,7 +518,14 @@
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             
             if (filteredMessages.length === 0) {
-                if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`;
+                if (getEl('chatContainer')) {
+                    getEl('chatContainer').innerHTML = `
+                        <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+                            <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
+                            <p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
+                        </div>
+                    `;
+                }
                 return;
             }
 
@@ -636,7 +637,9 @@
                         updateHeaderTitle();
                         startInfiniteRender();
                     } else {
-                        if (getEl('guideText')) getEl('guideText').innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
+                        // ヘッダーを壊さず、独立ボックス内だけ書き換える
+                        const initGuide = getEl('guideText');
+                        if(initGuide) initGuide.innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
                         if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
                     }
                     done(); 
