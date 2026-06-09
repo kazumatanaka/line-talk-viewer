@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v43 (Strict Date Parsing & Fixed Header)</title>
+    <title>LINE Talk Viewer v44 (Real Back Button & Theme Sync)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -51,12 +51,16 @@
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
 
-    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-4 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
-        <div class="flex items-center space-x-3">
-            <button id="backBtn" class="text-xl hover:opacity-70 cursor-pointer">←</button>
+    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
+        <div class="flex items-center space-x-1.5">
+            <button id="backBtn" class="p-2 -ml-2 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
+                <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base">LINE Talk Viewer</h1>
-                <p id="talkSub" class="text-[10px] sub-blue">未連携</p>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer</h1>
+                <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
         
@@ -208,10 +212,48 @@
             return getThemeDefaultAvatar();
         }
 
+        // 💡 【新規ナビゲーション関数】「＜」を押した時に初期画面（ウェルカム画面）に戻す処理
+        function returnToInitialWelcome() {
+            // カレンダーと検索トグルを非表示へ
+            if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
+            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
+            toggleHeaderSearchBox(false);
+
+            // ヘッダーテキストの初期リセット
+            actualPartnerNames = "LINE Talk Viewer";
+            applyTitleDisplay();
+            
+            const savedToken = localStorage.getItem('drive_access_token');
+            const subText = getEl('talkSub');
+            if (subText) {
+                subText.innerText = savedToken ? "フォルダを探してください" : "未連携";
+            }
+
+            // チャットタイムライン領域を初期ウェルカム表示に差し替え
+            const container = getEl('chatContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
+                        <p id="guideText" class="text-xs text-white/80">
+                            表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
         // 全体タップ・クリック監視
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
+            // 💡 「＜」アイコンボタン、または内側のSVGがクリックされた時にナビゲーションを発動
+            if (targetId === "backBtn" || e.target.closest("#backBtn")) {
+                e.preventDefault();
+                returnToInitialWelcome();
+                return;
+            }
+
             if (targetId === "menuBtn") { e.preventDefault(); e.stopPropagation(); toggleDrawer(true); return; }
             if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(false); return; }
             
@@ -552,7 +594,7 @@
             
             const header = getEl('mainHeader');
             if (header) {
-                header.className = `h-14 flex items-center justify-between px-4 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200 header-${themeName}`;
+                header.className = `h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200 header-${themeName}`;
             }
 
             const subText = getEl('talkSub');
@@ -564,7 +606,7 @@
             buttons.forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
             const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
             
-            if (globalMessages.length > 0) {
+            if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
                 startInfiniteRender();
             }
         }
@@ -843,44 +885,31 @@
         function parseToTimestamp(dateStr, timeStr) { const dMatches = dateStr.match(/\d+/g); const tMatches = timeStr.match(/\d+/g); if (!dMatches || dMatches.length < 3) return 0; const hour = tMatches ? parseInt(tMatches[0], 10) : 0; const min = tMatches ? parseInt(tMatches[1], 10) : 0; return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime(); }
         function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; applyTitleDisplay(); }
 
-        // 💡 【不具合修正】会話内の日付テキスト誤認識バグを厳格に防ぐ新・解析ロジック
         function parseLineText(text, filename) {
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
             const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
-            
-            // 📅 曜日条件(月〜日、または英字3文字)を必須化し、メッセージ本文の誤検知を防ぐ厳格な正規表現
             const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})\s*\(?([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)\)?/i; 
-            
-            // メッセージ判定用の正規表現
             const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
             const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
-            
             let currentMsgRef = null;
-            
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i]; const trimmedLine = line.trim(); 
                 if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
-                
-                // ➔ 先に「通常のメッセージ構造」を満たしているかチェック（メッセージ優先ルール）
                 let match = line.match(msgRegex1) || line.match(msgRegex2);
-                
                 if (match) {
                     const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
                     let cleanBody = body.replace(/\\n/g, '<br>'); 
                     if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; } 
                     else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; } 
                     else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
-                    
                     const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; 
                     messages.push(newMsg); 
                     currentMsgRef = newMsg;
                 } 
-                // ➔ メッセージ構造を満たしておらず、曜日付きの日付パターンであるときだけ、正式に「日付スタンプ」と認定
                 else if (dateRegex.test(trimmedLine)) { 
                     messages.push({ type: 'date', text: trimmedLine }); 
                     currentMsgRef = null; 
                 } 
-                // ➔ それ以外の不一致行は、直前のメッセージの改行（続き）としてセーフティに結合
                 else if (currentMsgRef) { 
                     currentMsgRef.body += '<br>' + line; 
                 } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
