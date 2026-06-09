@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v36 (Infinite Scroll & Toggle Menu)</title>
+    <title>LINE Talk Viewer v37 (Fixed Header & Infinite Scroll)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -37,7 +37,7 @@
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden overflow-x-hidden select-none w-full max-w-full">
 
-    <header class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-20 shadow-sm flex-shrink-0 w-full">
+    <header id="mainHeader" class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-20 shadow-sm flex-shrink-0 w-full">
         <div class="flex items-center space-x-3">
             <button class="text-gray-700 text-xl hover:opacity-70 cursor-pointer">←</button>
             <div id="titleArea" class="cursor-pointer hover:bg-gray-50 active:scale-95 transition-all p-1.5 rounded-lg select-none">
@@ -180,7 +180,6 @@
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
-            // ハンバーガーメニュー開閉制御の復活
             if (targetId === "menuBtn") { e.preventDefault(); e.stopPropagation(); toggleDrawer(true); return; }
             if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(false); return; }
             
@@ -422,7 +421,6 @@
             }
         }
 
-        // ハンバーガーメニュー開閉のアニメーション関数
         function toggleDrawer(forceOpen) {
             const drawer = getEl('drawerMenu');
             const overlay = getEl('overlay');
@@ -563,6 +561,7 @@
             isLoadingMore = false;
         }
 
+        // 📅 【不具合修正箇所】日付検索ジャンプ時のヘッダー消失バグを排除
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
@@ -613,6 +612,7 @@
             currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
             visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
             
+            // チャット表示コンテナの中身「だけ」を初期化
             if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; 
             renderChatSegment(visibleMessages, 'append', currentLoadedIndex);
             
