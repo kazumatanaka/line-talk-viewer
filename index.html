@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v25 (Bulletproof Stable)</title>
+    <title>LINE Talk Viewer v26 (Perfect Picker)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -40,8 +40,8 @@
         
         <div class="flex items-center space-x-2 select-none">
             <div id="calendarWrapper" class="relative hidden">
-                <input type="date" id="jumpDatePicker" class="absolute inset-0 opacity-0 w-10 h-10 cursor-pointer z-10">
-                <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition text-lg">📅</button>
+                <input type="date" id="jumpDatePicker" class="absolute pointer-events-none opacity-0 invisible" tabIndex="-1">
+                <button id="calendarBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition text-lg cursor-pointer">📅</button>
             </div>
             <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer z-10">
                 <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,36 +157,35 @@
 
         const getEl = (id) => document.getElementById(id);
 
-        // 🛡️ 【新・絶対防衛ロジック】
-        // 個別のボタンに機能を割り当てるのをやめ、画面全体のタップイベントを最上層で1括キャッチする
+        // 最上層タップ監視
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
-            // メニューボタン（☰）が押されたら何が何でもドロワーを開く
-            if (targetId === "menuBtn") {
-                e.preventDefault(); e.stopPropagation(); toggleDrawer(); return;
+            if (targetId === "menuBtn") { e.preventDefault(); e.stopPropagation(); toggleDrawer(); return; }
+            if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(); return; }
+            
+            // ⚡【ここを完全最適化】カレンダーのイラスト部分や隙間、どこが押されても確実に起動する処理
+            if (targetId === "calendarBtn" || e.target.closest("#calendarBtn")) {
+                const picker = getEl('jumpDatePicker');
+                if (picker && typeof picker.showPicker === 'function') {
+                    picker.showPicker(); // ブラウザ標準のカレンダーをプログラムで直接引き出す！
+                }
+                return;
             }
-            // ✕ボタン、または背景黒マスクが押されたらドロワーを閉じる
-            if (targetId === "closeMenuBtn" || targetId === "overlay") {
-                toggleDrawer(); return;
-            }
-            // カモフラージュ（左上タイトル）が押された場合
+
             if (e.target.closest("#titleArea")) {
                 if (globalMessages.length === 0) return;
                 isCamouflageMode = !isCamouflageMode;
                 applyTitleDisplay();
                 return;
             }
-            // 各種着せ替えボタン
             if (targetId === "theme-blue") changeTheme('blue');
             if (targetId === "theme-dark") changeTheme('dark');
             if (targetId === "theme-pink") changeTheme('pink');
             if (targetId === "theme-beige") changeTheme('beige');
-            // 各種サイズボタン
             if (targetId === "size-sm") changeFontSize('sm');
             if (targetId === "size-md") changeFontSize('md');
             if (targetId === "size-lg") changeFontSize('lg');
-            // 連携 & 解除 & 一括結合 & 検索
             if (targetId === "authBtn") triggerGoogleAuth();
             if (targetId === "logoutBtn") triggerLogoutProcessing();
             if (targetId === "batchLoadBtn") triggerBatchLoadFiles();
@@ -199,7 +198,6 @@
             changeTheme(savedTheme);
             changeFontSize(savedSize);
             
-            // カレンダー変更イベントだけは例外的にここに設置
             if (getEl('jumpDatePicker')) {
                 getEl('jumpDatePicker').onchange = (e) => {
                     if (!e.target.value) return;
@@ -210,20 +208,9 @@
             openDatabaseAndLoadCache();
         });
 
-        function gapiLoadedTrig() {
-            initGoogleApi();
-        }
-
-        function toggleDrawer() {
-            const drawer = getEl('drawerMenu');
-            const overlay = getEl('overlay');
-            if (drawer) drawer.classList.toggle('translate-x-full');
-            if (overlay) overlay.classList.toggle('hidden');
-        }
-
-        function applyTitleDisplay() {
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
-        }
+        function gapiLoadedTrig() { initGoogleApi(); }
+        function toggleDrawer() { const d = getEl('drawerMenu'); const o = getEl('overlay'); if (d) d.classList.toggle('translate-x-full'); if (o) o.classList.toggle('hidden'); }
+        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames; }
 
         function changeTheme(themeName) {
             if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
@@ -241,9 +228,7 @@
             if (sizeName === 'lg' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-base');
             localStorage.setItem('user_font_size', sizeName);
             const sizeButtons = [getEl('size-sm'), getEl('size-md'), getEl('size-lg')];
-            sizeButtons.forEach(btn => {
-                if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer";
-            });
+            sizeButtons.forEach(btn => { if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer"; });
             const activeBtn = getEl(`size-${sizeName}`);
             if(activeBtn) activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
         }
@@ -251,286 +236,141 @@
         function initGoogleApi() {
             if (typeof gapi === 'undefined' || typeof gapi.client === 'undefined') return;
             gapi.load('client', async () => {
-                await gapi.client.init({});
-                await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-                
-                const savedToken = localStorage.getItem('drive_access_token');
-                const tokenExpiry = localStorage.getItem('drive_token_expiry');
-                
+                await gapi.client.init({}); await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+                const savedToken = localStorage.getItem('drive_access_token'); const tokenExpiry = localStorage.getItem('drive_token_expiry');
                 if (savedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)) {
-                    gapi.client.setToken({ access_token: savedToken });
-                    setAuthSuccessState();
+                    gapi.client.setToken({ access_token: savedToken }); setAuthSuccessState();
                     const savedHistory = localStorage.getItem('explorer_folder_history');
-                    if (savedHistory) {
-                        folderHistory = JSON.parse(savedHistory);
-                        renderExplorer(folderHistory[folderHistory.length - 1].id);
-                    } else {
-                        renderExplorer('root');
-                    }
+                    if (savedHistory) { folderHistory = JSON.parse(savedHistory); renderExplorer(folderHistory[folderHistory.length - 1].id); } else { renderExplorer('root'); }
                     return;
                 }
-
                 const hash = window.location.hash;
                 if (hash) {
-                    const params = new URLSearchParams(hash.substring(1));
-                    const accessToken = params.get('access_token');
-                    const expiresIn = params.get('expires_in');
+                    const params = new URLSearchParams(hash.substring(1)); const accessToken = params.get('access_token'); const expiresIn = params.get('expires_in');
                     if (accessToken) {
-                        localStorage.setItem('drive_access_token', accessToken);
-                        localStorage.setItem('drive_token_expiry', Date.now() + (parseInt(expiresIn, 10) * 1000));
-                        gapi.client.setToken({ access_token: accessToken });
-                        window.location.hash = "";
-                        setAuthSuccessState();
-                        renderExplorer('root');
-                        return;
+                        localStorage.setItem('drive_access_token', accessToken); localStorage.setItem('drive_token_expiry', Date.now() + (parseInt(expiresIn, 10) * 1000));
+                        gapi.client.setToken({ access_token: accessToken }); window.location.hash = ""; setAuthSuccessState(); renderExplorer('root'); return;
                     }
                 }
                 if(globalMessages.length === 0) clearUiToUnauthenticated();
             });
         }
 
-        function triggerGoogleAuth() {
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`;
-            window.location.href = authUrl;
-        }
+        function triggerGoogleAuth() { window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`; }
 
         function triggerLogoutProcessing() {
-            const currentToken = localStorage.getItem('drive_access_token');
-            if (currentToken) { google.accounts.oauth2.revokeToken(currentToken, () => {}); }
-            localStorage.removeItem('drive_access_token');
-            localStorage.removeItem('drive_token_expiry');
-            localStorage.removeItem('explorer_folder_history');
-            localStorage.removeItem('cached_me_user');
-            gapi.client.setToken(null);
-            clearIndexedDbCache();
-
-            globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = "";
-            clearUiToUnauthenticated();
+            const currentToken = localStorage.getItem('drive_access_token'); if (currentToken) { google.accounts.oauth2.revokeToken(currentToken, () => {}); }
+            localStorage.removeItem('drive_access_token'); localStorage.removeItem('drive_token_expiry'); localStorage.removeItem('explorer_folder_history'); localStorage.removeItem('cached_me_user');
+            gapi.client.setToken(null); clearIndexedDbCache();
+            globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = ""; clearUiToUnauthenticated();
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
-            
-            if (getEl('chatContainer')) {
-                getEl('chatContainer').innerHTML = `
-                    <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-                        <p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p>
-                    </div>
-                `;
-            }
-            actualPartnerNames = "LINE Talk Viewer"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer"; 
-            if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
-            alert("連携情報を完全に削除しました。");
-            toggleDrawer();
+            if (getEl('chatContainer')) { getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; }
+            actualPartnerNames = "LINE Talk Viewer"; if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer"; if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
+            alert("連携情報を完全に削除しました。"); toggleDrawer();
         }
 
         function setAuthSuccessState() {
-            if (getEl('authBtn')) {
-                getEl('authBtn').innerText = "✓ 連携完了";
-                getEl('authBtn').className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none";
-            }
+            if (getEl('authBtn')) { getEl('authBtn').innerText = "✓ 連携完了"; getEl('authBtn').className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none"; }
             if (getEl('logoutBtn')) getEl('logoutBtn').classList.remove('hidden');
-            if(globalMessages.length === 0 && getEl('guideText')) {
-                getEl('guideText').innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。";
-                if (getEl('talkSub')) getEl('talkSub').innerText = "フォルダを探してください";
-            }
+            if(globalMessages.length === 0 && getEl('guideText')) { getEl('guideText').innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。"; if (getEl('talkSub')) getEl('talkSub').innerText = "フォルダを探してください"; }
         }
 
         function clearUiToUnauthenticated() {
-            if (getEl('authBtn')) {
-                getEl('authBtn').innerText = "Googleドライブと連携する";
-                getEl('authBtn').className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer";
-            }
-            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden');
-            if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.add('hidden');
-            if (getEl('guideText')) getEl('guideText').innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
-            if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
+            if (getEl('authBtn')) { getEl('authBtn').innerText = "Googleドライブと連携する"; getEl('authBtn').className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer"; }
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden'); if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.add('hidden');
+            if (getEl('guideText')) getEl('guideText').innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。"; if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
         }
 
         async function renderExplorer(folderId) {
-            currentFolderId = folderId;
-            if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
-            if (getEl('batchLoadBtn')) getEl('batchLoadBtn').classList.add('hidden');
-            if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.remove('hidden');
-            updateBreadcrumb();
-            localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
-
+            currentFolderId = folderId; if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
+            if (getEl('batchLoadBtn')) getEl('batchLoadBtn').classList.add('hidden'); if (getEl('driveExplorerZone')) getEl('driveExplorerZone').classList.remove('hidden');
+            updateBreadcrumb(); localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
             try {
-                const response = await gapi.client.drive.files.list({
-                    q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain') and trashed = false`,
-                    fields: 'files(id, name, mimeType)', pageSize: 100, orderBy: 'folder,name'
-                });
-                const files = response.result.files;
-                if (getEl('explorerList')) getEl('explorerList').innerHTML = ''; 
-                currentFolderFiles = [];
+                const response = await gapi.client.drive.files.list({ q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain') and trashed = false`, fields: 'files(id, name, mimeType)', pageSize: 100, orderBy: 'folder,name' });
+                const files = response.result.files; if (getEl('explorerList')) getEl('explorerList').innerHTML = ''; currentFolderFiles = [];
                 if ((!files || files.length === 0) && getEl('explorerList')) { getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; return; }
-
                 let textFileCount = 0;
                 files.forEach(file => {
-                    const isFolder = (file.mimeType === 'application/vnd.google-apps.folder');
-                    const item = document.createElement('div');
+                    const isFolder = (file.mimeType === 'application/vnd.google-apps.folder'); const item = document.createElement('div');
                     item.className = 'p-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer transition select-none';
-                    if (isFolder) {
-                        item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`;
-                        // 1体化onclick
-                        item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); };
-                    } else {
-                        item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`;
-                        currentFolderFiles.push(file); textFileCount++;
-                        item.onclick = () => processSingleDriveFile(file.id, file.name);
-                    }
+                    if (isFolder) { item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`; item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); }; } 
+                    else { item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`; currentFolderFiles.push(file); textFileCount++; item.onclick = () => processSingleDriveFile(file.id, file.name); }
                     if (getEl('explorerList')) getEl('explorerList').appendChild(item);
                 });
-                if (textFileCount > 0 && getEl('batchLoadBtn')) {
-                    getEl('batchLoadBtn').innerText = `⚡ このフォルダ内の一括結合 (${textFileCount}個)`;
-                    getEl('batchLoadBtn').classList.remove('hidden');
-                }
-            } catch (err) {
-                console.error(err);
-            }
+                if (textFileCount > 0 && getEl('batchLoadBtn')) { getEl('batchLoadBtn').innerText = `⚡ このフォルダ内の一括結合 (${textFileCount}個)`; getEl('batchLoadBtn').classList.remove('hidden'); }
+            } catch (err) { console.error(err); }
         }
 
         function updateBreadcrumb() {
-            if (!getEl('breadcrumb')) return;
-            getEl('breadcrumb').innerHTML = '';
+            if (!getEl('breadcrumb')) return; getEl('breadcrumb').innerHTML = '';
             folderHistory.forEach((f, idx) => {
                 if (idx > 0) { const arrow = document.createElement('span'); arrow.className = 'mx-1 text-gray-300'; arrow.innerText = '>'; getEl('breadcrumb').appendChild(arrow); }
                 const node = document.createElement('span'); const isLast = (idx === folderHistory.length - 1);
                 node.className = isLast ? 'font-bold text-gray-800' : 'text-blue-600 hover:underline cursor-pointer'; node.innerText = f.name;
-                if (!isLast) { node.onclick = () => { folderHistory = folderHistory.slice(0, idx + 1); renderExplorer(f.id); }; }
-                getEl('breadcrumb').appendChild(node);
+                if (!isLast) { node.onclick = () => { folderHistory = folderHistory.slice(0, idx + 1); renderExplorer(f.id); }; } getEl('breadcrumb').appendChild(node);
             });
         }
 
         async function triggerBatchLoadFiles() {
-            if (currentFolderFiles.length === 0) return;
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "全自動結合中...";
+            if (currentFolderFiles.length === 0) return; if (getEl('talkTitle')) getEl('talkTitle').innerText = "全自動結合中...";
             let combinedTexts = [];
-            for (let file of currentFolderFiles) {
-                try { const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' }); combinedTexts.push({ text: contentResponse.body, name: file.name }); }
-                catch (err) { console.error(err); }
-            }
+            for (let file of currentFolderFiles) { try { const contentResponse = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' }); combinedTexts.push({ text: contentResponse.body, name: file.name }); } catch (err) { console.error(err); } }
             processMultipleTexts(combinedTexts);
         }
 
-        async function processSingleDriveFile(fileId, filename) {
-            try { const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); processMultipleTexts([{ text: contentResponse.body, name: filename }]); }
-            catch (err) { console.error(err); }
-        }
+        async function processSingleDriveFile(fileId, filename) { try { const contentResponse = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); processMultipleTexts([{ text: contentResponse.body, name: filename }]); } catch (err) { console.error(err); } }
 
         function processMultipleTexts(fileObjects) {
-            let allRawMessages = []; let senderCounts = {};
-            fileObjects.forEach(obj => { const { messages } = parseLineText(obj.text, obj.name); allRawMessages = allRawMessages.concat(messages); });
+            let allRawMessages = []; let senderCounts = {}; fileObjects.forEach(obj => { const { messages } = parseLineText(obj.text, obj.name); allRawMessages = allRawMessages.concat(messages); });
             let structuredTimeline = []; let currentFileDateStr = ""; let uniqueMsgKeys = new Set(); let flatMessages = [];
             allRawMessages.forEach(m => { if (m.type === 'date') { currentFileDateStr = m.text; } else if (m.type === 'msg' && currentFileDateStr) { flatMessages.push({ dateStr: currentFileDateStr, time: m.time, sender: m.sender, body: m.body }); } });
             flatMessages.sort((a, b) => parseToTimestamp(a.dateStr, a.time) - parseToTimestamp(b.dateStr, b.time));
             let lastRenderedDateStr = "";
             flatMessages.forEach(m => {
                 const uniqueKey = `${m.dateStr}_${m.time}_${m.sender}_${m.body}`;
-                if (!uniqueMsgKeys.has(uniqueKey)) {
-                    uniqueMsgKeys.add(uniqueKey);
-                    if (m.dateStr !== lastRenderedDateStr) { structuredTimeline.push({ type: 'date', text: m.dateStr }); lastRenderedDateStr = m.dateStr; }
-                    structuredTimeline.push({ type: 'msg', time: m.time, sender: m.sender, body: m.body });
-                    senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1;
-                }
+                if (!uniqueMsgKeys.has(uniqueKey)) { uniqueMsgKeys.add(uniqueKey); if (m.dateStr !== lastRenderedDateStr) { structuredTimeline.push({ type: 'date', text: m.dateStr }); lastRenderedDateStr = m.dateStr; } structuredTimeline.push({ type: 'msg', time: m.time, sender: m.sender, body: m.body }); senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; }
             });
             globalMessages = structuredTimeline; filteredMessages = [...globalMessages]; globalSenders = Object.keys(senderCounts);
-
             saveDataToIndexedDb(globalMessages);
-
-            let assumedMe = "", maxCount = 0; 
-            if (getEl('meSelector')) getEl('meSelector').innerHTML = '';
+            let assumedMe = "", maxCount = 0; if (getEl('meSelector')) getEl('meSelector').innerHTML = '';
             for (const [sender, count] of Object.entries(senderCounts)) {
-                const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; 
-                if (getEl('meSelector')) getEl('meSelector').appendChild(option);
-                if (count > maxCount) { maxCount = count; assumedMe = sender; }
+                const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; if (getEl('meSelector')) getEl('meSelector').appendChild(option); if (count > maxCount) { maxCount = count; assumedMe = sender; }
             }
-            const savedMe = localStorage.getItem('cached_me_user');
-            if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
+            const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
             if(currentMe && getEl('meSelector')) { getEl('meSelector').value = currentMe; getEl('meSelector').disabled = false; localStorage.setItem('cached_me_user', currentMe); }
-
             if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
-            updateHeaderTitle();
-            startInfiniteRender();
-            toggleDrawer();
+            updateHeaderTitle(); startInfiniteRender(); toggleDrawer();
         }
 
         function startInfiniteRender() {
-            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
-            if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
-            
-            if (filteredMessages.length === 0) {
-                if (getEl('chatContainer')) {
-                    getEl('chatContainer').innerHTML = `
-                        <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                            <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-                            <p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
-                        </div>
-                    `;
-                }
-                return;
-            }
-
-            currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE);
-            visibleMessages = filteredMessages.slice(currentLoadedIndex);
-            renderChatSegment(visibleMessages, 'append');
+            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
+            currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); visibleMessages = filteredMessages.slice(currentLoadedIndex); renderChatSegment(visibleMessages, 'append');
             if (getEl('chatContainer')) getEl('chatContainer').scrollTop = getEl('chatContainer').scrollHeight; 
         }
 
         function loadMorePastMessages() {
             if (currentLoadedIndex <= 0) { isLodingMore = false; return; }
-            const nextStartIndex = Math.max(0, currentLoadedIndex - PAGE_SIZE);
-            const additionalSegment = filteredMessages.slice(nextStartIndex, currentLoadedIndex);
-            const oldScrollHeight = getEl('chatContainer').scrollHeight;
-            const oldScrollTop = getEl('chatContainer').scrollTop;
-            currentLoadedIndex = nextStartIndex;
-            renderChatSegment(additionalSegment, 'prepend');
-            const newScrollHeight = getEl('chatContainer').scrollHeight;
-            if (getEl('chatContainer')) getEl('chatContainer').scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+            const nextStartIndex = Math.max(0, currentLoadedIndex - PAGE_SIZE); const additionalSegment = filteredMessages.slice(nextStartIndex, currentLoadedIndex);
+            const oldScrollHeight = getEl('chatContainer').scrollHeight; const oldScrollTop = getEl('chatContainer').scrollTop; currentLoadedIndex = nextStartIndex; renderChatSegment(additionalSegment, 'prepend');
+            const newScrollHeight = getEl('chatContainer').scrollHeight; if (getEl('chatContainer')) getEl('chatContainer').scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
             isLodingMore = false;
         }
 
         function jumpToSpecificDate(dateDashString) {
-            const parts = dateDashString.split('-'); 
-            if (parts.length < 3) return;
-
-            const year = parts[0];
-            const monthRaw = parts[1];
-            const dayRaw = parts[2];
-
-            const monthShort = parseInt(monthRaw, 10).toString();
-            const dayShort = parseInt(dayRaw, 10).toString();
-            const targetPatternShort = `${year}/${monthShort}/${dayShort}`;
-            const targetPatternLong = `${year}/${monthRaw}/${dayRaw}`;
-
+            const parts = dateDashString.split('-'); if (parts.length < 3) return;
+            const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
+            const monthShort = parseInt(monthRaw, 10).toString(); const dayShort = parseInt(dayRaw, 10).toString();
+            const targetPatternShort = `${year}/${monthShort}/${dayShort}`; const targetPatternLong = `${year}/${monthRaw}/${dayRaw}`;
             let foundIndex = -1;
-            for (let i = 0; i < filteredMessages.length; i++) {
-                if (filteredMessages[i].type === 'date') {
-                    const text = filteredMessages[i].text;
-                    if (text.includes(targetPatternShort) || text.includes(targetPatternLong)) { foundIndex = i; break; }
-                }
-            }
-
+            for (let i = 0; i < filteredMessages.length; i++) { if (filteredMessages[i].type === 'date') { const text = filteredMessages[i].text; if (text.includes(targetPatternShort) || text.includes(targetPatternLong)) { foundIndex = i; break; } } }
             if (foundIndex === -1) { alert(`${year}/${monthShort}/${dayShort} のトーク履歴は見つかりませんでした。`); return; }
-
-            currentLoadedIndex = Math.max(0, foundIndex - 20); 
-            const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
-            visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
-            
-            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
-            renderChatSegment(visibleMessages, 'append');
-
+            currentLoadedIndex = Math.max(0, foundIndex - 20); const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
+            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; renderChatSegment(visibleMessages, 'append');
             setTimeout(() => {
-                if (!getEl('chatContainer')) return;
-                const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
-                for (let el of dayElements) {
-                    if (el.innerText.includes(targetPatternShort) || el.innerText.includes(targetPatternLong)) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        el.classList.add('ring-4', 'ring-yellow-400');
-                        setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000);
-                        break;
-                    }
-                }
+                if (!getEl('chatContainer')) return; const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
+                for (let el of dayElements) { if (el.innerText.includes(targetPatternShort) || el.innerText.includes(targetPatternLong)) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000); break; } }
             }, 150);
         }
 
@@ -538,98 +378,50 @@
             const fragment = document.createDocumentFragment();
             messages.forEach((msg, idx) => {
                 const globalIndex = currentLoadedIndex + idx;
-                if (msg.type === 'date') {
-                    const dateDiv = document.createElement('div');
-                    dateDiv.className = 'date-stamp-node text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10';
-                    dateDiv.innerText = msg.text;
-                    fragment.appendChild(dateDiv);
-                } else if (msg.type === 'msg') {
-                    const isMe = (msg.sender === currentMe);
-                    const msgWrapper = document.createElement('div');
-                    msgWrapper.id = `msg-${globalIndex}`;
-                    if (isMe) {
-                        msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg';
-                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`;
-                    } else {
-                        msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg';
-                        msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`;
-                    }
+                if (msg.type === 'date') { const dateDiv = document.createElement('div'); dateDiv.className = 'date-stamp-node text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10'; dateDiv.innerText = msg.text; fragment.appendChild(dateDiv); } 
+                else if (msg.type === 'msg') {
+                    const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
+                    if (isMe) { msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg'; msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; } 
+                    else { msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg'; msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`; }
                     fragment.appendChild(msgWrapper);
                 }
             });
-            if (getEl('chatContainer')) {
-                if (mode === 'prepend') { getEl('chatContainer').insertBefore(fragment, getEl('chatContainer').firstChild); } 
-                else { getEl('chatContainer').appendChild(fragment); }
-            }
+            if (getEl('chatContainer')) { if (mode === 'prepend') { getEl('chatContainer').insertBefore(fragment, getEl('chatContainer').firstChild); } else { getEl('chatContainer').appendChild(fragment); } }
         }
 
         function triggerSearchKeyword() {
-            const keyword = getEl('searchKeyword').value.trim().toLowerCase(); 
-            if (getEl('searchResults')) getEl('searchResults').innerHTML = ''; 
-            if (!keyword) { getEl('searchResults').classList.add('hidden'); return; }
+            const keyword = getEl('searchKeyword').value.trim().toLowerCase(); if (getEl('searchResults')) getEl('searchResults').innerHTML = ''; if (!keyword) { getEl('searchResults').classList.add('hidden'); return; }
             let matchCount = 0;
             globalMessages.forEach((msg, index) => {
                 if (msg.type === 'msg' && msg.body.toLowerCase().includes(keyword)) {
-                    matchCount++; 
-                    const item = document.createElement('div'); 
-                    item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
+                    matchCount++; const item = document.createElement('div'); item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
                     item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div><div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>`;
                     item.onclick = () => {
-                        currentLoadedIndex = Math.max(0, index - 50);
-                        const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
-                        visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
-                        if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
-                        renderChatSegment(visibleMessages, 'append');
-                        setTimeout(() => {
-                            const targetElement = getEl(`msg-${index}`);
-                            if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
-                        }, 100);
+                        currentLoadedIndex = Math.max(0, index - 50); const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
+                        if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; renderChatSegment(visibleMessages, 'append');
+                        setTimeout(() => { const targetElement = getEl(`msg-${index}`); if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); } }, 100);
                     };
                     if (getEl('searchResults')) getEl('searchResults').appendChild(item);
                 }
             });
-            if (getEl('searchResults')) {
-                getEl('searchResults').classList.toggle('hidden', matchCount === 0);
-                if(matchCount === 0) { getEl('searchResults').innerHTML = '<div class="p-3 text-center text-gray-400 text-xs">見つかりませんでした</div>'; getEl('searchResults').classList.remove('hidden'); }
-            }
+            if (getEl('searchResults')) { getEl('searchResults').classList.toggle('hidden', matchCount === 0); if(matchCount === 0) { getEl('searchResults').innerHTML = '<div class="p-3 text-center text-gray-400 text-xs">見つかりませんでした</div>'; getEl('searchResults').classList.remove('hidden'); } }
         }
 
-        function saveDataToIndexedDb(dataArray) {
-            const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: dataArray }); };
-        }
+        function saveDataToIndexedDb(dataArray) { const request = indexedDB.open("LineViewerCacheDB", 1); request.onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: dataArray }); }; }
 
         function openDatabaseAndLoadCache() {
             const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onupgradeneeded = function(e) {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains("timeline")) db.createObjectStore("timeline", { keyPath: "id" });
-            };
+            request.onupgradeneeded = function(e) { const db = e.target.result; if (!db.objectStoreNames.contains("timeline")) db.createObjectStore("timeline", { keyPath: "id" }); };
             request.onsuccess = function(e) {
-                const db = e.target.result;
-                const tx = db.transaction("timeline", "readonly");
-                const store = tx.objectStore("timeline");
-                const getReq = store.get("last_timeline");
-                
+                const db = e.target.result; const tx = db.transaction("timeline", "readonly"); const store = tx.objectStore("timeline"); const getReq = store.get("last_timeline");
                 getReq.onsuccess = function() {
                     if (getReq.result && getReq.result.data && getReq.result.data.length > 0) {
-                        globalMessages = getReq.result.data;
-                        filteredMessages = [...globalMessages];
-                        let senderCounts = {}; 
-                        globalMessages.forEach(m => { if(m.type === 'msg') senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; });
-                        globalSenders = Object.keys(senderCounts);
+                        globalMessages = getReq.result.data; filteredMessages = [...globalMessages]; let senderCounts = {}; globalMessages.forEach(m => { if(m.type === 'msg') senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; }); globalSenders = Object.keys(senderCounts);
                         if (getEl('meSelector')) getEl('meSelector').innerHTML = '';
-                        for (const [sender, count] of Object.entries(senderCounts)) {
-                            const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; if (getEl('meSelector')) getEl('meSelector').appendChild(option);
-                        }
-                        const savedMe = localStorage.getItem('cached_me_user');
-                        if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; if(getEl('meSelector')) { getEl('meSelector').value = savedMe; getEl('meSelector').disabled = false; } }
-                        if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
-                        updateHeaderTitle();
-                        startInfiniteRender();
-                    } else {
-                        clearUiToUnauthenticated();
-                    }
+                        for (const [sender, count] of Object.entries(senderCounts)) { const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; if (getEl('meSelector')) getEl('meSelector').appendChild(option); }
+                        const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; if(getEl('meSelector')) { getEl('meSelector').value = savedMe; getEl('meSelector').disabled = false; } }
+                        if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`; updateHeaderTitle(); startInfiniteRender();
+                    } else { clearUiToUnauthenticated(); }
                 };
             };
         }
@@ -649,13 +441,9 @@
                 let match = line.match(msgRegex1) || line.match(msgRegex2);
                 if (match) {
                     const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
-                    let cleanBody = body.replace(/\\n/g, '<br>');
-                    if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; }
-                    else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; }
-                    else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
+                    let cleanBody = body.replace(/\\n/g, '<br>'); if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; } else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; } else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
                     const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; messages.push(newMsg); currentMsgRef = newMsg;
-                } else if (currentMsgRef) { currentMsgRef.body += '<br>' + line; }
-                else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { messages[messages.length - 1].body += '<br>' + line; }
+                } else if (currentMsgRef) { currentMsgRef.body += '<br>' + line; } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { messages[messages.length - 1].body += '<br>' + line; }
             }
             return { messages, senderCounts, chatPartner };
         }
