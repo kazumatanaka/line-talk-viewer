@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v48 (Perfect Slide Menu & Dark Theme)</title>
+    <title>LINE Talk Viewer v49 (Official Dark Mode & Anti-Overlap Layout)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
         .bg-theme-blue { background-color: #7493c1; }
-        .bg-theme-dark { background-color: #191f2a; } /* 💡 公式の深みのあるダークグレー */
+        .bg-theme-dark { background-color: #191f2a; } /* 💡 添付画像に完全一致する公式ダーク */
         .bg-theme-pink { background-color: #fbcfe8; }
         .bg-theme-beige { background-color: #f5f5dc; }
 
         /* テーマ連動型のヘッダー（メニューバー）の背景色設定 */
+        .main-header-base { h-14 flex items-center justify-between px-3 z-50 shadow-xs w-full fixed top-0 left-0 transition-colors duration-200; }
         .header-blue { background-color: #6582ab; color: #ffffff; }
-        .header-dark { background-color: #191f2a; color: #ffffff; border-bottom: 1px solid #2c323e; } /* 💡 公式スタイル */
+        .header-dark { background-color: #191f2a; color: #ffffff; border-bottom: 1px solid #2c323e; } /* 💡 トーク画面と完全に一体化 */
         .header-pink { background-color: #f9a8d4; color: #ffffff; }
         .header-beige { background-color: #e5e5cc; color: #374151; }
 
@@ -40,7 +41,8 @@
         html, body {
             overflow: hidden !important;
             position: relative;
-            width: 100% !important;max-width: 100% !important;
+            width: 100% !important;
+            max-width: 100% !important;
             height: 100%;
             margin: 0;
             padding: 0;
@@ -49,7 +51,7 @@
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
 
-    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-xs w-full fixed top-0 left-0 transition-all duration-200">
+    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-xs w-full fixed top-0 left-0 transition-colors duration-200">
         <div class="flex items-center space-x-1.5">
             <button id="backBtn" class="p-2 -ml-2 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
                 <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
@@ -241,7 +243,6 @@
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
-            // 💡 ハンバーガーメニュー開閉制御の紐付け
             if (targetId === "menuBtn" || e.target.closest("#menuBtn")) { e.preventDefault(); e.stopPropagation(); toggleDrawer(true); return; }
             if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(false); return; }
             
@@ -544,7 +545,6 @@
             }
         }
 
-        // 💡 【修正】スライドドロワー用アニメーション制御関数
         function toggleDrawer(forceOpen) {
             const drawer = getEl('drawerMenu');
             const overlay = getEl('overlay');
