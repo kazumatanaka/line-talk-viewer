@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v35 (Infinite Scroll & Fixed Menu)</title>
+    <title>LINE Talk Viewer v36 (Infinite Scroll & Toggle Menu)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -53,6 +53,12 @@
                 <input type="date" id="jumpDatePicker" class="absolute pointer-events-none opacity-0 invisible" tabIndex="-1">
                 <button id="calendarBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition text-lg cursor-pointer">📅</button>
             </div>
+
+            <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer z-10">
+                <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -65,18 +71,21 @@
         <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50"></div>
     </div>
 
-    <div class="flex flex-1 w-full min-h-0 overflow-hidden">
+    <div class="flex flex-1 w-full min-h-0 overflow-hidden relative">
         
-        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text min-h-0">
+        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text min-h-0 w-full">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                 <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-                <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右側のメニューからトークファイルを結合してください。</p>
+                <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
 
-        <aside id="drawerMenu" class="w-80 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 h-full">
+        <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity w-full h-full"></div>
+
+        <aside id="drawerMenu" class="absolute top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200">
             <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 select-none">
                 <h2 class="font-bold text-gray-700 text-sm">各種設定 & 管理機能</h2>
+                <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
             </div>
             
             <div class="p-4 flex-1 overflow-y-auto space-y-4 text-sm flex flex-col min-h-0">
@@ -154,7 +163,7 @@
         const PAGE_SIZE = 300; 
         let visibleMessages = []; 
         let currentLoadedIndex = 0; 
-        let currentEndLoadedIndex = 0; // 【新規】未来方向のロード範囲を追跡するインデックス
+        let currentEndLoadedIndex = 0; 
         let isLoadingMore = false; 
 
         let currentFolderId = 'root'; 
@@ -170,6 +179,10 @@
         // 全体タップ・クリック監視
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
+            
+            // ハンバーガーメニュー開閉制御の復活
+            if (targetId === "menuBtn") { e.preventDefault(); e.stopPropagation(); toggleDrawer(true); return; }
+            if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(false); return; }
             
             if (targetId === "searchToggleBtn") { toggleHeaderSearchBox(); return; }
             if (targetId === "searchCloseBtn") { toggleHeaderSearchBox(false); return; }
@@ -238,19 +251,14 @@
                 };
             }
 
-            // 【機能追加】チャットの上下スクロール時の自動ロードイベントリスナー
             const chatContainer = getEl('chatContainer');
             if (chatContainer) {
                 chatContainer.addEventListener('scroll', () => {
                     if (isLoadingMore || filteredMessages.length === 0) return;
-                    
-                    // 1. 上方向（過去）のスクロール検知
                     if (chatContainer.scrollTop < 200) {
                         isLoadingMore = true;
                         loadMorePastMessages();
                     }
-                    
-                    // 2. 下方向（未来）のスクロール検知
                     if (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 200) {
                         isLoadingMore = true;
                         loadMoreFutureMessages();
@@ -346,6 +354,7 @@
             if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
+            toggleDrawer(false);
         }
 
         function setAuthSuccessState() {
@@ -412,6 +421,32 @@
                 if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-red-500 text-center py-4">⚠️ ドライブ情報の取得に失敗しました</p>';
             }
         }
+
+        // ハンバーガーメニュー開閉のアニメーション関数
+        function toggleDrawer(forceOpen) {
+            const drawer = getEl('drawerMenu');
+            const overlay = getEl('overlay');
+            if (!drawer || !overlay) return;
+
+            const isCurrentlyHidden = drawer.classList.contains('hidden');
+            const toOpen = (forceOpen !== undefined) ? forceOpen : isCurrentlyHidden;
+
+            if (toOpen) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => {
+                    drawer.classList.remove('translate-x-full');
+                    overlay.classList.remove('hidden');
+                }, 15);
+            } else {
+                drawer.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+                setTimeout(() => {
+                    if (drawer.classList.contains('translate-x-full')) {
+                        drawer.classList.add('hidden');
+                    }
+                }, 300);
+            }
+        }
         
         function toggleHeaderSearchBox(forceState) {
             const box = getEl('headerSearchBox'); if (!box) return;
@@ -425,16 +460,14 @@
 
         function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames; }
 
-        /🎨 背景着せ替え/
         function changeTheme(themeName) {
-            if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
+            if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} w-full`;
             localStorage.setItem('user_theme', themeName);
             const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
             buttons.forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
             const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
         }
 
-        /🔍 文字サイズ変更/
         function changeFontSize(sizeName) {
             if (getEl('chatContainer')) getEl('chatContainer').classList.remove('text-xs', 'text-sm', 'text-base', 'text-lg');
             if (sizeName === 'sm' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-xs');
@@ -484,18 +517,16 @@
             const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
             if(currentMe && getEl('meSelector')) { getEl('meSelector').value = currentMe; getEl('meSelector').disabled = false; localStorage.setItem('cached_me_user', currentMe); }
             if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
-            updateHeaderTitle(); startInfiniteRender();
+            updateHeaderTitle(); startInfiniteRender(); toggleDrawer(false);
         }
 
-        // チャット描画の初期化
         function startInfiniteRender() {
             if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; 
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
-            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p class="text-xs text-white/80">同期済みのデータがありません。右側のメニューからトークファイルを結合してください。</p></div>`; return; }
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
             
-            // 通常読み込み時は最下部（最新トーク）を起点にする
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
             currentEndLoadedIndex = filteredMessages.length; 
             
@@ -505,7 +536,6 @@
             if (getEl('chatContainer')) getEl('chatContainer').scrollTop = getEl('chatContainer').scrollHeight; 
         }
 
-        // 過去（上方向）の追加読込
         function loadMorePastMessages() {
             if (currentLoadedIndex <= 0) { isLoadingMore = false; return; }
             const nextStartIndex = Math.max(0, currentLoadedIndex - PAGE_SIZE); 
@@ -514,7 +544,6 @@
             const oldScrollHeight = getEl('chatContainer').scrollHeight; 
             const oldScrollTop = getEl('chatContainer').scrollTop; 
             
-            const prevIndex = currentLoadedIndex;
             currentLoadedIndex = nextStartIndex; 
             renderChatSegment(additionalSegment, 'prepend', currentLoadedIndex);
             
@@ -523,7 +552,6 @@
             isLoadingMore = false;
         }
 
-        // 【機能追加】未来（下方向）の追加読込
         function loadMoreFutureMessages() {
             if (currentEndLoadedIndex >= filteredMessages.length) { isLoadingMore = false; return; }
             const nextEndIndex = Math.min(filteredMessages.length, currentEndLoadedIndex + PAGE_SIZE);
@@ -535,7 +563,6 @@
             isLoadingMore = false;
         }
 
-        // 📅 カレンダー日付ジャンプ処理（無限スクロール対応版）
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
@@ -582,7 +609,6 @@
                 }
             }
             
-            // 【重要】ジャンプ先を中心に、前後をロード範囲としてバッファを構築する
             currentLoadedIndex = Math.max(0, foundIndex - 50); 
             currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
             visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
@@ -606,13 +632,11 @@
             }, 150);
         }
 
-        // トーク描画処理
         function renderChatSegment(messages, mode = 'append', baseStartIndex = 0) {
             const fragment = document.createDocumentFragment();
             messages.forEach((msg, idx) => {
                 const globalIndex = baseStartIndex + idx;
                 
-                // 【変更箇所】日付の境目のデザイン強化（左右にボーダーラインを挿入）
                 if (msg.type === 'date') { 
                     const dateWrapper = document.createElement('div');
                     dateWrapper.className = 'w-full flex items-center justify-center my-4 select-none z-10 px-4';
@@ -642,7 +666,6 @@
             }
         }
 
-        // キーワード検索
         function triggerSearchKeyword() {
             const keyword = getEl('searchKeyword').value.trim().toLowerCase(); if (getEl('searchResults')) getEl('searchResults').innerHTML = ''; if (!keyword) { getEl('searchResults').classList.add('hidden'); return; }
             let matchCount = 0;
@@ -655,8 +678,7 @@
                         currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
                         visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
                         
-                        if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; 
-                        renderChatSegment(visibleMessages, 'append', currentLoadedIndex);
+                        if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; renderChatSegment(visibleMessages, 'append', currentLoadedIndex);
                         
                         setTimeout(() => { 
                             const targetElement = getEl(`msg-${index}`); 
