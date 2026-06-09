@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v30 (Perfect Touch Lock)</title>
+    <title>LINE Talk Viewer v31 (Logout Restored)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -26,7 +26,6 @@
             border-color: transparent #ffffff transparent transparent;
         }
 
-        /* 🛠️ スマホ特有の「引っ張りバウンス」による場外はみ出しをCSS側でも完全に殺すガード */
         html, body {
             overflow-x: hidden !important;
             position: relative;
@@ -237,7 +236,6 @@
 
         function gapiLoadedTrig() { initGoogleApi(); }
         
-        // 🛠️ 【修正：スワイプ漏れ対策】hidden（display:none）で完全に存在を消し去ることで、スマホの右はみ出しを完全シャットアウト
         function toggleDrawer(forceOpen) {
             const drawer = getEl('drawerMenu');
             const overlay = getEl('overlay');
@@ -248,7 +246,6 @@
 
             if (toOpen) {
                 drawer.classList.remove('hidden');
-                // ブラウザにDOMを認識させてから、一瞬遅らせてスライドイン（アニメーションの維持）
                 setTimeout(() => {
                     drawer.classList.remove('translate-x-full');
                     overlay.classList.remove('hidden');
@@ -256,7 +253,6 @@
             } else {
                 drawer.classList.add('translate-x-full');
                 overlay.classList.add('hidden');
-                // アニメーション完了（300ms）を待ってから存在を完全に消去
                 setTimeout(() => {
                     if (drawer.classList.contains('translate-x-full')) {
                         drawer.classList.add('hidden');
@@ -336,13 +332,16 @@
 
         function setAuthSuccessState() {
             if (getEl('authBtn')) { getEl('authBtn').innerText = "✓ 連携完了"; getEl('authBtn').className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none"; }
-            if (getEl('logoutBtn')) getEl('logoutBtn').classList.remove('hidden');
-            if(globalMessages.length === 0 && getEl('guideText')) { getEl('guideText').innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。"; if (getEl('talkSub')) getEl('talkSub').innerText = "フォルダを探してください"; }
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.remove('hidden'); // 🛠️ 連携成功時にログアウトを表示
+            if(globalMessages.length === 0 && getEl('guideText')) {
+                getEl('guideText').innerText = "自動ログイン成功！右上のメニューからフォルダを選択してください。";
+                if (getEl('talkSub')) getEl('talkSub').innerText = "フォルダを探してください";
+            }
         }
 
         function clearUiToUnauthenticated() {
             if (getEl('authBtn')) { getEl('authBtn').innerText = "Googleドライブと連携する"; getEl('authBtn').className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer"; }
-            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden');
+            if (getEl('logoutBtn')) getEl('logoutBtn').classList.add('hidden'); // 🛠️ 未連携時は隠す
             if (getEl('explorerPlaceholder')) getEl('explorerPlaceholder').innerText = "連携するとフォルダが表示されます";
             if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>';
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
