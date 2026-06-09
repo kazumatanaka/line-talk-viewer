@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v33 (Auth Sync Fix)</title>
+    <title>LINE Talk Viewer v34 (Nearest Date Jump)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -168,7 +168,7 @@
 
         let isCamouflageMode = false;
         let actualPartnerNames = "LINE Talk Viewer"; 
-        let isGapiClientReady = false; // API初期化フラグ
+        let isGapiClientReady = false; 
 
         const getEl = (id) => document.getElementById(id);
 
@@ -233,19 +233,16 @@
             }
 
             openDatabaseAndLoadCache();
-            // DOM読込完了時にも認証チェックを試みる
             attemptTokenCheckAndInit();
         });
 
         function gapiLoadedTrig() { 
-            // スクリプト読込完了時にも認証チェックを試みる
             attemptTokenCheckAndInit(); 
         }
         
-        // 🛠️ 【根本修正】API読込とURLトークンチェックのタイミングのズレを解消する統合同期関数
         function attemptTokenCheckAndInit() {
             if (typeof gapi === 'undefined' || typeof gapi.load === 'undefined') return;
-            if (isGapiClientReady) return; // 既に初期化済みの場合はスキップ
+            if (isGapiClientReady) return;
 
             isGapiClientReady = true;
             gapi.load('client', async () => {
@@ -253,7 +250,6 @@
                     await gapi.client.init({}); 
                     await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
                     
-                    // 1. 最優先：URLハッシュから新しいトークンが返ってきているかをチェック
                     const hash = window.location.hash;
                     if (hash && hash.includes('access_token')) {
                         const params = new URLSearchParams(hash.substring(1)); 
@@ -265,7 +261,6 @@
                             localStorage.setItem('drive_token_expiry', Date.now() + (parseInt(expiresIn, 10) * 1000));
                             gapi.client.setToken({ access_token: accessToken }); 
                             
-                            // 履歴をクリアしてクリーンな状態に
                             window.location.hash = ""; 
                             setAuthSuccessState(); 
                             renderExplorer('root'); 
@@ -273,7 +268,6 @@
                         }
                     }
 
-                    // 2. 予備：ローカルストレージにある既存キャッシュトークンをチェック
                     const savedToken = localStorage.getItem('drive_access_token'); 
                     const tokenExpiry = localStorage.getItem('drive_token_expiry');
                     if (savedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry, 10)) {
@@ -289,7 +283,6 @@
                         return;
                     }
                     
-                    // トークンがどこにもない場合は未連携状態UIへ
                     if (globalMessages.length === 0) clearUiToUnauthenticated();
 
                 } catch (err) {
@@ -510,19 +503,78 @@
             isLodingMore = false;
         }
 
+        // 📅 【機能追加・修正】カレンダー日付ジャンプ処理（存在しない場合の最寄り検索対応）
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
             const monthShort = parseInt(monthRaw, 10).toString(); const dayShort = parseInt(dayRaw, 10).toString();
-            const targetPatternShort = `${year}/${monthShort}/${dayShort}`; const targetPatternLong = `${year}/${monthRaw}/${dayRaw}`;
+            
+            // 検索用の日付フォーマットパターン
+            const targetPatternShort = `${year}/${monthShort}/${dayShort}`; 
+            const targetPatternLong = `${year}/${monthRaw}/${dayRaw}`;
+            
             let foundIndex = -1;
-            for (let i = 0; i < filteredMessages.length; i++) { if (filteredMessages[i].type === 'date') { const text = filteredMessages[i].text; if (text.includes(targetPatternShort) || text.includes(targetPatternLong)) { foundIndex = i; break; } } }
-            if (foundIndex === -1) { alert(`${year}/${monthShort}/${dayShort} のトーク履歴は見つかりませんでした。`); return; }
-            currentLoadedIndex = Math.max(0, foundIndex - 20); const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
-            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; renderChatSegment(visibleMessages, 'append');
+            
+            // 1. 完全一致する日付ノードの探索
+            for (let i = 0; i < filteredMessages.length; i++) { 
+                if (filteredMessages[i].type === 'date') { 
+                    const text = filteredMessages[i].text; 
+                    if (text.includes(targetPatternShort) || text.includes(targetPatternLong)) { 
+                        foundIndex = i; 
+                        break; 
+                    } 
+                } 
+            }
+            
+            // 2. 一致する日付がない場合：最もタイムスタンプが近い日付ノードを自動検索
+            if (foundIndex === -1) {
+                const targetTimestamp = new Date(parseInt(year, 10), parseInt(monthRaw, 10) - 1, parseInt(dayRaw, 10)).getTime();
+                let minDiff = Infinity;
+                let nearestIndex = -1;
+                
+                for (let i = 0; i < filteredMessages.length; i++) {
+                    if (filteredMessages[i].type === 'date') {
+                        const currentTimestamp = parseToTimestamp(filteredMessages[i].text, "00:00");
+                        const diff = Math.abs(targetTimestamp - currentTimestamp);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            nearestIndex = i;
+                        }
+                    }
+                }
+                
+                if (nearestIndex !== -1) {
+                    foundIndex = nearestIndex;
+                    // アラートメッセージを構築（日付表記を抽出）
+                    const nearestDateText = filteredMessages[nearestIndex].text.match(/\d+[\/\.\-年]\d+[\/\.\-月]\d+/)[0];
+                    alert(`${year}/${monthShort}/${dayShort} のトークがないため、一番近い ${nearestDateText} を表示します。`);
+                } else {
+                    alert(`トーク履歴自体が空のため、ジャンプできません。`);
+                    return;
+                }
+            }
+            
+            // 3. 描画領域の読み込みとスクロール移動
+            currentLoadedIndex = Math.max(0, foundIndex - 20); 
+            const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
+            visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
+            
+            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; 
+            renderChatSegment(visibleMessages, 'append');
+            
             setTimeout(() => {
-                if (!getEl('chatContainer')) return; const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
-                for (let el of dayElements) { if (el.innerText.includes(targetPatternShort) || el.innerText.includes(targetPatternLong)) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000); break; } }
+                if (!getEl('chatContainer')) return; 
+                const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
+                const targetText = filteredMessages[foundIndex].text;
+                
+                for (let el of dayElements) { 
+                    if (el.innerText === targetText) { 
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+                        el.classList.add('ring-4', 'ring-yellow-400'); 
+                        setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000); 
+                        break; 
+                    } 
+                }
             }, 150);
         }
 
