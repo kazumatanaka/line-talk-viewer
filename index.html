@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v37 (Fixed Header & Infinite Scroll)</title>
+    <title>LINE Talk Viewer v38 (Fixed Header & Exact Repeat Jump)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -27,7 +27,7 @@
         }
 
         html, body {
-            overflow-x: hidden !important;
+            overflow: hidden !important;
             position: relative;
             width: 100% !important;
             max-width: 100% !important;
@@ -35,9 +35,9 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden overflow-x-hidden select-none w-full max-w-full">
+<body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full">
 
-    <header id="mainHeader" class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-20 shadow-sm flex-shrink-0 w-full">
+    <header id="mainHeader" class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-40 shadow-sm flex-shrink-0 w-full relative">
         <div class="flex items-center space-x-3">
             <button class="text-gray-700 text-xl hover:opacity-70 cursor-pointer">←</button>
             <div id="titleArea" class="cursor-pointer hover:bg-gray-50 active:scale-95 transition-all p-1.5 rounded-lg select-none">
@@ -62,7 +62,7 @@
         </div>
     </header>
 
-    <div id="headerSearchBox" class="bg-white border-b border-gray-200 p-2 shadow-xs z-10 hidden transition-all duration-200 flex flex-col space-y-2 flex-shrink-0 w-full">
+    <div id="headerSearchBox" class="bg-white border-b border-gray-200 p-2 shadow-xs z-30 hidden transition-all duration-200 flex flex-col space-y-2 flex-shrink-0 w-full">
         <div class="flex items-center space-x-2">
             <input type="text" id="searchKeyword" placeholder="トーク内を検索..." class="flex-1 border border-gray-300 rounded-full px-4 py-1.5 text-xs focus:outline-none focus:border-blue-500">
             <button id="searchBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-full font-medium cursor-pointer">検索</button>
@@ -71,9 +71,9 @@
         <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50"></div>
     </div>
 
-    <div class="flex flex-1 w-full min-h-0 overflow-hidden relative">
+    <div class="flex-1 w-full min-h-0 overflow-hidden relative flex">
         
-        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text min-h-0 w-full">
+        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                 <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
@@ -217,10 +217,14 @@
             changeTheme(savedTheme);
             changeFontSize(savedSize);
             
+            // 【重要な修正】同じ日を何回選んでもイベントが着火するようonchangeをハック
             if (getEl('jumpDatePicker')) {
                 getEl('jumpDatePicker').onchange = (e) => {
-                    if (!e.target.value) return;
-                    jumpToSpecificDate(e.target.value);
+                    const val = e.target.value;
+                    if (!val) return;
+                    jumpToSpecificDate(val);
+                    // ➔ ジャンプ直後に値を消去することで、次回同じ日付を選んでも確実に発火させる
+                    e.target.value = ""; 
                 };
             }
 
@@ -459,7 +463,7 @@
         function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames; }
 
         function changeTheme(themeName) {
-            if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} w-full`;
+            if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} h-full w-full`;
             localStorage.setItem('user_theme', themeName);
             const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
             buttons.forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
@@ -550,6 +554,7 @@
             isLoadingMore = false;
         }
 
+        // 未来追加読み込み
         function loadMoreFutureMessages() {
             if (currentEndLoadedIndex >= filteredMessages.length) { isLoadingMore = false; return; }
             const nextEndIndex = Math.min(filteredMessages.length, currentEndLoadedIndex + PAGE_SIZE);
@@ -561,7 +566,7 @@
             isLoadingMore = false;
         }
 
-        // 📅 【不具合修正箇所】日付検索ジャンプ時のヘッダー消失バグを排除
+        // 📅 日付検索ジャンプ（完全固定＆同日リピート対応版）
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
@@ -612,8 +617,10 @@
             currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
             visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
             
-            // チャット表示コンテナの中身「だけ」を初期化
-            if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; 
+            // ➔ ヘッダーには絶対に触らず、チャットコンテナ（スクロール領域）の内側だけをクリアして再描画
+            const container = getEl('chatContainer');
+            if (container) container.innerHTML = ''; 
+            
             renderChatSegment(visibleMessages, 'append', currentLoadedIndex);
             
             setTimeout(() => {
@@ -622,7 +629,7 @@
                 const targetText = filteredMessages[foundIndex].text;
                 
                 for (let el of dayElements) { 
-                    if (el.innerText === targetText) { 
+                    if (el.innerText.trim() === targetText.trim()) { 
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
                         el.classList.add('ring-4', 'ring-yellow-400'); 
                         setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000); 
@@ -639,7 +646,7 @@
                 
                 if (msg.type === 'date') { 
                     const dateWrapper = document.createElement('div');
-                    dateWrapper.className = 'w-full flex items-center justify-center my-4 select-none z-10 px-4';
+                    dateWrapper.className = 'w-full flex items-center justify-center my-4 select-none z-10 px-4 flex-shrink-0';
                     dateWrapper.innerHTML = `
                         <div class="flex-1 border-t border-white/20"></div>
                         <div class="date-stamp-node text-center text-white text-[11px] font-bold bg-black/30 rounded-full px-4 py-1 mx-3 shadow-sm border border-white/10">
@@ -651,8 +658,8 @@
                 } 
                 else if (msg.type === 'msg') {
                     const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
-                    if (isMe) { msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg'; msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; } 
-                    else { msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg'; msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`; }
+                    if (isMe) { msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; } 
+                    else { msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`; }
                     fragment.appendChild(msgWrapper);
                 }
             });
