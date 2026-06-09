@@ -219,6 +219,21 @@
                 };
             }
 
+            // 【修正箇所】「自分」のプルダウン選択が変更されたときの処理を追加
+            if (getEl('meSelector')) {
+                getEl('meSelector').onchange = (e) => {
+                    const selectedMe = e.target.value;
+                    if (!selectedMe) return;
+                    
+                    currentMe = selectedMe;
+                    localStorage.setItem('cached_me_user', selectedMe);
+                    
+                    // 表示名とチャットタイムラインの再描画
+                    updateHeaderTitle();
+                    startInfiniteRender();
+                };
+            }
+
             if (getEl('fileInput')) {
                 getEl('fileInput').onchange = async (e) => {
                     const files = e.target.files; if (!files || files.length === 0) return;
@@ -503,19 +518,17 @@
             isLodingMore = false;
         }
 
-        // 📅 【機能追加・修正】カレンダー日付ジャンプ処理（存在しない場合の最寄り検索対応）
+        // 📅 カレンダー日付ジャンプ処理
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
             const monthShort = parseInt(monthRaw, 10).toString(); const dayShort = parseInt(dayRaw, 10).toString();
             
-            // 検索用の日付フォーマットパターン
             const targetPatternShort = `${year}/${monthShort}/${dayShort}`; 
             const targetPatternLong = `${year}/${monthRaw}/${dayRaw}`;
             
             let foundIndex = -1;
             
-            // 1. 完全一致する日付ノードの探索
             for (let i = 0; i < filteredMessages.length; i++) { 
                 if (filteredMessages[i].type === 'date') { 
                     const text = filteredMessages[i].text; 
@@ -526,7 +539,6 @@
                 } 
             }
             
-            // 2. 一致する日付がない場合：最もタイムスタンプが近い日付ノードを自動検索
             if (foundIndex === -1) {
                 const targetTimestamp = new Date(parseInt(year, 10), parseInt(monthRaw, 10) - 1, parseInt(dayRaw, 10)).getTime();
                 let minDiff = Infinity;
@@ -545,7 +557,6 @@
                 
                 if (nearestIndex !== -1) {
                     foundIndex = nearestIndex;
-                    // アラートメッセージを構築（日付表記を抽出）
                     const nearestDateText = filteredMessages[nearestIndex].text.match(/\d+[\/\.\-年]\d+[\/\.\-月]\d+/)[0];
                     alert(`${year}/${monthShort}/${dayShort} のトークがないため、一番近い ${nearestDateText} を表示します。`);
                 } else {
@@ -554,7 +565,6 @@
                 }
             }
             
-            // 3. 描画領域の読み込みとスクロール移動
             currentLoadedIndex = Math.max(0, foundIndex - 20); 
             const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
             visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
