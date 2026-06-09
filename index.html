@@ -3,15 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v41 (Dynamic Default Avatar & Fixed Header)</title>
+    <title>LINE Talk Viewer v42 (Absolute Fixed Header & Theme Sync)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* テーマごとの背景色設定 */
         .bg-theme-blue { background-color: #7493c1; }
         .bg-theme-dark { background-color: #1f2937; }
         .bg-theme-pink { background-color: #fbcfe8; }
         .bg-theme-beige { background-color: #f5f5dc; }
 
-        .line-header-bg { background-color: #ffffff; }
+        /* 💡 テーマ連動型のヘッダー（メニューバー）の背景色設定 */
+        .header-blue { background-color: #6582ab; color: #ffffff; }
+        .header-dark { background-color: #111827; color: #ffffff; }
+        .header-pink { background-color: #f9a8d4; color: #ffffff; }
+        .header-beige { background-color: #e5e5cc; color: #374151; }
+
+        /* 💡 テーマ連動型のヘッダーサブテキスト（未連携・件数など）の文字色設定 */
+        .sub-blue { color: #dbeafe; }
+        .sub-dark { color: #9ca3af; }
+        .sub-pink { color: #fdf2f8; }
+        .sub-beige { color: #6b7280; }
+
         .bubble-other { background-color: #ffffff; color: #000000; }
         .bubble-me { background-color: #85e249; color: #000000; }
         
@@ -32,29 +44,31 @@
             width: 100% !important;
             max-width: 100% !important;
             height: 100%;
+            margin: 0;
+            padding: 0;
         }
     </style>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
 
-    <header id="mainHeader" class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-50 shadow-sm flex-shrink-0 w-full relative block">
+    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-4 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
         <div class="flex items-center space-x-3">
-            <button class="text-gray-700 text-xl hover:opacity-70 cursor-pointer">←</button>
-            <div id="titleArea" class="cursor-pointer hover:bg-gray-50 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-gray-800 text-base">LINE Talk Viewer</h1>
-                <p id="talkSub" class="text-[10px] text-gray-400">未連携</p>
+            <button id="backBtn" class="text-xl hover:opacity-70 cursor-pointer">←</button>
+            <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
+                <h1 id="talkTitle" class="font-bold text-base">LINE Talk Viewer</h1>
+                <p id="talkSub" class="text-[10px] sub-blue">未連携</p>
             </div>
         </div>
         
         <div class="flex items-center space-x-1 select-none">
-            <button id="searchToggleBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition text-lg cursor-pointer hidden">🔍</button>
+            <button id="searchToggleBtn" class="p-2 hover:bg-black/5 rounded-full transition text-lg cursor-pointer hidden">🔍</button>
             
             <div id="calendarWrapper" class="relative hidden">
                 <input type="date" id="jumpDatePicker" class="absolute pointer-events-none opacity-0 invisible" tabIndex="-1">
-                <button id="calendarBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition text-lg cursor-pointer">📅</button>
+                <button id="calendarBtn" class="p-2 hover:bg-black/5 rounded-full transition text-lg cursor-pointer">📅</button>
             </div>
 
-            <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer z-10">
+            <button id="menuBtn" class="p-2 hover:bg-black/5 rounded-full transition cursor-pointer z-10">
                 <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
@@ -62,16 +76,16 @@
         </div>
     </header>
 
-    <div id="headerSearchBox" class="bg-white border-b border-gray-200 p-2 shadow-xs z-40 hidden flex flex-col space-y-2 flex-shrink-0 w-full relative">
+    <div id="headerSearchBox" class="bg-white border-b border-gray-200 p-2 shadow-sm z-40 hidden flex flex-col space-y-2 w-full fixed top-14 left-0">
         <div class="flex items-center space-x-2">
-            <input type="text" id="searchKeyword" placeholder="トーク内を検索..." class="flex-1 border border-gray-300 rounded-full px-4 py-1.5 text-xs focus:outline-none focus:border-blue-500">
+            <input type="text" id="searchKeyword" placeholder="トーク内を検索..." class="flex-1 border border-gray-300 rounded-full px-4 py-1.5 text-xs text-black focus:outline-none focus:border-blue-500">
             <button id="searchBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-full font-medium cursor-pointer">検索</button>
             <button id="searchCloseBtn" class="text-gray-400 hover:text-gray-600 text-sm font-bold p-1 cursor-pointer">✕</button>
         </div>
-        <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50"></div>
+        <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50 text-black"></div>
     </div>
 
-    <div class="flex-1 w-full min-h-0 overflow-hidden relative flex z-10">
+    <div class="flex-1 w-full pt-14 overflow-hidden relative flex z-10">
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
@@ -82,7 +96,7 @@
 
         <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity w-full h-full"></div>
 
-        <aside id="drawerMenu" class="absolute top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200">
+        <aside id="drawerMenu" class="absolute top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200 text-black">
             <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 select-none">
                 <h2 class="font-bold text-gray-700 text-sm">各種設定 & 管理機能</h2>
                 <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
@@ -94,7 +108,7 @@
                     <button id="authBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer">
                         Googleドライブと連携する
                     </button>
-                    <button id="logoutBtn" class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs py-1.5 px-3 rounded font-medium shadow-2xs transition hidden cursor-pointer">
+                    <button id="logoutBtn" class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs py-1.5 px-3 rounded font-medium shadow-sm transition hidden cursor-pointer">
                         連携を解除する
                     </button>
                     
@@ -139,7 +153,7 @@
 
                 <div class="space-y-1 flex-shrink-0">
                     <label class="block text-xs font-bold text-gray-500">「自分」の設定</label>
-                    <select id="meSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white" disabled>
+                    <select id="meSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white text-black" disabled>
                         <option value="">ファイルを読み込んでください</option>
                     </select>
                 </div>
@@ -155,9 +169,9 @@
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
         const REDIRECT_URI = window.location.origin + window.location.pathname;
 
-        // 現在選択中のテーマ名（初期値blue）
+        const DEFAULT_PARTNER_AVATAR = "default.png";
+
         let currentThemeName = 'blue';
-        // ドライブ内でカスタム画像が発見されたかどうかを追跡するフラグ
         let hasDriveCustomImage = false;
 
         let globalMessages = []; 
@@ -183,12 +197,10 @@
 
         const getEl = (id) => document.getElementById(id);
 
-        // 💡 【新規関数】現在のテーマ設定に合わせてデフォルト画像パスを動的に返す関数
         function getThemeDefaultAvatar() {
             return currentThemeName === 'dark' ? 'default-dark.png' : 'default-light.png';
         }
 
-        // 💡 【新規関数】最終的に適用するアバターURLを決定する（ドライブ画像を最優先）
         function getFinalAvatarUrl() {
             if (hasDriveCustomImage && partnerCustomAvatarUrl) {
                 return partnerCustomAvatarUrl;
@@ -435,17 +447,16 @@
                             binary += String.fromCharCode(bytes[i]);
                         }
                         partnerCustomAvatarUrl = `data:${foundImageFile.mimeType};base64,` + window.btoa(binary);
-                        hasDriveCustomImage = true; // ドライブ優先フラグを立てる
+                        hasDriveCustomImage = true;
                     } catch(e) {
                         console.error("画像の自動読み込みに失敗しました", e);
                         hasDriveCustomImage = false;
                     }
                 } else {
                     partnerCustomAvatarUrl = "";
-                    hasDriveCustomImage = false; // ドライブ内にないのでフラグを降ろす
+                    hasDriveCustomImage = false;
                 }
 
-                // タイムラインを最新状態の画像URLで再描画
                 if (globalMessages.length > 0) {
                     startInfiniteRender();
                 }
@@ -534,16 +545,30 @@
 
         function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames; }
 
-        // 💡 【修正】テーマ着せ替えの変更と同時にアバターの切り替え判定も走らせる
+        // 💡 【修正】着せ替えテーマに合わせてメニューバーの色も同期的に変更
         function changeTheme(themeName) {
-            currentThemeName = themeName; // グローバル変数を更新
+            currentThemeName = themeName; 
+            
+            // 1. チャット背景の変更
             if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} h-full w-full relative`;
             localStorage.setItem('user_theme', themeName);
+            
+            // 2. メニューバー（ヘッダー）のクラス切り替え
+            const header = getEl('mainHeader');
+            if (header) {
+                header.className = `h-14 flex items-center justify-between px-4 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200 header-${themeName}`;
+            }
+
+            // 3. ヘッダー内のサブテキスト（未連携などの文字）の色切り替え
+            const subText = getEl('talkSub');
+            if (subText) {
+                subText.className = `text-[10px] sub-${themeName}`;
+            }
+
             const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
             buttons.forEach(btn => { if(btn) btn.classList.remove('ring-4', 'ring-yellow-400'); });
             const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
             
-            // テーマ切り替え時にチャットが既にロードされていれば再描画してアバターを反映
             if (globalMessages.length > 0) {
                 startInfiniteRender();
             }
@@ -597,7 +622,10 @@
             }
             const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
             if(currentMe && getEl('meSelector')) { getEl('meSelector').value = currentMe; getEl('meSelector').disabled = false; localStorage.setItem('cached_me_user', currentMe); }
+            
+            // トーク件数を更新
             if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+            
             updateHeaderTitle(); startInfiniteRender(); toggleDrawer(false);
         }
 
@@ -644,6 +672,7 @@
             isLoadingMore = false;
         }
 
+        // 📅 日付検索ジャンプ処理（メニューバーの消失を永久防御）
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
@@ -699,6 +728,7 @@
             
             renderChatSegment(visibleMessages, 'append', currentLoadedIndex);
             
+            // 💡 スクロール位置のズレによりヘッダーが引きずり上げられるのを防ぐため、タイマータスクで安全に位置を合わせる
             setTimeout(() => {
                 if (!getEl('chatContainer')) return; 
                 const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
@@ -706,6 +736,7 @@
                 
                 for (let el of dayElements) { 
                     if (el.innerText.trim() === targetText.trim()) { 
+                        // メニューバーを固定化したため、スムーズスクロールが綺麗に動作します
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
                         el.classList.add('ring-4', 'ring-yellow-400'); 
                         setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000); 
@@ -717,7 +748,6 @@
 
         function renderChatSegment(messages, mode = 'append', baseStartIndex = 0) {
             const fragment = document.createDocumentFragment();
-            // ➔ 描画直前に適用アバターURLの最終決定（ドライブ画像かテーマ別デフォルトか）
             const activeAvatar = getFinalAvatarUrl();
             const fallbackAvatar = getThemeDefaultAvatar();
 
@@ -809,7 +839,11 @@
                         if (getEl('meSelector')) getEl('meSelector').innerHTML = '';
                         for (const [sender, count] of Object.entries(senderCounts)) { const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; if (getEl('meSelector')) getEl('meSelector').appendChild(option); }
                         const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; if(getEl('meSelector')) { getEl('meSelector').value = savedMe; getEl('meSelector').disabled = false; } }
-                        if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`; updateHeaderTitle(); startInfiniteRender();
+                        
+                        // トーク件数を復元表示
+                        if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+                        
+                        updateHeaderTitle(); startInfiniteRender();
                     } else { clearUiToUnauthenticated(); }
                 };
             };
