@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v44 (Real Back Button & Theme Sync)</title>
+    <title>LINE Talk Viewer v45 (Perfect Date Parsing & Real Back Button)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -55,7 +55,7 @@
         <div class="flex items-center space-x-1.5">
             <button id="backBtn" class="p-2 -ml-2 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
                 <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
@@ -212,14 +212,11 @@
             return getThemeDefaultAvatar();
         }
 
-        // 💡 【新規ナビゲーション関数】「＜」を押した時に初期画面（ウェルカム画面）に戻す処理
         function returnToInitialWelcome() {
-            // カレンダーと検索トグルを非表示へ
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
 
-            // ヘッダーテキストの初期リセット
             actualPartnerNames = "LINE Talk Viewer";
             applyTitleDisplay();
             
@@ -229,7 +226,6 @@
                 subText.innerText = savedToken ? "フォルダを探してください" : "未連携";
             }
 
-            // チャットタイムライン領域を初期ウェルカム表示に差し替え
             const container = getEl('chatContainer');
             if (container) {
                 container.innerHTML = `
@@ -247,7 +243,6 @@
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
-            // 💡 「＜」アイコンボタン、または内側のSVGがクリックされた時にナビゲーションを発動
             if (targetId === "backBtn" || e.target.closest("#backBtn")) {
                 e.preventDefault();
                 returnToInitialWelcome();
@@ -499,7 +494,7 @@
                     hasDriveCustomImage = false;
                 }
 
-                if (globalMessages.length > 0) {
+                if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
                     startInfiniteRender();
                 }
 
@@ -888,13 +883,18 @@
         function parseLineText(text, filename) {
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
             const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
-            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})\s*\(?([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)\)?/i; 
+            
+            // 💡 【超厳格化】単なる漢字1文字の誤認識を永久追放。前後のスペース、カッコ「()」での曜日囲みを完全必須条件に指定。
+            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)(?:\s*|\s*\)\s*)$/i; 
+            
             const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
             const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
             let currentMsgRef = null;
+            
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i]; const trimmedLine = line.trim(); 
                 if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
+                
                 let match = line.match(msgRegex1) || line.match(msgRegex2);
                 if (match) {
                     const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
@@ -906,6 +906,7 @@
                     messages.push(newMsg); 
                     currentMsgRef = newMsg;
                 } 
+                // 💡 完全に独立した曜日スタンプ行形式のときのみ安全に日付変更処理を通す
                 else if (dateRegex.test(trimmedLine)) { 
                     messages.push({ type: 'date', text: trimmedLine }); 
                     currentMsgRef = null; 
