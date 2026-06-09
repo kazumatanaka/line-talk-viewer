@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v23 (Ultimate Stable)</title>
+    <title>LINE Talk Viewer v24 (Calendar Jump Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -40,8 +40,8 @@
         
         <div class="flex items-center space-x-2 select-none">
             <div id="calendarWrapper" class="relative hidden">
-                <input type="date" id="jumpDatePicker" class="absolute inset-0 opacity-0 w-8 h-8 cursor-pointer z-10">
-                <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition">📅</button>
+                <input type="date" id="jumpDatePicker" class="absolute inset-0 opacity-0 w-10 h-10 cursor-pointer z-10">
+                <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition text-lg">📅</button>
             </div>
             <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer z-10" style="display: block !important;">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,20 +157,15 @@
 
         const getEl = (id) => document.getElementById(id);
 
-        // ⚡ 【起動コア】Googleの状況に一切関わらず、ページが開かれた瞬間にボタン群を強制完全アクティブ化する
         window.addEventListener("DOMContentLoaded", () => {
             bindAllButtonEvents();
-            
             const savedTheme = localStorage.getItem('user_theme') || 'blue';
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             changeTheme(savedTheme);
             changeFontSize(savedSize);
-
-            // ローカルキャッシュの復元に走る
             openDatabaseAndLoadCache();
         });
 
-        // Googleスクリプトがロードされた際のトリガー
         function gapiLoadedTrig() {
             initGoogleApi();
         }
@@ -190,9 +185,9 @@
 
             if (getEl('jumpDatePicker')) {
                 getEl('jumpDatePicker').onchange = (e) => {
-                    const selectedDateStr = e.target.value;
+                    const selectedDateStr = e.target.value; // 例: "2026-06-09"
                     if (!selectedDateStr) return;
-                    jumpToSpecificDate(selectedDateStr.replace(/-/g, '/'));
+                    jumpToSpecificDate(selectedDateStr);
                 };
             }
 
@@ -307,15 +302,6 @@
                     }
                 };
             }
-        }
-
-        function toggleDrawer() {
-            if (getEl('drawerMenu')) getEl('drawerMenu').classList.toggle('translate-x-full');
-            if (getEl('overlay')) getEl('overlay').classList.toggle('hidden');
-        }
-
-        function applyTitleDisplay() {
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
         }
 
         function changeTheme(themeName) {
@@ -537,30 +523,62 @@
             isLodingMore = false;
         }
 
-        function jumpToSpecificDate(dateString) {
+        // 📅 【ここを完全修復】"2026-06-09" ➔ 「2026/6/9」と「2026/06/09」の両方の表記パターンを賢くマッチングさせる
+        function jumpToSpecificDate(dateDashString) {
+            const parts = dateDashString.split('-'); // ["2026", "06", "09"]
+            if (parts.length < 3) return;
+
+            const year = parts[0];
+            const monthRaw = parts[1];
+            const dayRaw = parts[2];
+
+            // 0埋めなしバージョン（例: 2026/6/9）
+            const monthShort = parseInt(monthRaw, 10).toString();
+            const dayShort = parseInt(dayRaw, 10).toString();
+            const targetPatternShort = `${year}/${monthShort}/${dayShort}`;
+
+            // 0埋めありバージョン（例: 2026/06/09）
+            const targetPatternLong = `${year}/${monthRaw}/${dayRaw}`;
+
             let foundIndex = -1;
             for (let i = 0; i < filteredMessages.length; i++) {
-                if (filteredMessages[i].type === 'date' && filteredMessages[i].text.includes(dateString)) { foundIndex = i; break; }
+                if (filteredMessages[i].type === 'date') {
+                    const text = filteredMessages[i].text;
+                    // LINEテキストの1行（例: "2026/6/9(火)"）に、どちらかのパターンが含まれるかチェック
+                    if (text.includes(targetPatternShort) || text.includes(targetPatternLong)) {
+                        foundIndex = i;
+                        break;
+                    }
+                }
             }
-            if (foundIndex === -1) { alert(`${dateString} 付近のトーク履歴が見つかりませんでした。`); return; }
-            currentLoadedIndex = Math.max(0, foundIndex - 50);
+
+            if (foundIndex === -1) {
+                // 人間が見て分かりやすいように、スラッシュ区切りでアラートを出す
+                alert(`${year}/${monthShort}/${dayShort} のトーク履歴は見つかりませんでした。`);
+                return;
+            }
+
+            // 見つかったら無限スクロールの描画位置をそこを中心に再編成
+            currentLoadedIndex = Math.max(0, foundIndex - 20); // 少し手前から出す
             const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
             visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
+            
             if (getEl('chatContainer')) getEl('chatContainer').innerHTML = '';
             renderChatSegment(visibleMessages, 'append');
 
+            // 画面にレンダリングされたら、該当の日付スタンプまで滑らかに移動
             setTimeout(() => {
                 if (!getEl('chatContainer')) return;
                 const dayElements = getEl('chatContainer').querySelectorAll('.date-stamp-node');
                 for (let el of dayElements) {
-                    if (el.innerText.includes(dateString)) {
+                    if (el.innerText.includes(targetPatternShort) || el.innerText.includes(targetPatternLong)) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         el.classList.add('ring-4', 'ring-yellow-400');
                         setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000);
                         break;
                     }
                 }
-            }, 100);
+            }, 150);
         }
 
         function renderChatSegment(messages, mode = 'append') {
