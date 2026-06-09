@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v45 (Perfect Date Parsing & Real Back Button)</title>
+    <title>LINE Talk Viewer v47 (Official Dark Theme & Anti-Overlap Layout)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
         .bg-theme-blue { background-color: #7493c1; }
-        .bg-theme-dark { background-color: #1f2937; }
+        .bg-theme-dark { background-color: #191f2a; } /* 💡 公式の深みのあるダークグレーに修正 */
         .bg-theme-pink { background-color: #fbcfe8; }
         .bg-theme-beige { background-color: #f5f5dc; }
 
         /* テーマ連動型のヘッダー（メニューバー）の背景色設定 */
         .header-blue { background-color: #6582ab; color: #ffffff; }
-        .header-dark { background-color: #111827; color: #ffffff; }
+        .header-dark { background-color: #191f2a; color: #ffffff; border-bottom: 1px solid #2c323e; } /* 💡 トーク背景と一体化する公式スタイル */
         .header-pink { background-color: #f9a8d4; color: #ffffff; }
         .header-beige { background-color: #e5e5cc; color: #374151; }
 
         /* テーマ連動型のヘッダーサブテキストの文字色設定 */
         .sub-blue { color: #dbeafe; }
-        .sub-dark { color: #9ca3af; }
+        .sub-dark { color: #8893a6; }
         .sub-pink { color: #fdf2f8; }
         .sub-beige { color: #6b7280; }
 
-        .bubble-other { background-color: #ffffff; color: #000000; }
-        .bubble-me { background-color: #85e249; color: #000000; }
+        /* 共通吹き出しスタイルベース */
+        .bubble-base { position: relative; border-radius: 1.1rem; padding: 0.5rem 0.85rem; font-size: 13.5px; box-shadow: 0 1px 1px rgba(0,0,0,0.08); word-break: break-all; white-space: pre-wrap; }
         
-        .bubble-me::after {
-            content: ""; position: absolute; top: 12px; right: -7px;
-            border-width: 5px 0 5px 8px; border-style: solid;
-            border-color: transparent transparent transparent #85e249;
+        /* 吹き出しのひげ（三角形）ベース */
+        .bubble-me-shaping::after {
+            content: ""; position: absolute; top: 12px; right: -6px;
+            border-width: 5px 0 5px 7px; border-style: solid;
         }
-        .bubble-other::after {
-            content: ""; position: absolute; top: 12px; left: -7px;
-            border-width: 5px 8px 5px 0; border-style: solid;
-            border-color: transparent #ffffff transparent transparent;
+        .bubble-other-shaping::after {
+            content: ""; position: absolute; top: 12px; left: -6px;
+            border-width: 5px 7px 5px 0; border-style: solid;
         }
 
         html, body {
@@ -51,11 +50,11 @@
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
 
-    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
+    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-xs w-full fixed top-0 left-0 transition-all duration-200">
         <div class="flex items-center space-x-1.5">
             <button id="backBtn" class="p-2 -ml-2 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
                 <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
@@ -71,12 +70,6 @@
                 <input type="date" id="jumpDatePicker" class="absolute pointer-events-none opacity-0 invisible" tabIndex="-1">
                 <button id="calendarBtn" class="p-2 hover:bg-black/5 rounded-full transition text-lg cursor-pointer">📅</button>
             </div>
-
-            <button id="menuBtn" class="p-2 hover:bg-black/5 rounded-full transition cursor-pointer z-10">
-                <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
         </div>
     </header>
 
@@ -89,21 +82,18 @@
         <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50 text-black"></div>
     </div>
 
-    <div class="flex-1 w-full pt-14 overflow-hidden relative flex z-10">
+    <div class="flex flex-1 w-full min-h-0 overflow-hidden relative">
         
-        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
+        <main id="chatContainer" class="flex-1 overflow-y-auto px-4 pb-6 bg-theme-blue flex flex-col space-y-4 select-text h-full relative" style="padding-top: 4.5rem;">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                 <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-                <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
+                <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右側のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
 
-        <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity w-full h-full"></div>
-
-        <aside id="drawerMenu" class="absolute top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200 text-black">
+        <aside id="drawerMenu" class="w-80 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 h-full text-black z-30 pt-14">
             <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 select-none">
                 <h2 class="font-bold text-gray-700 text-sm">各種設定 & 管理機能</h2>
-                <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
             </div>
             
             <div class="p-4 flex-1 overflow-y-auto space-y-4 text-sm flex flex-col min-h-0">
@@ -212,6 +202,7 @@
             return getThemeDefaultAvatar();
         }
 
+        // 初期のウェルカム表示へ戻すナビゲーション処理
         function returnToInitialWelcome() {
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
@@ -232,7 +223,7 @@
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                         <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
                         <p id="guideText" class="text-xs text-white/80">
-                            表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
+                            表示をリセットしました。トークを確認するには右側のメニューからフォルダまたはファイルを再選択してください。
                         </p>
                     </div>
                 `;
@@ -248,9 +239,6 @@
                 returnToInitialWelcome();
                 return;
             }
-
-            if (targetId === "menuBtn") { e.preventDefault(); e.stopPropagation(); toggleDrawer(true); return; }
-            if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(false); return; }
             
             if (targetId === "searchToggleBtn") { toggleHeaderSearchBox(); return; }
             if (targetId === "searchCloseBtn") { toggleHeaderSearchBox(false); return; }
@@ -426,7 +414,6 @@
             if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
-            toggleDrawer(false);
         }
 
         function setAuthSuccessState() {
@@ -545,31 +532,6 @@
             }
         }
 
-        function toggleDrawer(forceOpen) {
-            const drawer = getEl('drawerMenu');
-            const overlay = getEl('overlay');
-            if (!drawer || !overlay) return;
-
-            const isCurrentlyHidden = drawer.classList.contains('hidden');
-            const toOpen = (forceOpen !== undefined) ? forceOpen : isCurrentlyHidden;
-
-            if (toOpen) {
-                drawer.classList.remove('hidden');
-                setTimeout(() => {
-                    drawer.classList.remove('translate-x-full');
-                    overlay.classList.remove('hidden');
-                }, 15);
-            } else {
-                drawer.classList.add('translate-x-full');
-                overlay.classList.add('hidden');
-                setTimeout(() => {
-                    if (drawer.classList.contains('translate-x-full')) {
-                        drawer.classList.add('hidden');
-                    }
-                }, 300);
-            }
-        }
-        
         function toggleHeaderSearchBox(forceState) {
             const box = getEl('headerSearchBox'); if (!box) return;
             const isHidden = box.classList.contains('hidden'); const toShow = (forceState !== undefined) ? forceState : isHidden;
@@ -584,12 +546,12 @@
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
-            if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} h-full w-full relative`;
+            if (getEl('chatContainer')) getEl('chatContainer').className = `flex-1 overflow-y-auto px-4 pb-4 flex flex-col space-y-4 select-text bg-theme-${themeName} h-full w-full relative`;
             localStorage.setItem('user_theme', themeName);
             
             const header = getEl('mainHeader');
             if (header) {
-                header.className = `h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200 header-${themeName}`;
+                header.className = `h-14 flex items-center justify-between px-3 z-50 shadow-xs w-full fixed top-0 left-0 transition-colors duration-200 header-${themeName}`;
             }
 
             const subText = getEl('talkSub');
@@ -657,7 +619,7 @@
             
             if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             
-            updateHeaderTitle(); startInfiniteRender(); toggleDrawer(false);
+            updateHeaderTitle(); startInfiniteRender();
         }
 
         function startInfiniteRender() {
@@ -779,6 +741,13 @@
             const activeAvatar = getFinalAvatarUrl();
             const fallbackAvatar = getThemeDefaultAvatar();
 
+            // 💡 【仕様変更】公式LINE（ダークモード）の配色を完全抽出
+            const isDark = (currentThemeName === 'dark');
+            const meBgColor = isDark ? '#72d967' : '#85e249';       /* 💡 自分の吹き出し背景（ダーク：公式鮮やかグリーン） */
+            const meTxtColor = '#000000';                           /* 💡 自分の文字（ダーク・ライト共に黒） */
+            const otherBgColor = isDark ? '#2c323e' : '#ffffff';    /* 💡 相手の吹き出し背景（ダーク：公式チャコール） */
+            const otherTxtColor = isDark ? '#ffffff' : '#000000';   /* 💡 相手の文字（ダーク：白、ライト：黒） */
+
             messages.forEach((msg, idx) => {
                 const globalIndex = baseStartIndex + idx;
                 
@@ -787,7 +756,7 @@
                     dateWrapper.className = 'w-full flex items-center justify-center my-4 select-none z-10 px-4 flex-shrink-0';
                     dateWrapper.innerHTML = `
                         <div class="flex-1 border-t border-white/20"></div>
-                        <div class="date-stamp-node text-center text-white text-[11px] font-bold bg-black/30 rounded-full px-4 py-1 mx-3 shadow-sm border border-white/10">
+                        <div class="date-stamp-node text-center text-white text-[11px] font-bold bg-black/30 rounded-full px-4 py-1 mx-3 shadow-xs border border-white/10">
                             ${msg.text}
                         </div>
                         <div class="flex-1 border-t border-white/20"></div>
@@ -798,16 +767,28 @@
                     const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
                     if (isMe) { 
                         msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; 
-                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
+                        msgWrapper.innerHTML = `
+                            <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
+                            <div class="bubble-base bubble-me-shaping" style="background-color: ${meBgColor}; color: ${meTxtColor};">
+                                ${msg.body}
+                                <style>
+                                    #msg-${globalIndex} .bubble-me-shaping::after { border-color: transparent transparent transparent ${meBgColor} !important; }
+                                </style>
+                            </div>`; 
                     } 
                     else { 
                         msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
                         msgWrapper.innerHTML = `
-                            <img src="${activeAvatar}" class="w-9 h-9 rounded-2xl object-cover flex-shrink-0 select-none shadow-sm mt-0.5" alt="avatar" onerror="this.src='${fallbackAvatar}'">
+                            <img src="${activeAvatar}" class="w-9 h-9 rounded-2xl object-cover flex-shrink-0 select-none shadow-xs mt-0.5" alt="avatar" onerror="this.src='${fallbackAvatar}'">
                             <div class="flex flex-col">
                                 <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
                                 <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                    <div class="bubble-base bubble-other-shaping" style="background-color: ${otherBgColor}; color: ${otherTxtColor};">
+                                        ${msg.body}
+                                        <style>
+                                            #msg-${globalIndex} .bubble-other-shaping::after { border-color: transparent ${otherBgColor} transparent transparent !important; }
+                                        </style>
+                                    </div>
                                     <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
                                 </div>
                             </div>`; 
@@ -884,13 +865,11 @@
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
             const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
             
-            // 💡 【超厳格化】単なる漢字1文字の誤認識を永久追放。前後のスペース、カッコ「()」での曜日囲みを完全必須条件に指定。
-            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)(?:\s*|\s*\)\s*)$/i; 
+            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)\)?(?:\s*|\s*\)\s*)$/i; 
             
             const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
             const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
             let currentMsgRef = null;
-            
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i]; const trimmedLine = line.trim(); 
                 if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
@@ -906,7 +885,6 @@
                     messages.push(newMsg); 
                     currentMsgRef = newMsg;
                 } 
-                // 💡 完全に独立した曜日スタンプ行形式のときのみ安全に日付変更処理を通す
                 else if (dateRegex.test(trimmedLine)) { 
                     messages.push({ type: 'date', text: trimmedLine }); 
                     currentMsgRef = null; 
