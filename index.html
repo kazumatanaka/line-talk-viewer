@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v18 (Stable Boot)</title>
+    <title>LINE Talk Viewer v19 (Async Fixed)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
         .bg-theme-dark { background-color: #1f2937; }
@@ -128,9 +126,12 @@
     <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text">
         <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
             <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-            <p id="guideText" class="text-xs text-white/80">APIを読み込んでいます...</p>
+            <p id="guideText" class="text-xs text-white/80">ライブラリを準備中...</p>
         </div>
     </main>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" onload="onGapiLoad()" async defer></script>
 
     <script>
         const CLIENT_ID = '903007987907-ctng3cio3hdiedu6ckimvtgkf1d5uq6s.apps.googleusercontent.com';
@@ -223,19 +224,19 @@
         sizeMdBtn.addEventListener('click', () => changeFontSize('md'));
         sizeLgBtn.addEventListener('click', () => changeFontSize('lg'));
 
-        // ⚡ 【最重要：修正ポイント】
-        // 起動時はまずIndexedDBの枠組みだけを確実に作り、データ有無に関わらず即座に一歩前へ進む
-        window.onload = function() {
+        // 🌐 スクリプト読み込み完了時にダイレクトに起動するルートへ変更
+        function onGapiLoad() {
             const savedTheme = localStorage.getItem('user_theme') || 'blue';
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             changeTheme(savedTheme);
             changeFontSize(savedSize);
 
-            // データベースを開き、終わったら「必ず」次のログインAPI処理を呼び出す
+            // 1. IndexedDBを最優先で処理
             openDatabaseAndLoadCache(() => {
+                // 2. 終わったら即座にGoogleクライアント初期化へ
                 initGoogleApi();
             });
-        };
+        }
 
         function changeTheme(themeName) {
             chatContainer.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
@@ -259,6 +260,11 @@
         }
 
         function initGoogleApi() {
+            if (typeof gapi === 'undefined' || typeof gapi.client === 'undefined') {
+                setTimeout(initGoogleApi, 100); // ロードがまだなら一瞬待つガード
+                return;
+            }
+            
             gapi.load('client', async () => {
                 await gapi.client.init({});
                 await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
@@ -541,12 +547,9 @@
             request.onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: dataArray }); };
         }
 
-        // 🧠 【修正ポイントのコアロジック】
-        // データベースを開き、空なら空なりに、成功関数(done)を100%確実に呼び出してフリーズを回避する
         function openDatabaseAndLoadCache(done) {
             const request = indexedDB.open("LineViewerCacheDB", 1);
             
-            // データベースの枠（テーブル）を作成
             request.onupgradeneeded = function(e) {
                 const db = e.target.result;
                 if (!db.objectStoreNames.contains("timeline")) {
@@ -561,7 +564,6 @@
                 const getReq = store.get("last_timeline");
                 
                 getReq.onsuccess = function() {
-                    // データが存在していた場合だけパース・展開する
                     if (getReq.result && getReq.result.data && getReq.result.data.length > 0) {
                         globalMessages = getReq.result.data;
                         filteredMessages = [...globalMessages];
@@ -578,13 +580,12 @@
                         updateHeaderTitle();
                         startInfiniteRender();
                     } else {
-                        // データがまだ何も無い初回起動時は、中央メッセージの文言を案内用に変更
                         const initGuide = document.getElementById('guideText');
                         if(initGuide) initGuide.innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
                         const initSub = document.getElementById('talkSub');
                         if(initSub) initSub.innerText = "未連携";
                     }
-                    done(); // ◀ 成功を告げてGoogle連携処理へ進む
+                    done(); 
                 };
                 getReq.onerror = function() { done(); };
             };
