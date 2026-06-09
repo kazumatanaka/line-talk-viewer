@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v17 (Premium Full-Spec)</title>
+    <title>LINE Talk Viewer v18 (Stable Boot)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
-        /* 着せ替え用カラー定義 */
         .bg-theme-blue { background-color: #7493c1; }
         .bg-theme-dark { background-color: #1f2937; }
         .bg-theme-pink { background-color: #fbcfe8; }
@@ -44,9 +43,7 @@
         <div class="flex items-center space-x-2">
             <div id="calendarWrapper" class="relative hidden">
                 <input type="date" id="jumpDatePicker" class="absolute inset-0 opacity-0 w-8 h-8 cursor-pointer z-10">
-                <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition">
-                    📅
-                </button>
+                <button class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition">📅</button>
             </div>
             <button id="menuBtn" class="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition cursor-pointer">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +128,7 @@
     <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text">
         <div class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
             <p class="font-bold mb-1">Google Drive & LINE Viewer</p>
-            <p id="guideText" class="text-xs text-white/80">データを復元中...</p>
+            <p id="guideText" class="text-xs text-white/80">APIを読み込んでいます...</p>
         </div>
     </main>
 
@@ -140,13 +137,11 @@
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
         const REDIRECT_URI = 'https://kazumatanaka.github.io/line-talk-viewer/';
 
-        // トーク全データ用
         let globalMessages = []; 
         let filteredMessages = []; 
         let currentMe = "";
         let globalSenders = [];
 
-        // 📱 【無限スクロール（②）用】の制御データ
         const PAGE_SIZE = 300; 
         let visibleMessages = []; 
         let currentLoadedIndex = 0; 
@@ -184,7 +179,6 @@
         const searchBtn = document.getElementById('searchBtn');
         const searchResults = document.getElementById('searchResults');
 
-        // 着せ替え＆サイズDOM
         const themeBlueBtn = document.getElementById('theme-blue');
         const themeDarkBtn = document.getElementById('theme-dark');
         const themePinkBtn = document.getElementById('theme-pink');
@@ -207,27 +201,20 @@
             talkTitle.innerText = isCamouflageMode ? "LINE Talk Viewer" : actualPartnerNames;
         }
 
-        // 📱 【無限スクロール（②）】の監視処理：上部にスクロールしたら過去データを追加
         chatContainer.addEventListener('scroll', () => {
             if (globalMessages.length === 0 || isLodingMore) return;
-            
-            // スクロール位置が最上部に近づいた（50px以内）かつ、まだ未読み込みの過去データがある場合
             if (chatContainer.scrollTop <= 50 && currentLoadedIndex < filteredMessages.length) {
                 isLodingMore = true;
                 loadMorePastMessages();
             }
         });
 
-        // 📅 【カレンダー移動（③）】のチェンジイベント
         jumpDatePicker.addEventListener('change', (e) => {
-            const selectedDateStr = e.target.value; // YYYY-MM-DD
+            const selectedDateStr = e.target.value;
             if (!selectedDateStr) return;
-            
-            const targetFormat = selectedDateStr.replace(/-/g, '/'); // YYYY/MM/DD
-            jumpToSpecificDate(targetFormat);
+            jumpToSpecificDate(selectedDateStr.replace(/-/g, '/'));
         });
 
-        // 🎨 【着せ替え（⑤）】＆🔍【文字サイズ（④）】イベント
         themeBlueBtn.addEventListener('click', () => changeTheme('blue'));
         themeDarkBtn.addEventListener('click', () => changeTheme('dark'));
         themePinkBtn.addEventListener('click', () => changeTheme('pink'));
@@ -236,14 +223,16 @@
         sizeMdBtn.addEventListener('click', () => changeFontSize('md'));
         sizeLgBtn.addEventListener('click', () => changeFontSize('lg'));
 
+        // ⚡ 【最重要：修正ポイント】
+        // 起動時はまずIndexedDBの枠組みだけを確実に作り、データ有無に関わらず即座に一歩前へ進む
         window.onload = function() {
-            // ローカル保存されていた着せ替えと文字サイズを最初に戻す
             const savedTheme = localStorage.getItem('user_theme') || 'blue';
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             changeTheme(savedTheme);
             changeFontSize(savedSize);
 
-            loadCachedData(() => {
+            // データベースを開き、終わったら「必ず」次のログインAPI処理を呼び出す
+            openDatabaseAndLoadCache(() => {
                 initGoogleApi();
             });
         };
@@ -252,7 +241,8 @@
             chatContainer.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName}`;
             localStorage.setItem('user_theme', themeName);
             [themeBlueBtn, themeDarkBtn, themePinkBtn, themeBeigeBtn].forEach(btn => btn.classList.remove('ring-4', 'ring-yellow-400'));
-            document.getElementById(`theme-${themeName}`).classList.add('ring-4', 'ring-yellow-400');
+            const targetBtn = document.getElementById(`theme-${themeName}`);
+            if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
         }
 
         function changeFontSize(sizeName) {
@@ -260,13 +250,12 @@
             if (sizeName === 'sm') chatContainer.classList.add('text-xs');
             if (sizeName === 'md') chatContainer.classList.add('text-sm');
             if (sizeName === 'lg') chatContainer.classList.add('text-base');
-            
             localStorage.setItem('user_font_size', sizeName);
             [sizeSmBtn, sizeMdBtn, sizeLgBtn].forEach(btn => {
                 btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer";
             });
             const activeBtn = document.getElementById(`size-${sizeName}`);
-            activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
+            if(activeBtn) activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
         }
 
         function initGoogleApi() {
@@ -460,57 +449,39 @@
 
             talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             updateHeaderTitle();
-            
-            // 📱 【無限スクロール用（②）】初期の切り出しレンダリング開始
             startInfiniteRender();
             toggleDrawer();
         }
 
-        // 📱 【無限スクロール用（②）】初期描画（未来の直近300件を切り出し）
         function startInfiniteRender() {
             chatContainer.innerHTML = '';
-            calendarWrapper.classList.remove('hidden'); // カレンダー表示
+            calendarWrapper.classList.remove('hidden'); 
             
             if (filteredMessages.length === 0) {
-                chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-full px-4 py-1 self-center">メッセージがありません。</div>`;
+                chatContainer.innerHTML = `<div class="text-center text-white text-xs my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer</p><p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`;
                 return;
             }
 
-            // 未来側（配列の末尾）からPAGE_SIZE分だけ切り出す
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE);
             visibleMessages = filteredMessages.slice(currentLoadedIndex);
-            
             renderChatSegment(visibleMessages, 'append');
-            chatContainer.scrollTop = chatContainer.scrollHeight; // 最下部にスクロール
+            chatContainer.scrollTop = chatContainer.scrollHeight; 
         }
 
-        // 📱 【無限スクロール用（②）】上部スクロール時の過去ログ追加
         function loadMorePastMessages() {
             if (currentLoadedIndex <= 0) { isLodingMore = false; return; }
-
-            // 次に読み込む過去データの開始位置
             const nextStartIndex = Math.max(0, currentLoadedIndex - PAGE_SIZE);
             const additionalSegment = filteredMessages.slice(nextStartIndex, currentLoadedIndex);
-            
-            // スクロール位置のガタつきを防ぐために、現在の高さを控える
             const oldScrollHeight = chatContainer.scrollHeight;
             const oldScrollTop = chatContainer.scrollTop;
-
             currentLoadedIndex = nextStartIndex;
-            
-            // 過去ログを上部に挿入（prepend）
             renderChatSegment(additionalSegment, 'prepend');
-
-            // スクロール位置の補正（ガタつき防止）
             const newScrollHeight = chatContainer.scrollHeight;
             chatContainer.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
-
             isLodingMore = false;
         }
 
-        // 📅 【カレンダー移動（③）】指定された日付（例: "2026/06/09"）のメッセージを強制検索してタイムラインを再編成
         function jumpToSpecificDate(dateString) {
-            // 全データから、その日付に最も近い、または合致する日付スタンプを探索
             let foundIndex = -1;
             for (let i = 0; i < filteredMessages.length; i++) {
                 if (filteredMessages[i].type === 'date' && filteredMessages[i].text.includes(dateString)) {
@@ -518,21 +489,13 @@
                     break;
                 }
             }
-
-            if (foundIndex === -1) {
-                alert(`${dateString} 付近のトーク履歴が見つかりませんでした。`);
-                return;
-            }
-
-            // ジャンプ先の日付スタンプを中心に、前後300件を切り出して表示枠を強制再構築！
-            currentLoadedIndex = Math.max(0, foundIndex - 50); // 少し上に余白を持たせる
+            if (foundIndex === -1) { alert(`${dateString} 付近のトーク履歴が見つかりませんでした。`); return; }
+            currentLoadedIndex = Math.max(0, foundIndex - 50);
             const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
-            
             visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
             chatContainer.innerHTML = '';
             renderChatSegment(visibleMessages, 'append');
 
-            // ターゲットの日付スタンプ要素を見つけてそこへスクロール
             setTimeout(() => {
                 const dayElements = chatContainer.querySelectorAll('.date-stamp-node');
                 for (let el of dayElements) {
@@ -546,14 +509,10 @@
             }, 100);
         }
 
-        // 部分レンダリング用のコア
         function renderChatSegment(messages, mode = 'append') {
             const fragment = document.createDocumentFragment();
-
             messages.forEach((msg, idx) => {
-                // グローバルインデックスの特定
                 const globalIndex = currentLoadedIndex + idx;
-
                 if (msg.type === 'date') {
                     const dateDiv = document.createElement('div');
                     dateDiv.className = 'date-stamp-node text-center text-white text-[11px] bg-black/15 rounded-full px-3 py-0.5 self-center my-2 select-none z-10';
@@ -563,7 +522,6 @@
                     const isMe = (msg.sender === currentMe);
                     const msgWrapper = document.createElement('div');
                     msgWrapper.id = `msg-${globalIndex}`;
-                    
                     if (isMe) {
                         msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg';
                         msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`;
@@ -574,30 +532,41 @@
                     fragment.appendChild(msgWrapper);
                 }
             });
-
-            if (mode === 'prepend') {
-                chatContainer.insertBefore(fragment, chatContainer.firstChild);
-            } else {
-                chatContainer.appendChild(fragment);
-            }
+            if (mode === 'prepend') { chatContainer.insertBefore(fragment, chatContainer.firstChild); } 
+            else { chatContainer.appendChild(fragment); }
         }
 
         function saveDataToIndexedDb(dataArray) {
             const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onupgradeneeded = function(e) { e.target.result.createObjectStore("timeline", { keyPath: "id" }); };
             request.onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: dataArray }); };
         }
 
-        function loadCachedData(callback) {
+        // 🧠 【修正ポイントのコアロジック】
+        // データベースを開き、空なら空なりに、成功関数(done)を100%確実に呼び出してフリーズを回避する
+        function openDatabaseAndLoadCache(done) {
             const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onupgradeneeded = function(e) { e.target.result.createObjectStore("timeline", { keyPath: "id" }); };
+            
+            // データベースの枠（テーブル）を作成
+            request.onupgradeneeded = function(e) {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains("timeline")) {
+                    db.createObjectStore("timeline", { keyPath: "id" });
+                }
+            };
+            
             request.onsuccess = function(e) {
-                const tx = e.target.result.transaction("timeline", "readonly");
-                tx.objectStore("timeline").get("last_timeline").onsuccess = function(getEvent) {
-                    const res = getEvent.target.result;
-                    if (res && res.data && res.data.length > 0) {
-                        globalMessages = res.data; filteredMessages = [...globalMessages];
-                        let senderCounts = {}; globalMessages.forEach(m => { if(m.type === 'msg') { senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; } });
+                const db = e.target.result;
+                const tx = db.transaction("timeline", "readonly");
+                const store = tx.objectStore("timeline");
+                const getReq = store.get("last_timeline");
+                
+                getReq.onsuccess = function() {
+                    // データが存在していた場合だけパース・展開する
+                    if (getReq.result && getReq.result.data && getReq.result.data.length > 0) {
+                        globalMessages = getReq.result.data;
+                        filteredMessages = [...globalMessages];
+                        let senderCounts = {}; 
+                        globalMessages.forEach(m => { if(m.type === 'msg') { senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; } });
                         globalSenders = Object.keys(senderCounts);
                         meSelector.innerHTML = '';
                         for (const [sender, count] of Object.entries(senderCounts)) {
@@ -607,11 +576,19 @@
                         if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; meSelector.value = savedMe; meSelector.disabled = false; }
                         talkSub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         updateHeaderTitle();
-                        startInfiniteRender(); // 📱 無限スクロールで展開
+                        startInfiniteRender();
+                    } else {
+                        // データがまだ何も無い初回起動時は、中央メッセージの文言を案内用に変更
+                        const initGuide = document.getElementById('guideText');
+                        if(initGuide) initGuide.innerText = "同期済みのデータがありません。右上のメニューからトークファイルを結合してください。";
+                        const initSub = document.getElementById('talkSub');
+                        if(initSub) initSub.innerText = "未連携";
                     }
-                    callback();
+                    done(); // ◀ 成功を告げてGoogle連携処理へ進む
                 };
+                getReq.onerror = function() { done(); };
             };
+            request.onerror = function() { done(); };
         }
 
         function clearIndexedDbCache() { indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); }; }
@@ -626,14 +603,11 @@
                     matchCount++; const item = document.createElement('div'); item.className = 'p-2 hover:bg-gray-100 cursor-pointer transition';
                     item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[11px]"><span>${msg.sender}</span><span>${msg.time}</span></div><div class="text-gray-500 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>`;
                     item.addEventListener('click', () => {
-                        // 📱 【無限スクロール対応の検索ジャンプ】
-                        // 検索対象のメッセージが含まれるように表示インデックスを強制再編成
                         currentLoadedIndex = Math.max(0, index - 50);
                         const endIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE);
                         visibleMessages = filteredMessages.slice(currentLoadedIndex, endIndex);
                         chatContainer.innerHTML = '';
                         renderChatSegment(visibleMessages, 'append');
-
                         setTimeout(() => {
                             const targetElement = document.getElementById(`msg-${index}`);
                             if (targetElement) { targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); targetElement.classList.add('ring-4', 'ring-yellow-400'); setTimeout(() => targetElement.classList.remove('ring-4', 'ring-yellow-400'), 2000); toggleDrawer(); }
@@ -657,13 +631,10 @@
                 let match = line.match(msgRegex1) || line.match(msgRegex2);
                 if (match) {
                     const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
-                    
                     let cleanBody = body.replace(/\\n/g, '<br>');
                     if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; }
-                    // ①ついでに写真と動画の装飾もここにこっそり追加！
                     else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; }
                     else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
-
                     const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; messages.push(newMsg); currentMsgRef = newMsg;
                 } else if (currentMsgRef) { currentMsgRef.body += '<br>' + line; }
                 else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { messages[messages.length - 1].body += '<br>' + line; }
