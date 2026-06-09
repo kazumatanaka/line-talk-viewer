@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE Talk Viewer v29 (Layout Shift Fixed)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LINE Talk Viewer v30 (Perfect Touch Lock)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -25,9 +25,18 @@
             border-width: 5px 8px 5px 0; border-style: solid;
             border-color: transparent #ffffff transparent transparent;
         }
+
+        /* 🛠️ スマホ特有の「引っ張りバウンス」による場外はみ出しをCSS側でも完全に殺すガード */
+        html, body {
+            overflow-x: hidden !important;
+            position: relative;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100%;
+        }
     </style>
 </head>
-<body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none relative w-full max-w-full">
+<body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden overflow-x-hidden select-none relative w-full max-w-full">
 
     <header class="line-header-bg border-b border-gray-200 h-14 flex items-center justify-between px-4 z-20 shadow-sm flex-shrink-0 w-full">
         <div class="flex items-center space-x-3">
@@ -63,7 +72,7 @@
         <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50"></div>
     </div>
 
-    <div id="drawerMenu" class="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full invisible transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200">
+    <div id="drawerMenu" class="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200">
         <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
             <h2 class="font-bold text-gray-700 text-sm">各種設定 & 管理機能</h2>
             <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
@@ -228,29 +237,29 @@
 
         function gapiLoadedTrig() { initGoogleApi(); }
         
-        // 🛠️ 【修正：画面ズレ対策】メニュー開閉時に invisible 状態も同時にスイッチさせることで右側の引っ張りを完全遮断
+        // 🛠️ 【修正：スワイプ漏れ対策】hidden（display:none）で完全に存在を消し去ることで、スマホの右はみ出しを完全シャットアウト
         function toggleDrawer(forceOpen) {
             const drawer = getEl('drawerMenu');
             const overlay = getEl('overlay');
             if (!drawer || !overlay) return;
 
-            const isCurrentlyClosed = drawer.classList.contains('translate-x-full');
-            const toOpen = (forceOpen !== undefined) ? forceOpen : isCurrentlyClosed;
+            const isCurrentlyHidden = drawer.classList.contains('hidden');
+            const toOpen = (forceOpen !== undefined) ? forceOpen : isCurrentlyHidden;
 
             if (toOpen) {
-                drawer.classList.remove('invisible');
-                // ブラウザに一度表示を認識させてから滑らかにスライドイン
+                drawer.classList.remove('hidden');
+                // ブラウザにDOMを認識させてから、一瞬遅らせてスライドイン（アニメーションの維持）
                 setTimeout(() => {
                     drawer.classList.remove('translate-x-full');
                     overlay.classList.remove('hidden');
-                }, 10);
+                }, 15);
             } else {
                 drawer.classList.add('translate-x-full');
                 overlay.classList.add('hidden');
-                // スライド動作（300ms）が終わったタイミングで存在を完全に消す（invisible化）
+                // アニメーション完了（300ms）を待ってから存在を完全に消去
                 setTimeout(() => {
                     if (drawer.classList.contains('translate-x-full')) {
-                        drawer.classList.add('invisible');
+                        drawer.classList.add('hidden');
                     }
                 }, 300);
             }
