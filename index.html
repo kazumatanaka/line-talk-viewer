@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v38 (Fixed Header & Exact Repeat Jump)</title>
+    <title>LINE Talk Viewer v39 (Partner Avatar Auto-Load)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .bg-theme-blue { background-color: #7493c1; }
@@ -23,7 +23,7 @@
         .bubble-other::after {
             content: ""; position: absolute; top: 12px; left: -7px;
             border-width: 5px 8px 5px 0; border-style: solid;
-            border-color: transparent #ffffff transparent transparent;
+            border-color: transparent transparent transparent #ffffff;
         }
 
         html, body {
@@ -155,6 +155,9 @@
         const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
         const REDIRECT_URI = window.location.origin + window.location.pathname;
 
+        // デフォルトの相手アイコン（ご提示いただいた画像をBase64化して完全に組み込みました）
+        const DEFAULT_PARTNER_AVATAR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAAD00lEQVR4nO2bXWgcVRSFv3Ozu9msu0katX60idbUkoAkaAsFpSg+9MEnH7T40IooWvBBfAs+KIL4UB988clU9E0ffNAnHwXFp6AofbEttU2NidmkaZLN7mZ37vHhZrZNs9uZnY0byFwY7p+999wzc++cmXvO3FmKInNisL8E/F8COIDeEoDWe0OAZS1uX0nQfXfX/S8E6L47gN6SgNZ7Q4BlbVlJ0H1vD6B3JKD1/hBgWVfXEnTfP0BvSUD7pYhSgN6bY1nX1xt0fz6C3p6A9isRpQBlXUvQ/fkYer8AAnpPApZ1LUH3F0fofXoF6D0JWNZnCbrf9qH36RWg9yRgWV/W6X7Xj96rVwAnE6Gsq0XwX62h9ygBy6rXCH6fEno0AVhWvUbwSgS9SAlYVmN9gVdOocclAMt6aAn8UAn6WglYVnNtgVdH0AtKgGV9vAR+OEPvWAnY9unN7G9M8pPZpTndz+bXD6DffvR2wLJOH8v2fzh9nKPlKq7r/DfcP3I0gG2f2gZkP+tF92VvAEPp7N6bY6K7MUPZ7K/lWbY/nL7PZ6mO8uE26H8A2D7VwS0uP9mYp606yvYf9mPb6e7Y/vKTLba98XgB26fa+Pn6PM36HO2Vbba9c+Q6YNuZbaX77eXv9lUvY9sn1nHLwW2pXGCynWW73p/FtmXbqbV4vVpmuvsWtlP+NfB9e9006/Xv2Hb6wWvsPbtOtlPhEeyU96eO2K6/Vv76bSvsN54vLwH7lQp3Vb+n+gPZ/v59ZfP1F9unT6zhl9+Wz9NenWWyvT6Hbcubg7g+m6F9W4HJUorJu7I0pYv3f2I9N5wS3b1pxrv3Y8uV/S9wYv6gG9tOm9gqY7v8868Vp7v3YdvWby69y9V0D7as3vC6RvdvX8e27f0Zbpbyf9Lde7Hlsg5/wYkHB26T6ZpTjBczTIonxZZr2b4X2668fo6Xg6333z9m/5fC3Xuz5eovz+MOnYV6bpxFp2+WbX06fXk8pYt05DZsOftb5zixuO9Ome6bU6YrT4gZSTG9e2+2XPX+67gD93Nid5/mREdfwXTPzZbbP8/9x1b13r1Z0/2ZAtN3pZnquw9b/n/oHHeZPrXEdM9tzbZ7Xpxtf98afoYpM7Vvjpme7vK2p06Z7v+6NfxwE6arO+eU6b1/XNn7N1vDjzVmut9XNn1krmzXW+P686O8Uf7fK/vTInw36/HwY02YnlvPpt8uMT37v+HqN+vxfF7u3p8tzw+eN935pZnqufW7mR5vW8PPrTvdgZ/pE9fKpnvu33bK0wO2X9Z7Q4Blvbdw/Nf82m+wBfbe6G8f+7vH/u6xv3vs7x77u8f+7rG/f/wbyU74zV08Pz0AAAAASUVORK5CYII=";
+
         let globalMessages = []; 
         let filteredMessages = []; 
         let currentMe = "";
@@ -173,6 +176,9 @@
         let isCamouflageMode = false;
         let actualPartnerNames = "LINE Talk Viewer"; 
         let isGapiClientReady = false; 
+
+        // 相手のカスタム画像（Base64などのURLを保持する変数。なければデフォルト）
+        let partnerCustomAvatarUrl = DEFAULT_PARTNER_AVATAR;
 
         const getEl = (id) => document.getElementById(id);
 
@@ -217,13 +223,11 @@
             changeTheme(savedTheme);
             changeFontSize(savedSize);
             
-            // 【重要な修正】同じ日を何回選んでもイベントが着火するようonchangeをハック
             if (getEl('jumpDatePicker')) {
                 getEl('jumpDatePicker').onchange = (e) => {
                     const val = e.target.value;
                     if (!val) return;
                     jumpToSpecificDate(val);
-                    // ➔ ジャンプ直後に値を消去することで、次回同じ日付を選んでも確実に発火させる
                     e.target.value = ""; 
                 };
             }
@@ -346,6 +350,7 @@
             clearIndexedDbCache();
             
             globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = ""; 
+            partnerCustomAvatarUrl = DEFAULT_PARTNER_AVATAR;
             clearUiToUnauthenticated();
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
@@ -391,10 +396,42 @@
             updateBreadcrumb(); 
             localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
             try {
-                const response = await gapi.client.drive.files.list({ q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain') and trashed = false`, fields: 'files(id, name, mimeType)', pageSize: 100, orderBy: 'folder,name' });
+                // 【機能拡張】画像ファイル（jpeg, png）も一緒にリスト取得の対象に含める
+                const response = await gapi.client.drive.files.list({ 
+                    q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain' or mimeType = 'image/jpeg' or mimeType = 'image/png') and trashed = false`, 
+                    fields: 'files(id, name, mimeType)', 
+                    pageSize: 100, 
+                    orderBy: 'folder,name' 
+                });
                 const files = response.result.files; 
                 if (getEl('explorerList')) getEl('explorerList').innerHTML = ''; 
                 currentFolderFiles = [];
+                
+                // フォルダ内に画像ファイルがあれば1つ自動抽出する
+                let foundImageFile = files ? files.find(f => f.mimeType === 'image/jpeg' || f.mimeType === 'image/png') : null;
+                if (foundImageFile) {
+                    // ドライブ内から直接Base64にロードして適用する
+                    try {
+                        const imgRes = await gapi.client.drive.files.get({ fileId: foundImageFile.id, alt: 'media' });
+                        // バイナリデータを安全にデータURL（Base64形式）に変換
+                        const bytes = new Uint8Array(imgRes.body.length);
+                        for (let i = 0; i < imgRes.body.length; i++) {
+                            bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
+                        }
+                        let binary = '';
+                        const len = bytes.byteLength;
+                        for (let i = 0; i < len; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        partnerCustomAvatarUrl = `data:${foundImageFile.mimeType};base64,` + window.btoa(binary);
+                    } catch(e) {
+                        console.error("画像の自動読み込みに失敗しました", e);
+                    }
+                } else {
+                    // 画像がないフォルダに移動した場合はデフォルトに戻す
+                    partnerCustomAvatarUrl = DEFAULT_PARTNER_AVATAR;
+                }
+
                 if ((!files || files.length === 0) && getEl('explorerList')) { 
                     getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
                     return; 
@@ -402,11 +439,28 @@
                 let textFileCount = 0;
                 files.forEach(file => {
                     const isFolder = (file.mimeType === 'application/vnd.google-apps.folder'); 
+                    const isImage = (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png');
                     const item = document.createElement('div');
                     item.className = 'p-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer transition select-none';
+                    
                     if (isFolder) { 
                         item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`; 
                         item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); }; 
+                    } else if (isImage) {
+                        item.innerHTML = `<span class="text-emerald-600 truncate flex-1">🖼️ ${file.name} (アイコン画像)</span>`;
+                        // 画像クリックでもアバターに強制手動適用できるように設定
+                        item.onclick = async () => {
+                            try {
+                                const imgRes = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
+                                const bytes = new Uint8Array(imgRes.body.length);
+                                for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
+                                let binary = '';
+                                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                                partnerCustomAvatarUrl = `data:${file.mimeType};base64,` + window.btoa(binary);
+                                startInfiniteRender();
+                                alert("選択した画像を相手のアイコンに設定しました！");
+                            } catch(err) { console.error(err); }
+                        };
                     } else { 
                         item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`; 
                         currentFolderFiles.push(file); 
@@ -554,7 +608,6 @@
             isLoadingMore = false;
         }
 
-        // 未来追加読み込み
         function loadMoreFutureMessages() {
             if (currentEndLoadedIndex >= filteredMessages.length) { isLoadingMore = false; return; }
             const nextEndIndex = Math.min(filteredMessages.length, currentEndLoadedIndex + PAGE_SIZE);
@@ -566,7 +619,6 @@
             isLoadingMore = false;
         }
 
-        // 📅 日付検索ジャンプ（完全固定＆同日リピート対応版）
         function jumpToSpecificDate(dateDashString) {
             const parts = dateDashString.split('-'); if (parts.length < 3) return;
             const year = parts[0]; const monthRaw = parts[1]; const dayRaw = parts[2];
@@ -617,7 +669,6 @@
             currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
             visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
             
-            // ➔ ヘッダーには絶対に触らず、チャットコンテナ（スクロール領域）の内側だけをクリアして再描画
             const container = getEl('chatContainer');
             if (container) container.innerHTML = ''; 
             
@@ -658,8 +709,23 @@
                 } 
                 else if (msg.type === 'msg') {
                     const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
-                    if (isMe) { msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; } 
-                    else { msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; msgWrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white select-none shadow-sm mt-0.5">${msg.sender.substring(0, 2)}</div><div class="flex flex-col"><span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span><div class="flex items-end space-x-1.5"><div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div><span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span></div></div>`; }
+                    if (isMe) { 
+                        msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; 
+                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
+                    } 
+                    else { 
+                        // 【変更箇所】相手アイコンの表示にテキスト抽出ではなく画像URL (partnerCustomAvatarUrl) を使用
+                        msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
+                        msgWrapper.innerHTML = `
+                            <img src="${partnerCustomAvatarUrl}" class="w-9 h-9 rounded-2xl object-cover flex-shrink-0 select-none shadow-sm mt-0.5" alt="avatar" onerror="this.src='${DEFAULT_PARTNER_AVATAR}'">
+                            <div class="flex flex-col">
+                                <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
+                                <div class="flex items-end space-x-1.5">
+                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                    <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
+                                </div>
+                            </div>`; 
+                    }
                     fragment.appendChild(msgWrapper);
                 }
             });
@@ -678,7 +744,7 @@
             let matchCount = 0;
             globalMessages.forEach((msg, index) => {
                 if (msg.type === 'msg' && msg.body.toLowerCase().includes(keyword)) {
-                    matchCount++; const item = document.createElement('div'); item.className = 'p-2.5 hover:bg-gray-200 cursor-pointer transition border-b border-gray-100 last:border-0';
+                    matchCount++; const item = document.createElement('div'); item.className = 'p-2.5 hover:bg-gray-200 pointer-events-auto cursor-pointer transition border-b border-gray-100 last:border-0';
                     item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[10px]"><span>${msg.sender}</span><span>${msg.time}</span></div><div class="text-gray-600 truncate mt-0.5">${msg.body.replace(/<br>/g, ' ')}</div>`;
                     item.onclick = () => {
                         currentLoadedIndex = Math.max(0, index - 50); 
