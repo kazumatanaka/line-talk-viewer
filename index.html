@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v50 (Perfect Date Parsing & Real Back Button)</title>
+    <title>LINE Talk Viewer v51 (Perfect Date Parsing & Real Back Button)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -43,28 +43,32 @@
         .text-xs.bg-theme-dark .bubble-other,
         .text-sm.bg-theme-dark .bubble-other,
         .text-base.bg-theme-dark .bubble-other,
-        .text-lg.bg-theme-dark .bubble-other {
+        .text-lg.bg-theme-dark .bubble-other,
+        .text-xl.bg-theme-dark .bubble-other {
             background-color: #2c2e3a !important;
             color: #e4e6eb !important;
         }
         .text-xs.bg-theme-dark .bubble-other::after,
         .text-sm.bg-theme-dark .bubble-other::after,
         .text-base.bg-theme-dark .bubble-other::after,
-        .text-lg.bg-theme-dark .bubble-other::after {
+        .text-lg.bg-theme-dark .bubble-other::after,
+        .text-xl.bg-theme-dark .bubble-other::after {
             border-color: transparent #2c2e3a transparent transparent !important;
         }
 
         .text-xs.bg-theme-dark .bubble-me,
         .text-sm.bg-theme-dark .bubble-me,
         .text-base.bg-theme-dark .bubble-me,
-        .text-lg.bg-theme-dark .bubble-me {
+        .text-lg.bg-theme-dark .bubble-me,
+        .text-xl.bg-theme-dark .bubble-me {
             background-color: #7ed371 !important; /* 添付画像の鮮やかな緑色に一致 */
             color: #000000 !important;             /* 画像の文字色(黒)に一致 */
         }
         .text-xs.bg-theme-dark .bubble-me::after,
         .text-sm.bg-theme-dark .bubble-me::after,
         .text-base.bg-theme-dark .bubble-me::after,
-        .text-lg.bg-theme-dark .bubble-me::after {
+        .text-lg.bg-theme-dark .bubble-me::after,
+        .text-xl.bg-theme-dark .bubble-me::after {
             border-color: transparent transparent transparent #7ed371 !important;
         }
 
@@ -89,7 +93,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v50</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v51</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -123,7 +127,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v50</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v51</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -176,11 +180,13 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1.5">🔍 文字サイズ変更</label>
-                        <div class="grid grid-cols-3 gap-1">
-                            <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">小</button>
-                            <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer">中</button>
-                            <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">大</button>
+                        <label class="block text-xs font-bold text-gray-500 mb-1.5">🔍 文字サイズ変更 (5段階)</label>
+                        <div class="grid grid-cols-5 gap-1">
+                            <button id="size-xs" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">極小</button>
+                            <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">小</button>
+                            <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-[10px] py-1 rounded font-bold cursor-pointer">中</button>
+                            <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">大</button>
+                            <button id="size-xl" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">極大</button>
                         </div>
                     </div>
                 </div>
@@ -224,7 +230,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v50"; 
+        let actualPartnerNames = "LINE Talk Viewer v51"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -247,7 +253,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v50";
+            actualPartnerNames = "LINE Talk Viewer v51";
             applyTitleDisplay();
             
             const savedToken = localStorage.getItem('drive_access_token');
@@ -260,7 +266,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v50</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v51</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -301,9 +307,11 @@
             if (targetId === "theme-dark") changeTheme('dark');
             if (targetId === "theme-pink") changeTheme('pink');
             if (targetId === "theme-beige") changeTheme('beige');
+            if (targetId === "size-xs") changeFontSize('xs');
             if (targetId === "size-sm") changeFontSize('sm');
             if (targetId === "size-md") changeFontSize('md');
             if (targetId === "size-lg") changeFontSize('lg');
+            if (targetId === "size-xl") changeFontSize('xl');
             if (targetId === "authBtn") triggerGoogleAuth();
             if (targetId === "logoutBtn") triggerLogoutProcessing();
             if (targetId === "batchLoadBtn") triggerBatchLoadFiles();
@@ -450,10 +458,10 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v50</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v51</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v50"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v50"; 
+            actualPartnerNames = "LINE Talk Viewer v51"; 
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v51"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -524,7 +532,7 @@
                 }
 
                 if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
-                    startInfiniteRender();
+                    startRender();
                 }
 
                 if ((!files || files.length === 0) && getEl('explorerList')) { 
@@ -552,7 +560,7 @@
                                 for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
                                 partnerCustomAvatarUrl = `data:${file.mimeType};base64,` + window.btoa(binary);
                                 hasDriveCustomImage = true;
-                                startInfiniteRender();
+                                startRender();
                                 alert("選択した画像を相手のアイコンに設定しました！");
                             } catch(err) { console.error(err); }
                         };
@@ -609,16 +617,18 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v50" : actualPartnerNames; }
+        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v51" : actualPartnerNames; }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             
-            // クラス更新時に文字サイズ用クラスも同時に維持する仕組みに修正
-            let sizeClass = 'text-sm';
-            if (savedSize === 'sm') sizeClass = 'text-xs';
-            if (savedSize === 'lg') sizeClass = 'text-base';
+            let sizeClass = 'text-base';
+            if (savedSize === 'xs') sizeClass = 'text-xs';
+            if (savedSize === 'sm') sizeClass = 'text-sm';
+            if (savedSize === 'md') sizeClass = 'text-base';
+            if (savedSize === 'lg') sizeClass = 'text-lg';
+            if (savedSize === 'xl') sizeClass = 'text-xl';
             
             if (getEl('chatContainer')) {
                 getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} ${sizeClass} h-full w-full relative`;
@@ -640,19 +650,30 @@
             const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
             
             if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
-                startInfiniteRender();
+                startRender();
             }
         }
 
         function changeFontSize(sizeName) {
-            if (getEl('chatContainer')) getEl('chatContainer').classList.remove('text-xs', 'text-sm', 'text-base', 'text-lg');
-            if (sizeName === 'sm' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-xs');
-            if (sizeName === 'md' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-sm');
-            if (sizeName === 'lg' && getEl('chatContainer')) getEl('chatContainer').classList.add('text-base');
+            if (getEl('chatContainer')) {
+                getEl('chatContainer').classList.remove('text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl');
+                if (sizeName === 'xs') getEl('chatContainer').classList.add('text-xs');
+                if (sizeName === 'sm') getEl('chatContainer').classList.add('text-sm');
+                if (sizeName === 'md') getEl('chatContainer').classList.add('text-base');
+                if (sizeName === 'lg') getEl('chatContainer').classList.add('text-lg');
+                if (sizeName === 'xl') getEl('chatContainer').classList.add('text-xl');
+            }
             localStorage.setItem('user_font_size', sizeName);
-            const sizeButtons = [getEl('size-sm'), getEl('size-md'), getEl('size-lg')];
-            sizeButtons.forEach(btn => { if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer"; });
-            const activeBtn = getEl(`size-${sizeName}`); if(activeBtn) activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
+            
+            const sizeButtons = [getEl('size-xs'), getEl('size-sm'), getEl('size-md'), getEl('size-lg'), getEl('size-xl')];
+            sizeButtons.forEach(btn => { 
+                if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer"; 
+            });
+            
+            const activeBtn = getEl(`size-${sizeName}`); 
+            if(activeBtn) {
+                activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-[10px] py-1 rounded font-bold cursor-pointer";
+            }
         }
 
         function updateBreadcrumb() {
@@ -695,15 +716,15 @@
             
             if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             
-            updateHeaderTitle(); startInfiniteRender(); toggleDrawer(false);
+            updateHeaderTitle(); startRender(); toggleDrawer(false);
         }
 
-        function startInfiniteRender() {
+        function startRender() {
             if (getEl('chatContainer')) getEl('chatContainer').innerHTML = ''; 
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
-            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
+            if (getEl('ToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
-            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v50</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v51</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
             
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
             currentEndLoadedIndex = filteredMessages.length; 
@@ -908,7 +929,7 @@
                         
                         if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         
-                        updateHeaderTitle(); startInfiniteRender();
+                        updateHeaderTitle(); startRender();
                     } else { clearUiToUnauthenticated(); }
                 };
             };
@@ -922,7 +943,6 @@
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
             const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
             
-            // 💡 【超厳格化】単なる漢字1文字の誤認識を永久追放。前後のスペース、カッコ「()」での曜日囲みを完全必須条件に指定。
             const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)(?:\s*|\s*\)\s*)$/i; 
             
             const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
@@ -944,7 +964,6 @@
                     messages.push(newMsg); 
                     currentMsgRef = newMsg;
                 } 
-                // 💡 完全に独立した曜日スタンプ行形式のときのみ安全に日付変更処理を通す
                 else if (dateRegex.test(trimmedLine)) { 
                     messages.push({ type: 'date', text: trimmedLine }); 
                     currentMsgRef = null; 
