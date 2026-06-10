@@ -8,7 +8,7 @@
     <style>
         /* テーマごとの背景色設定 */
         .bg-theme-blue { background-color: #7493c1; }
-        .bg-theme-dark { background-color: #0b0b0b !important; } /* 画像に合わせた漆黒 */
+        .bg-theme-dark { background-color: #0b0b0b !important; }
         .bg-theme-pink { background-color: #fbcfe8; }
         .bg-theme-beige { background-color: #f5f5dc; }
 
@@ -28,7 +28,7 @@
         .bubble-other {
             background-color: #ffffff;
             color: #000000;
-            border-radius: 16px 20px 20px 20px !important; /* しっぽ側を少し尖らせる */
+            border-radius: 16px 20px 20px 20px !important;
             padding: 8px 14px !important;
             box-shadow: none !important;
             line-height: 1.4 !important;
@@ -37,7 +37,7 @@
         .bubble-me {
             background-color: #8ce35b;
             color: #000000;
-            border-radius: 20px 16px 20px 20px !important; /* しっぽ側を少し尖らせる */
+            border-radius: 20px 16px 20px 20px !important;
             padding: 8px 14px !important;
             box-shadow: none !important;
             line-height: 1.4 !important;
@@ -56,12 +56,12 @@
             border-color: transparent #ffffff transparent transparent;
         }
 
-        /* ダークモード時の吹き出し・ヒゲの着色（添付画像と完全に同一の色） */
+        /* ダークモード時の吹き出し・ヒゲの着色 */
         .text-xs.bg-theme-dark .bubble-other,
         .text-sm.bg-theme-dark .bubble-other,
         .text-base.bg-theme-dark .bubble-other {
-            background-color: #2a2a2a !important; /* 添付画像の相手のグレー */
-            color: #efefef !important; /* 添付画像の白文字 */
+            background-color: #2a2a2a !important;
+            color: #efefef !important;
         }
         .text-xs.bg-theme-dark .bubble-other::after,
         .text-sm.bg-theme-dark .bubble-other::after,
@@ -72,8 +72,8 @@
         .text-xs.bg-theme-dark .bubble-me,
         .text-sm.bg-theme-dark .bubble-me,
         .text-base.bg-theme-dark .bubble-me {
-            background-color: #92e468 !important; /* 添付画像の鮮やかな緑色 */
-            color: #000000 !important;             /* 画像の文字色(黒) */
+            background-color: #92e468 !important;
+            color: #000000 !important;
         }
         .text-xs.bg-theme-dark .bubble-me::after,
         .text-sm.bg-theme-dark .bubble-me::after,
@@ -291,6 +291,7 @@
             toggleHeaderBox(false);
 
             actualPartnerNames = "LINE Talk Viewer v59";
+            isCamouflageMode = false;
             applyTitle();
             
             const token = localStorage.getItem('drive_access_token');
@@ -372,6 +373,7 @@
                 return;
             }
 
+            // タイトルタップでカモフラージュ切り替え
             if (e.target.closest("#titleArea")) {
                 if (globalMessages.length === 0) return;
                 isCamouflageMode = !isCamouflageMode;
@@ -533,7 +535,8 @@
                 getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v59</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
             actualPartnerNames = "LINE Talk Viewer v59"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v59"; 
+            isCamouflageMode = false;
+            applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -670,7 +673,17 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitle() { const title = getEl('talkTitle'); if (title) title.innerText = isCamouflageMode ? "LINE Talk Viewer v59" : PartnerNames; }
+        // タイトル表示切り替え用関数
+        function applyTitle() { 
+            const t = getEl('talkTitle'); 
+            if (t) {
+                if (globalMessages.length === 0) {
+                    t.innerText = "LINE Talk Viewer v59";
+                } else {
+                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v59" : actualPartnerNames;
+                }
+            }
+        }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
@@ -795,6 +808,7 @@
             const sub = getEl('talkSub');
             if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             
+            isCamouflageMode = false; // 新規ロード時は相手の名前を表示
             updateTitleText(); 
             startRender(); 
             toggleDrawer(false);
@@ -1013,10 +1027,12 @@
             }
         }
 
+        // 保存時と読み込み時でデータベース名を統一
         function saveCache(data) { indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: data }); }; }
 
         function openDbAndLoad() {
-            const req = indexedDB.open("LineCacheDB", 1);
+            // ここが前回 "LineCacheDB" になっており、ロードに失敗していました
+            const req = indexedDB.open("LineViewerCacheDB", 1);
             req.onupgradeneeded = function(e) { const db = e.target.result; if (!db.objectStoreNames.contains("timeline")) db.createObjectStore("timeline", { keyPath: "id" }); };
             req.onsuccess = function(e) {
                 const db = e.target.result; 
@@ -1038,6 +1054,7 @@
                         const sub = getEl('talkSub');
                         if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         
+                        isCamouflageMode = false; // 自動ロード時も最初は相手の名前を表示
                         updateTitleText(); 
                         startRender();
                     } else { clearAuthUi(); }
@@ -1045,8 +1062,11 @@
             };
         }
 
-        function clearCache() { indexedDB.open("LineCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); }; }
+        function clearCache() { indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); }; }
+
         function parseTimestamp(dStr, tStr) { const dM = dStr.match(/\d+/g); const tM = tStr.match(/\d+/g); if (!dM || dM.length < 3) return 0; const h = tM ? parseInt(tM[0], 10) : 0; const m = tM ? parseInt(tM[1], 10) : 0; return new Date(parseInt(dM[0], 10), parseInt(dM[1], 10) - 1, parseInt(dM[2], 10), h, m, 0).getTime(); }
+        
+        // タイトルテキストの更新
         function updateTitleText() { 
             if (globalSenders.length === 0) return; 
             const partners = globalSenders.filter(s => s !== currentMe); 
@@ -1054,8 +1074,6 @@
             applyTitle(); 
         }
         
-        let PartnerNames = "LINE Talk Viewer v59";
-        function applyTitle() { const t = getEl('talkTitle'); if (t) t.innerText = isCamouflageMode ? "LINE Talk Viewer v59" : PartnerNames; }
         function Render() { startRender(); }
 
         function parseText(text, filename) {
