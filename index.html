@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v51 (Perfect Bubble Silhouette)</title>
+    <title>LINE Talk Viewer v51 (Absolute Bubble Silhouette)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -26,11 +26,11 @@
 
         /* ========================================================
            【LINE公式・吹き出しシルエット完全共通化システム】
-           背景テーマ（blue/dark/pink/beige）や文字サイズに関わらず
-           すべての環境で全く同じぷっくり形状と滑らかなヒゲを維持します。
+           すべての背景テーマ（blue/dark/pink/beige）や文字サイズで
+           完全に共通の「ぷっくり角丸」と「滑らかな湾曲ヒゲ」を再現します。
         ======================================================== */
         
-        /* 1. 吹き出し本体：共通のぷっくりとした丸みと隙間のないタイトな上下余白 */
+        /* 1. 吹き出し全体のレイアウト・余白・基本の角丸 */
         .bubble-other, .bubble-me {
             border-radius: 18px;
             padding: 7px 14px 8px 14px !important;
@@ -41,59 +41,60 @@
             position: relative;
         }
 
-        /* 2. テーマごとの「吹き出し本体」と「ヒゲ」の色連動（形状コードを汚さないための分離） */
-        /* ブルー・ピンク・ベージュなどの通常時 */
-        .bg-theme-blue .bubble-other, .bg-theme-pink .bubble-other, .bg-theme-beige .bubble-other { background-color: #ffffff !important; color: #000000 !important; }
-        .bg-theme-blue .bubble-other::after, .bg-theme-pink .bubble-other::after, .bg-theme-beige .bubble-other::after { background-color: #ffffff !important; }
+        /* 2. 【最重要】公式の絶妙な「トンガリ（ヒゲ）」の曲線を完全再現する擬似要素 */
         
-        .bg-theme-blue .bubble-me, .bg-theme-pink .bubble-me, .bg-theme-beige .bubble-me { background-color: #85e249 !important; color: #000000 !important; }
-        .bg-theme-blue .bubble-me::after, .bg-theme-pink .bubble-me::after, .bg-theme-beige .bubble-me::after { background-color: #85e249 !important; }
-
-        /* ダークモード時 */
-        .bg-theme-dark .bubble-other { background-color: #2c2e3a !important; color: #e4e6eb !important; }
-        .bg-theme-dark .bubble-other::after { background-color: #2c2e3a !important; }
-        
-        .bg-theme-dark .bubble-me { background-color: #7ed371 !important; color: #000000 !important; }
-        .bg-theme-dark .bubble-me::after { background-color: #7ed371 !important; }
-
-
-        /* 3. 相手の吹き出し（左側）のヒゲ形状：上部から滑らかな円弧で突き出る曲線 */
+        /* 相手の吹き出し（左側ヒゲ） */
         .bubble-other {
-            border-top-left-radius: 4px !important; /* ヒゲの根本の太さを上部に密着させる */
+            border-top-left-radius: 5px !important; /* ヒゲのトップとの接続をフラットに */
+            margin-left: 6px; /* ヒゲの飛び出しスペース */
         }
         .bubble-other::after {
             content: "" !important;
             position: absolute !important;
             top: 0px !important;
             left: -6px !important;
-            width: 14px !important;
-            height: 14px !important;
-            border-width: 0 !important;
-            /* 左下から右上にかけて100%の正円曲面で削り落とすことで、公式特有の下向き湾曲を完全再現 */
-            border-radius: 0 0 100% 0 / 0 0 100% 0 !important;
-            z-index: 1;
+            width: 7px !important;
+            height: 16px !important;
+            /* SVGパスによるクリッピング：上から下へ滑らかに降り、下部でクイッとえぐれる曲線をドット単位で指定 */
+            clip-path: path('M 6,0 C 4,0 1,2 0,5 C 0,7 2,11 6,14 L 6,16 Z');
+            z-index: 10;
         }
 
-        /* 4. 自分の吹き出し（右側）のヒゲ形状：上部から滑らかな円弧で突き出る曲線 */
+        /* 自分の吹き出し（右側ヒゲ） */
         .bubble-me {
-            border-top-right-radius: 4px !important; /* ヒゲの根本の太さを上部に密着させる */
+            border-top-right-radius: 5px !important; /* ヒゲのトップとの接続をフラットに */
+            margin-right: 6px; /* ヒゲの飛び出しスペース */
         }
         .bubble-me::after {
             content: "" !important;
             position: absolute !important;
             top: 0px !important;
             right: -6px !important;
-            width: 14px !important;
-            height: 14px !important;
-            border-width: 0 !important;
-            /* 右下から左上にかけて100%の正円曲面で削り落とすことで、公式特有の下向き湾曲を完全再現 */
-            border-radius: 0 0 0 100% / 0 0 0 100% !important;
-            z-index: 1;
+            width: 7px !important;
+            height: 16px !important;
+            /* 左側と完全に対称な下向きの肉厚湾曲カーブ */
+            clip-path: path('M 0,0 C 2,0 5,2 7,5 C 7,7 5,11 0,14 L 0,16 Z');
+            z-index: 10;
         }
 
-        /* 1文字や短いテキストのときの最小幅の最適化（きれいな正円へのアプローチ） */
+        /* 3. 各背景テーマにおける「吹き出し本体」と「ヒゲ」の色連動設定 */
+        /* 通常背景（ブルー・ピンク・ベージュ） */
+        .bg-theme-blue .bubble-other, .bg-theme-pink .bubble-other, .bg-theme-beige .bubble-other { background-color: #ffffff !important; color: #000000 !important; }
+        .bg-theme-blue .bubble-other::after, .bg-theme-pink .bubble-other::after, .bg-theme-beige .bubble-other::after { background-color: #ffffff !important; }
+        
+        .bg-theme-blue .bubble-me, .bg-theme-pink .bubble-me, .bg-theme-beige .bubble-me { background-color: #85e249 !important; color: #000000 !important; }
+        .bg-theme-blue .bubble-me::after, .bg-theme-pink .bubble-me::after, .bg-theme-beige .bubble-me::after { background-color: #85e249 !important; }
+
+        /* ダークモード背景 */
+        .bg-theme-dark .bubble-other { background-color: #2c2e3a !important; color: #e4e6eb !important; }
+        .bg-theme-dark .bubble-other::after { background-color: #2c2e3a !important; }
+        
+        .bg-theme-dark .bubble-me { background-color: #7ed371 !important; color: #000000 !important; }
+        .bg-theme-dark .bubble-me::after { background-color: #7ed371 !important; }
+
+        /* 1文字（「？」や「ｗ」など）の時の最小幅調整（きれいな丸みに収める） */
         .bubble-other:only-child, .bubble-me:only-child {
-            min-width: 36px;
+            min-width: 38px;
             justify-content: center;
         }
 
