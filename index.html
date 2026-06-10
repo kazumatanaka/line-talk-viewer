@@ -8,7 +8,7 @@
     <style>
         /* テーマごとの背景色設定 */
         .bg-theme-blue { background-color: #7493c1; }
-        .bg-theme-dark { background-color: #1a1c22; }
+        .bg-theme-dark { background-color: #0b0b0b !important; } /* 画像に合わせた漆黒 */
         .bg-theme-pink { background-color: #fbcfe8; }
         .bg-theme-beige { background-color: #f5f5dc; }
 
@@ -24,45 +24,66 @@
         .sub-pink { color: #fdf2f8; }
         .sub-beige { color: #6b7280; }
 
-        /* 通常テーマ（デフォルト）のスタイル */
-        .bubble-other { background-color: #ffffff; color: #000000; }
-        .bubble-me { background-color: #85e249; color: #000000; }
-        
+        /* 吹き出しの基本スタイル（LINE完全再現） */
+        .bubble-other {
+            background-color: #ffffff;
+            color: #000000;
+            border-radius: 16px 20px 20px 20px !important; /* しっぽ側を少し尖らせる */
+            padding: 8px 14px !important;
+            box-shadow: none !important;
+            line-height: 1.4 !important;
+            letter-spacing: 0.02em;
+        }
+        .bubble-me {
+            background-color: #8ce35b;
+            color: #000000;
+            border-radius: 20px 16px 20px 20px !important; /* しっぽ側を少し尖らせる */
+            padding: 8px 14px !important;
+            box-shadow: none !important;
+            line-height: 1.4 !important;
+            letter-spacing: 0.02em;
+        }
+
+        /* しっぽ（ヒゲ）の形状をLINE風に微調整 */
         .bubble-me::after {
-            content: ""; position: absolute; top: 12px; right: -7px;
-            border-width: 5px 0 5px 8px; border-style: solid;
-            border-color: transparent transparent transparent #85e249;
+            content: ""; position: absolute; top: 10px; right: -6px;
+            border-width: 5px 0 5px 7px; border-style: solid;
+            border-color: transparent transparent transparent #8ce35b;
         }
         .bubble-other::after {
-            content: ""; position: absolute; top: 12px; left: -7px;
-            border-width: 5px 8px 5px 0; border-style: solid;
+            content: ""; position: absolute; top: 10px; left: -6px;
+            border-width: 5px 7px 5px 0; border-style: solid;
             border-color: transparent #ffffff transparent transparent;
         }
 
-        /* ダークモード時の吹き出し・ヒゲの着色上書き */
+        /* ダークモード時の吹き出し・ヒゲの着色（添付画像と完全に同一の色） */
         .text-xs.bg-theme-dark .bubble-other,
         .text-sm.bg-theme-dark .bubble-other,
         .text-base.bg-theme-dark .bubble-other {
-            background-color: #2c2e3a !important;
-            color: #e4e6eb !important;
+            background-color: #2a2a2a !important; /* 添付画像の相手のグレー */
+            color: #efefef !important; /* 添付画像の白文字 */
         }
         .text-xs.bg-theme-dark .bubble-other::after,
         .text-sm.bg-theme-dark .bubble-other::after,
         .text-base.bg-theme-dark .bubble-other::after {
-            border-color: transparent #2c2e3a transparent transparent !important;
+            border-color: transparent #2a2a2a transparent transparent !important;
         }
 
         .text-xs.bg-theme-dark .bubble-me,
         .text-sm.bg-theme-dark .bubble-me,
         .text-base.bg-theme-dark .bubble-me {
-            background-color: #7ed371 !important; /* 添付画像の鮮やかな緑色に一致 */
-            color: #000000 !important;             /* 画像の文字色(黒)に一致 */
+            background-color: #92e468 !important; /* 添付画像の鮮やかな緑色 */
+            color: #000000 !important;             /* 画像の文字色(黒) */
         }
         .text-xs.bg-theme-dark .bubble-me::after,
         .text-sm.bg-theme-dark .bubble-me::after,
         .text-base.bg-theme-dark .bubble-me::after {
-            border-color: transparent transparent transparent #7ed371 !important;
+            border-color: transparent transparent transparent #92e468 !important;
         }
+
+        /* タイムスタンプや既読テキストの色を画像と同じグレーに */
+        .bg-theme-dark .time-text { color: #777777 !important; }
+        .bg-theme-dark .name-text { color: #999999 !important; }
 
         html, body {
             overflow: hidden !important;
@@ -117,7 +138,7 @@
 
     <div class="flex-1 w-full pt-14 overflow-hidden relative flex z-10">
         
-        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
+        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
                 <p class="font-bold mb-1">Google Drive & LINE Viewer v59</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
@@ -915,18 +936,24 @@
                     const w = document.createElement('div'); 
                     w.id = `msg-${gIdx}`;
                     if (isMe) { 
-                        w.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; 
-                        w.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
+                        w.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 flex-shrink-0 mb-1'; 
+                        w.innerHTML = `
+                            <div class="flex flex-col items-end justify-end pb-0.5 space-y-1">
+                                <span class="text-[10px] text-white/70 time-text select-none leading-none">既読</span>
+                                <span class="text-[10px] text-white/70 time-text select-none leading-none whitespace-nowrap">${msg.time}</span>
+                            </div>
+                            <div class="bubble-me relative break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                        `; 
                     } 
                     else { 
-                        w.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
+                        w.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 flex-shrink-0 mb-1'; 
                         w.innerHTML = `
-                            <img src="${avatar}" class="w-9 h-9 rounded-2xl object-cover flex-shrink-0 select-none shadow-sm mt-0.5" alt="avatar" onerror="this.src='${defAvatar}'">
+                            <img src="${avatar}" class="w-9 h-9 rounded-full object-cover flex-shrink-0 select-none mt-0.5" alt="avatar" onerror="this.src='${defAvatar}'">
                             <div class="flex flex-col">
-                                <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
+                                <span class="text-[11px] text-white/80 name-text mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
                                 <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative rounded-xl px-3 py-2 shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
-                                    <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
+                                    <div class="bubble-other relative break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                    <span class="text-[10px] text-white/70 time-text select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
                                 </div>
                             </div>`; 
                     }
