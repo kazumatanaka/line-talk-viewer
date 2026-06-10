@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v57 (Perfect Date Parsing & Real Back Button)</title>
+    <title>LINE Talk Viewer v58 (Perfect Date Parsing & Real Back Button)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -85,7 +85,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v57</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v58</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -98,7 +98,7 @@
                 <button id="calendarBtn" class="p-2 hover:bg-black/5 rounded-full transition text-lg cursor-pointer">📅</button>
             </div>
 
-            <button id="menuBtn" onclick="toggleDrawer(true)" class="p-2 hover:bg-black/5 rounded-full transition cursor-pointer z-10">
+            <button id="menuBtn" onclick="toggleDrawer(true); event.preventDefault();" ontouchend="toggleDrawer(true); event.preventDefault();" class="p-2 hover:bg-black/5 rounded-full transition cursor-pointer z-10">
                 <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
@@ -119,17 +119,17 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v57</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v58</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
 
-        <div id="overlay" onclick="toggleDrawer(false)" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity w-full h-full"></div>
+        <div id="overlay" onclick="toggleDrawer(false)" ontouchend="toggleDrawer(false)" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity w-full h-full"></div>
 
         <aside id="drawerMenu" class="absolute top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200 text-black">
             <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 select-none">
                 <h2 class="font-bold text-gray-700 text-sm">各種設定 & 管理機能</h2>
-                <button id="closeMenuBtn" onclick="toggleDrawer(false)" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
+                <button id="closeMenuBtn" onclick="toggleDrawer(false)" ontouchend="toggleDrawer(false)" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
             </div>
             
             <div class="p-4 flex-1 overflow-y-auto space-y-4 text-sm flex flex-col min-h-0">
@@ -220,7 +220,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v57"; 
+        let actualPartnerNames = "LINE Talk Viewer v58"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -243,7 +243,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v57";
+            actualPartnerNames = "LINE Talk Viewer v58";
             applyTitle();
             
             const token = localStorage.getItem('drive_access_token');
@@ -256,7 +256,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v57</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v58</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -265,7 +265,7 @@
             }
         }
 
-        // 全体タップ・クリック監視
+        // 全体タップ・クリック監視 (DOMクリックイベント設定)
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
@@ -275,7 +275,6 @@
                 return;
             }
 
-            if (targetId === "searchToggleBtn") { toggleHeaderBox(); return; }
             if (targetId === "searchCloseBtn") { toggleHeaderBox(false); return; }
 
             if (targetId === "calendarBtn" || e.target.closest("#calendarBtn")) {
@@ -437,13 +436,13 @@
             hasDriveCustomImage = false;
             clearAuthUi();
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
-            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
+            if (getEl('searchToggleBtn')) getEl('ToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v57</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v58</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v57"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v57"; 
+            actualPartnerNames = "LINE Talk Viewer v58"; 
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v58"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -580,7 +579,7 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitle() { const title = getEl('talkTitle'); if (title) title.innerText = isCamouflageMode ? "LINE Talk Viewer v57" : PartnerNames; }
+        function applyTitle() { const title = getEl('talkTitle'); if (title) title.innerText = isCamouflageMode ? "LINE Talk Viewer v58" : PartnerNames; }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
@@ -714,10 +713,10 @@
             const c = getEl('chatContainer');
             if (c) c.innerHTML = ''; 
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
-            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
+            if (getEl('ToggleBtn')) getEl('ToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v57</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v58</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
@@ -847,7 +846,7 @@
                     w.id = `msg-${gIdx}`;
                     if (isMe) { 
                         w.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; 
-                        w.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
+                        w.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
                     } 
                     else { 
                         w.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
@@ -856,7 +855,7 @@
                             <div class="flex flex-col">
                                 <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
                                 <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative rounded-xl px-3 py-2 shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
                                     <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
                                 </div>
                             </div>`; 
@@ -958,12 +957,46 @@
             applyTitle(); 
         }
         
-        let PartnerNames = "LINE Talk Viewer v57";
-        function applyTitle() { const t = getEl('talkTitle'); if (t) t.innerText = isCamouflageMode ? "LINE Talk Viewer v57" : PartnerNames; }
+        let PartnerNames = "LINE Talk Viewer v58";
+        function applyTitle() { const t = getEl('talkTitle'); if (t) t.innerText = isCamouflageMode ? "LINE Talk Viewer v58" : PartnerNames; }
         function Render() { startRender(); }
 
         function parseText(text, filename) {
             const lines = text.split(/\r?\n/); const messages = []; const counts = {}; let partner = "";
             const match = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (match) partner = match[1];
             
-            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([0-9
+            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([0-9a-zA-Z一-龥ぁ-んァ-ヶ]|MON|TUE|WED|THU|FRI|SAT|SUN)(?:\s*|\s*\)\s*)$/i; 
+            const reg1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
+            const reg2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
+            let ref = null;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i]; const trim = line.trim(); 
+                if (trim === "") { if (ref) ref.body += '<br>'; continue; }
+                
+                let m = line.match(reg1) || line.match(reg2);
+                if (m) {
+                    const [_, time, sender, body] = m; const cleanS = sender.trim(); counts[cleanS] = (counts[cleanS] || 0) + 1;
+                    let cleanB = body.replace(/\\n/g, '<br>'); 
+                    if (cleanB === '[スタンプ]' || cleanB === '[Sticker]') { cleanB = '🎨 [スタンプ]'; } 
+                    else if (cleanB === '[写真]' || cleanB === '[Photo]') { cleanB = '📸 [写真]'; } 
+                    else if (cleanB === '[動画]' || cleanB === '[Video]') { cleanB = '🎬 [動画]'; }
+                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanS, body: cleanB }; 
+                    messages.push(newMsg); 
+                    ref = newMsg;
+                } 
+                else if (dateRegex.test(trim)) { 
+                    messages.push({ type: 'date', text: trim }); 
+                    ref = null; 
+                } 
+                else if (ref) { 
+                    ref.body += '<br>' + line; 
+                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
+                    messages[messages.length - 1].body += '<br>' + line; 
+                }
+            }
+            return { messages, counts, partner };
+        }
+    </script>
+</body>
+</html>
