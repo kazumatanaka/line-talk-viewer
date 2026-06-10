@@ -916,7 +916,7 @@
                     w.id = `msg-${gIdx}`;
                     if (isMe) { 
                         w.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; 
-                        w.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
+                        w.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
                     } 
                     else { 
                         w.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
@@ -925,7 +925,7 @@
                             <div class="flex flex-col">
                                 <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
                                 <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                    <div class="bubble-other relative rounded-xl px-3 py-2 shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
                                     <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
                                 </div>
                             </div>`; 
