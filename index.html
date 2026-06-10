@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v50 (Perfect Date Parsing & Real Back Button)</title>
+    <title>LINE Talk Viewer v51 (Perfect Bubble Silhouette)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -25,97 +25,76 @@
         .sub-beige { color: #6b7280; }
 
         /* ========================================================
-           【通常テーマ（デフォルト）のスタイル】
+           【LINE公式・吹き出しシルエット完全共通化システム】
+           背景テーマ（blue/dark/pink/beige）や文字サイズに関わらず
+           すべての環境で全く同じぷっくり形状と滑らかなヒゲを維持します。
         ======================================================== */
-        .bubble-other { background-color: #ffffff; color: #000000; }
-        .bubble-me { background-color: #85e249; color: #000000; }
         
-        .bubble-me::after {
-            content: ""; position: absolute; top: 12px; right: -7px;
-            border-width: 5px 0 5px 8px; border-style: solid;
-            border-color: transparent transparent transparent #85e249;
-        }
-        .bubble-other::after {
-            content: ""; position: absolute; top: 12px; left: -7px;
-            border-width: 5px 8px 5px 0; border-style: solid;
-            border-color: transparent #ffffff transparent transparent;
-        }
-
-        /* ========================================================
-           【ダークモード・LINE公式吹き出し形状の完全再現】
-        ======================================================== */
-        /* 共通設定：LINE特有のぷっくりとしたなめらかな角丸、極限まで無駄を削った上下余白 */
-        .text-xs.bg-theme-dark .bubble-other, .text-xs.bg-theme-dark .bubble-me,
-        .text-sm.bg-theme-dark .bubble-other, .text-sm.bg-theme-dark .bubble-me,
-        .text-base.bg-theme-dark .bubble-other, .text-base.bg-theme-dark .bubble-me,
-        .text-lg.bg-theme-dark .bubble-other, .text-lg.bg-theme-dark .bubble-me {
+        /* 1. 吹き出し本体：共通のぷっくりとした丸みと隙間のないタイトな上下余白 */
+        .bubble-other, .bubble-me {
             border-radius: 18px;
             padding: 7px 14px 8px 14px !important;
             line-height: 1.42 !important;
-            min-height: 35px;
+            min-height: 36px;
             display: inline-flex;
             align-items: center;
+            position: relative;
         }
 
-        /* 相手の吹き出し（左側） */
-        .text-xs.bg-theme-dark .bubble-other,
-        .text-sm.bg-theme-dark .bubble-other,
-        .text-base.bg-theme-dark .bubble-other,
-        .text-lg.bg-theme-dark .bubble-other {
-            background-color: #2c2e3a !important;
-            color: #e4e6eb !important;
-            border-top-left-radius: 4px !important; /* ヒゲの根元と一体化させるために左上を小さく丸める */
+        /* 2. テーマごとの「吹き出し本体」と「ヒゲ」の色連動（形状コードを汚さないための分離） */
+        /* ブルー・ピンク・ベージュなどの通常時 */
+        .bg-theme-blue .bubble-other, .bg-theme-pink .bubble-other, .bg-theme-beige .bubble-other { background-color: #ffffff !important; color: #000000 !important; }
+        .bg-theme-blue .bubble-other::after, .bg-theme-pink .bubble-other::after, .bg-theme-beige .bubble-other::after { background-color: #ffffff !important; }
+        
+        .bg-theme-blue .bubble-me, .bg-theme-pink .bubble-me, .bg-theme-beige .bubble-me { background-color: #85e249 !important; color: #000000 !important; }
+        .bg-theme-blue .bubble-me::after, .bg-theme-pink .bubble-me::after, .bg-theme-beige .bubble-me::after { background-color: #85e249 !important; }
+
+        /* ダークモード時 */
+        .bg-theme-dark .bubble-other { background-color: #2c2e3a !important; color: #e4e6eb !important; }
+        .bg-theme-dark .bubble-other::after { background-color: #2c2e3a !important; }
+        
+        .bg-theme-dark .bubble-me { background-color: #7ed371 !important; color: #000000 !important; }
+        .bg-theme-dark .bubble-me::after { background-color: #7ed371 !important; }
+
+
+        /* 3. 相手の吹き出し（左側）のヒゲ形状：上部から滑らかな円弧で突き出る曲線 */
+        .bubble-other {
+            border-top-left-radius: 4px !important; /* ヒゲの根本の太さを上部に密着させる */
         }
-        /* 左側の滑らかなヒゲ（擬似要素で曲線を再現） */
-        .text-xs.bg-theme-dark .bubble-other::after,
-        .text-sm.bg-theme-dark .bubble-other::after,
-        .text-base.bg-theme-dark .bubble-other::after,
-        .text-lg.bg-theme-dark .bubble-other::after {
+        .bubble-other::after {
             content: "" !important;
             position: absolute !important;
             top: 0px !important;
             left: -6px !important;
-            width: 12px !important;
-            height: 12px !important;
-            background-color: #2c2e3a !important;
+            width: 14px !important;
+            height: 14px !important;
             border-width: 0 !important;
-            border-radius: 0 0 100% 0 / 0 0 100% 0 !important; /* 絶妙な反り返りカーブ */
-            z-index: -1;
+            /* 左下から右上にかけて100%の正円曲面で削り落とすことで、公式特有の下向き湾曲を完全再現 */
+            border-radius: 0 0 100% 0 / 0 0 100% 0 !important;
+            z-index: 1;
         }
 
-        /* 自分の吹き出し（右側） */
-        .text-xs.bg-theme-dark .bubble-me,
-        .text-sm.bg-theme-dark .bubble-me,
-        .text-base.bg-theme-dark .bubble-me,
-        .text-lg.bg-theme-dark .bubble-me {
-            background-color: #7ed371 !important;
-            color: #000000 !important;
-            border-top-right-radius: 4px !important; /* ヒゲの根元と一体化させるために右上を小さく丸める */
+        /* 4. 自分の吹き出し（右側）のヒゲ形状：上部から滑らかな円弧で突き出る曲線 */
+        .bubble-me {
+            border-top-right-radius: 4px !important; /* ヒゲの根本の太さを上部に密着させる */
         }
-        /* 右側の滑らかなヒゲ（擬似要素で曲線を再現） */
-        .text-xs.bg-theme-dark .bubble-me::after,
-        .text-sm.bg-theme-dark .bubble-me::after,
-        .text-base.bg-theme-dark .bubble-me::after,
-        .text-lg.bg-theme-dark .bubble-me::after {
+        .bubble-me::after {
             content: "" !important;
             position: absolute !important;
             top: 0px !important;
             right: -6px !important;
-            width: 12px !important;
-            height: 12px !important;
-            background-color: #7ed371 !important;
+            width: 14px !important;
+            height: 14px !important;
             border-width: 0 !important;
-            border-radius: 0 0 0 100% / 0 0 0 100% !important; /* 絶妙な反り返りカーブ */
-            z-index: -1;
+            /* 右下から左上にかけて100%の正円曲面で削り落とすことで、公式特有の下向き湾曲を完全再現 */
+            border-radius: 0 0 0 100% / 0 0 0 100% !important;
+            z-index: 1;
         }
 
-        /* 1文字（特に「？」など）の時に完全な正円に近づけるためのCSS調整 */
-        .text-xs.bg-theme-dark .bubble-other:only-child, .text-xs.bg-theme-dark .bubble-me:only-child,
-        .text-sm.bg-theme-dark .bubble-other:only-child, .text-sm.bg-theme-dark .bubble-me:only-child,
-        .text-base.bg-theme-dark .bubble-other:only-child, .text-base.bg-theme-dark .bubble-me:only-child,
-        .text-lg.bg-theme-dark .bubble-other:only-child, .text-lg.bg-theme-dark .bubble-me:only-child {
-            /* 1文字のみでかつ横幅が狭い場合、正円的な丸みを維持 */
-            min-w: [35px];
+        /* 1文字や短いテキストのときの最小幅の最適化（きれいな正円へのアプローチ） */
+        .bubble-other:only-child, .bubble-me:only-child {
+            min-width: 36px;
+            justify-content: center;
         }
 
         html, body {
@@ -139,7 +118,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v50</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v51</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -173,7 +152,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v50</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v51</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -274,7 +253,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v50"; 
+        let actualPartnerNames = "LINE Talk Viewer v51"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -297,7 +276,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v50";
+            actualPartnerNames = "LINE Talk Viewer v51";
             applyTitleDisplay();
             
             const savedToken = localStorage.getItem('drive_access_token');
@@ -310,7 +289,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v50</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v51</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -319,7 +298,6 @@
             }
         }
 
-        // 全体タップ・クリック監視
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
@@ -500,10 +478,10 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v50</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v51</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v50"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v50"; 
+            actualPartnerNames = "LINE Talk Viewer v51"; 
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v51"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -659,7 +637,7 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v50" : actualPartnerNames; }
+        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v51" : actualPartnerNames; }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
@@ -752,7 +730,7 @@
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
-            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v50</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v51</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
             
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
             currentEndLoadedIndex = filteredMessages.length; 
