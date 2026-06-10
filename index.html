@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v52 (Perfect Date Parsing & Real Back Button)</title>
+    <title>LINE Talk Viewer v53 (Perfect Date Parsing & Real Back Button)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -93,7 +93,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v52</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v53</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -127,7 +127,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v52</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v53</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -230,7 +230,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v52"; 
+        let actualPartnerNames = "LINE Talk Viewer v53"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -253,7 +253,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v52";
+            actualPartnerNames = "LINE Talk Viewer v53";
             applyTitleDisplay();
             
             const savedToken = localStorage.getItem('drive_access_token');
@@ -266,7 +266,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v52</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v53</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -285,7 +285,12 @@
                 return;
             }
 
-            if (targetId === "menuBtn") { e.preventDefault(); e.stopPropagation(); toggleDrawer(true); return; }
+            if (targetId === "menuBtn" || e.target.closest("#menuBtn")) { 
+                e.preventDefault(); 
+                e.stopPropagation(); 
+                toggleDrawer(true); 
+                return; 
+            }
             if (targetId === "closeMenuBtn" || targetId === "overlay") { toggleDrawer(false); return; }
             
             if (targetId === "searchToggleBtn") { toggleHeaderSearchBox(); return; }
@@ -458,10 +463,10 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v52</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v53</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v52"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v52"; 
+            actualPartnerNames = "LINE Talk Viewer v53"; 
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v53"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -617,7 +622,7 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v52" : actualPartnerNames; }
+        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v53" : actualPartnerNames; }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
@@ -724,7 +729,7 @@
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
-            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v52</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v53</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
             
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
             currentEndLoadedIndex = filteredMessages.length; 
@@ -747,7 +752,7 @@
             renderChatSegment(additionalSegment, 'prepend', currentLoadedIndex);
             
             const newHeight = getEl('chatContainer').scrollHeight; 
-            if (getEl('chatContainer')) getEl('chatContainer').scrollTop = oldTop + (newHeight - oldHeight);
+            if (getEl('chatContainer')) getEl('chatContainer').scrollTop = oldTop + (newHeight - oldScrollHeight);
             isLoadingMore = false;
         }
 
@@ -977,7 +982,6 @@
             return { messages, senderCounts, chatPartner };
         }
 
-        // 軽微なタイポ（ToggleBtnの欠損）も修正しました
         function getEl(id) {
             return document.getElementById(id);
         }
