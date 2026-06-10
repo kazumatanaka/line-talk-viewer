@@ -24,7 +24,9 @@
         .sub-pink { color: #fdf2f8; }
         .sub-beige { color: #6b7280; }
 
-        /* 通常テーマ（デフォルト）のスタイル */
+        /* ========================================================
+           【通常テーマ（デフォルト）のスタイル】
+        ======================================================== */
         .bubble-other { background-color: #ffffff; color: #000000; }
         .bubble-me { background-color: #85e249; color: #000000; }
         
@@ -39,33 +41,81 @@
             border-color: transparent #ffffff transparent transparent;
         }
 
-        /* ダークモード時の吹き出し・ヒゲの着色上書き */
+        /* ========================================================
+           【ダークモード・LINE公式吹き出し形状の完全再現】
+        ======================================================== */
+        /* 共通設定：LINE特有のぷっくりとしたなめらかな角丸、極限まで無駄を削った上下余白 */
+        .text-xs.bg-theme-dark .bubble-other, .text-xs.bg-theme-dark .bubble-me,
+        .text-sm.bg-theme-dark .bubble-other, .text-sm.bg-theme-dark .bubble-me,
+        .text-base.bg-theme-dark .bubble-other, .text-base.bg-theme-dark .bubble-me,
+        .text-lg.bg-theme-dark .bubble-other, .text-lg.bg-theme-dark .bubble-me {
+            border-radius: 18px;
+            padding: 7px 14px 8px 14px !important;
+            line-height: 1.42 !important;
+            min-height: 35px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* 相手の吹き出し（左側） */
         .text-xs.bg-theme-dark .bubble-other,
         .text-sm.bg-theme-dark .bubble-other,
         .text-base.bg-theme-dark .bubble-other,
         .text-lg.bg-theme-dark .bubble-other {
             background-color: #2c2e3a !important;
             color: #e4e6eb !important;
+            border-top-left-radius: 4px !important; /* ヒゲの根元と一体化させるために左上を小さく丸める */
         }
+        /* 左側の滑らかなヒゲ（擬似要素で曲線を再現） */
         .text-xs.bg-theme-dark .bubble-other::after,
         .text-sm.bg-theme-dark .bubble-other::after,
         .text-base.bg-theme-dark .bubble-other::after,
         .text-lg.bg-theme-dark .bubble-other::after {
-            border-color: transparent #2c2e3a transparent transparent !important;
+            content: "" !important;
+            position: absolute !important;
+            top: 0px !important;
+            left: -6px !important;
+            width: 12px !important;
+            height: 12px !important;
+            background-color: #2c2e3a !important;
+            border-width: 0 !important;
+            border-radius: 0 0 100% 0 / 0 0 100% 0 !important; /* 絶妙な反り返りカーブ */
+            z-index: -1;
         }
 
+        /* 自分の吹き出し（右側） */
         .text-xs.bg-theme-dark .bubble-me,
         .text-sm.bg-theme-dark .bubble-me,
         .text-base.bg-theme-dark .bubble-me,
         .text-lg.bg-theme-dark .bubble-me {
-            background-color: #7ed371 !important; /* 添付画像の鮮やかな緑色に一致 */
-            color: #000000 !important;             /* 画像の文字色(黒)に一致 */
+            background-color: #7ed371 !important;
+            color: #000000 !important;
+            border-top-right-radius: 4px !important; /* ヒゲの根元と一体化させるために右上を小さく丸める */
         }
+        /* 右側の滑らかなヒゲ（擬似要素で曲線を再現） */
         .text-xs.bg-theme-dark .bubble-me::after,
         .text-sm.bg-theme-dark .bubble-me::after,
         .text-base.bg-theme-dark .bubble-me::after,
         .text-lg.bg-theme-dark .bubble-me::after {
-            border-color: transparent transparent transparent #7ed371 !important;
+            content: "" !important;
+            position: absolute !important;
+            top: 0px !important;
+            right: -6px !important;
+            width: 12px !important;
+            height: 12px !important;
+            background-color: #7ed371 !important;
+            border-width: 0 !important;
+            border-radius: 0 0 0 100% / 0 0 0 100% !important; /* 絶妙な反り返りカーブ */
+            z-index: -1;
+        }
+
+        /* 1文字（特に「？」など）の時に完全な正円に近づけるためのCSS調整 */
+        .text-xs.bg-theme-dark .bubble-other:only-child, .text-xs.bg-theme-dark .bubble-me:only-child,
+        .text-sm.bg-theme-dark .bubble-other:only-child, .text-sm.bg-theme-dark .bubble-me:only-child,
+        .text-base.bg-theme-dark .bubble-other:only-child, .text-base.bg-theme-dark .bubble-me:only-child,
+        .text-lg.bg-theme-dark .bubble-other:only-child, .text-lg.bg-theme-dark .bubble-me:only-child {
+            /* 1文字のみでかつ横幅が狭い場合、正円的な丸みを維持 */
+            min-w: [35px];
         }
 
         html, body {
@@ -615,7 +665,6 @@
             currentThemeName = themeName; 
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             
-            // クラス更新時に文字サイズ用クラスも同時に維持する仕組みに修正
             let sizeClass = 'text-sm';
             if (savedSize === 'sm') sizeClass = 'text-xs';
             if (savedSize === 'lg') sizeClass = 'text-base';
@@ -836,7 +885,7 @@
                     const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
                     if (isMe) { 
                         msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; 
-                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
+                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
                     } 
                     else { 
                         msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
@@ -845,7 +894,7 @@
                             <div class="flex flex-col">
                                 <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
                                 <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                    <div class="bubble-other relative text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
                                     <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
                                 </div>
                             </div>`; 
@@ -922,7 +971,6 @@
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
             const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
             
-            // 💡 【超厳格化】単なる漢字1文字の誤認識を永久追放。前後のスペース、カッコ「()」での曜日囲みを完全必須条件に指定。
             const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)(?:\s*|\s*\)\s*)$/i; 
             
             const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
@@ -944,7 +992,6 @@
                     messages.push(newMsg); 
                     currentMsgRef = newMsg;
                 } 
-                // 💡 完全に独立した曜日スタンプ行形式のときのみ安全に日付変更処理を通す
                 else if (dateRegex.test(trimmedLine)) { 
                     messages.push({ type: 'date', text: trimmedLine }); 
                     currentMsgRef = null; 
