@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v62 (Absolute Silhouette Replica)</title>
+    <title>LINE Talk Viewer v50 (Perfect Date Parsing & Real Back Button)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -24,84 +24,48 @@
         .sub-pink { color: #fdf2f8; }
         .sub-beige { color: #6b7280; }
 
-        /* ========================================================
-           【真・LINE公式吹き出しシステム (v62 完全再現版)】
-           すべての背景・すべてのデバイスにおいて、隙間なく滑らかな
-           「たわみカーブ」を描いて尖る本物のトンガリ形状を固定適用
-        ======================================================== */
+        /* 通常テーマ（デフォルト）のスタイル */
+        .bubble-other { background-color: #ffffff; color: #000000; }
+        .bubble-me { background-color: #85e249; color: #000000; }
         
-        /* 1. 吹き出し本体：公式そのままの、少し四角さを残したぷっくり角丸とコンパクトな余白 */
-        .bubble-other, .bubble-me {
-            border-radius: 18px !important;
-            padding: 8px 13px 9px 13px !important;
-            line-height: 1.42 !important;
-            min-height: 36px;
-            display: inline-flex;
-            align-items: center;
-            position: relative;
-        }
-
-        /* 2. 相手の吹き出し（左側ヒゲ）：上から4px下がった位置から滑らかにしなるツノ */
-        .bubble-other {
-            margin-left: 8px; /* ツノの突き出し幅 */
+        .bubble-me::after {
+            content: ""; position: absolute; top: 12px; right: -7px;
+            border-width: 5px 0 5px 8px; border-style: solid;
+            border-color: transparent transparent transparent #85e249;
         }
         .bubble-other::after {
-            content: "" !important;
-            position: absolute !important;
-            top: 4px !important; /* 一番上ではなく、なだらかな下り坂が始まる位置に固定 */
-            left: -8px !important; /* 本体と0.1ドットの隙間もなく融合する位置 */
-            width: 9px !important;
-            height: 13px !important;
-            z-index: 10;
-            /* 2つの円形グラデーションをブレンドし、上部の「下り坂の凹み」と下部の「えぐれる凸み」を完全再現 */
-            background-image: 
-                radial-gradient(circle at -4px -3px, transparent 11px, currentColor 11px),
-                radial-gradient(circle at 11px 18px, transparent 11px, currentColor 11px) !important;
-            background-blend-mode: multiply !important;
+            content: ""; position: absolute; top: 12px; left: -7px;
+            border-width: 5px 8px 5px 0; border-style: solid;
+            border-color: transparent #ffffff transparent transparent;
         }
 
-        /* 3. 自分の吹き出し（右側ヒゲ）：上から4px下がった位置から滑らかにしなるツノ */
-        .bubble-me {
-            margin-right: 8px; /* ツノの突き出し幅 */
+        /* ダークモード時の吹き出し・ヒゲの着色上書き */
+        .text-xs.bg-theme-dark .bubble-other,
+        .text-sm.bg-theme-dark .bubble-other,
+        .text-base.bg-theme-dark .bubble-other,
+        .text-lg.bg-theme-dark .bubble-other {
+            background-color: #2c2e3a !important;
+            color: #e4e6eb !important;
         }
-        .bubble-me::after {
-            content: "" !important;
-            position: absolute !important;
-            top: 4px !important; /* 一番上ではなく、なだらかな下り坂が始まる位置に固定 */
-            right: -8px !important; /* 本体と0.1ドットの隙間もなく融合する位置 */
-            width: 9px !important;
-            height: 13px !important;
-            z-index: 10;
-            /* 左側と完全に対称な「しなり曲線」を描くグラデーションマスクスタック */
-            background-image: 
-                radial-gradient(circle at 13px -3px, transparent 11px, currentColor 11px),
-                radial-gradient(circle at -2px 18px, transparent 11px, currentColor 11px) !important;
-            background-blend-mode: multiply !important;
+        .text-xs.bg-theme-dark .bubble-other::after,
+        .text-sm.bg-theme-dark .bubble-other::after,
+        .text-base.bg-theme-dark .bubble-other::after,
+        .text-lg.bg-theme-dark .bubble-other::after {
+            border-color: transparent #2c2e3a transparent transparent !important;
         }
 
-        /* --------------------------------------------------------
-           【全テーマ共通カラーマネジメント】
-           どの背景が選ばれても、ツノ（currentColor）と本体の色を完璧に同期
-        -------------------------------------------------------- */
-        
-        /* ブルー・ピンク・ベージュ背景のとき */
-        .bg-theme-blue .bubble-other, .bg-theme-pink .bubble-other, .bg-theme-beige .bubble-other { background-color: #ffffff !important; color: #ffffff !important; }
-        .bg-theme-blue .bubble-other *, .bg-theme-pink .bubble-other *, .bg-theme-beige .bubble-other * { color: #000000 !important; }
-        
-        .bg-theme-blue .bubble-me, .bg-theme-pink .bubble-me, .bg-theme-beige .bubble-me { background-color: #85e249 !important; color: #85e249 !important; }
-        .bg-theme-blue .bubble-me *, .bg-theme-pink .bubble-me *, .bg-theme-beige .bubble-me * { color: #000000 !important; }
-
-        /* ダークモード背景のとき（公式アプリの配色に完全一致） */
-        .bg-theme-dark .bubble-other { background-color: #2c2e3a !important; color: #2c2e3a !important; }
-        .bg-theme-dark .bubble-other * { color: #e4e6eb !important; }
-        
-        .bg-theme-dark .bubble-me { background-color: #7ed371 !important; color: #7ed371 !important; }
-        .bg-theme-dark .bubble-me * { color: #000000 !important; }
-
-        /* 1文字トーク（「？」や「ｗ」など）のときでも縦長にならず綺麗な丸みをキープする最小幅設定 */
-        .bubble-other:only-child, .bubble-me:only-child {
-            min-width: 38px;
-            justify-content: center;
+        .text-xs.bg-theme-dark .bubble-me,
+        .text-sm.bg-theme-dark .bubble-me,
+        .text-base.bg-theme-dark .bubble-me,
+        .text-lg.bg-theme-dark .bubble-me {
+            background-color: #7ed371 !important; /* 添付画像の鮮やかな緑色に一致 */
+            color: #000000 !important;             /* 画像の文字色(黒)に一致 */
+        }
+        .text-xs.bg-theme-dark .bubble-me::after,
+        .text-sm.bg-theme-dark .bubble-me::after,
+        .text-base.bg-theme-dark .bubble-me::after,
+        .text-lg.bg-theme-dark .bubble-me::after {
+            border-color: transparent transparent transparent #7ed371 !important;
         }
 
         html, body {
@@ -125,7 +89,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v62</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v50</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -159,7 +123,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v62</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v50</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -260,7 +224,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v62"; 
+        let actualPartnerNames = "LINE Talk Viewer v50"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -283,7 +247,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v62";
+            actualPartnerNames = "LINE Talk Viewer v50";
             applyTitleDisplay();
             
             const savedToken = localStorage.getItem('drive_access_token');
@@ -296,7 +260,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v62</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v50</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -305,6 +269,7 @@
             }
         }
 
+        // 全体タップ・クリック監視
         document.addEventListener("click", (e) => {
             const targetId = e.target.id;
             
@@ -485,10 +450,10 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v62</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v50</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v62"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v62"; 
+            actualPartnerNames = "LINE Talk Viewer v50"; 
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v50"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -520,8 +485,7 @@
 
         async function renderExplorer(folderId) {
             currentFolderId = folderId; 
-            if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">読み込み中...</p>';
-            if (getEl('batchLoadBtn')) getEl('batchLoadBtn').classList.add('hidden');
+            if (getEl('explorerList')) getEl('explorerList').innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
             updateBreadcrumb(); 
             localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
             try {
@@ -645,12 +609,13 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v62" : actualPartnerNames; }
+        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v50" : actualPartnerNames; }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             
+            // クラス更新時に文字サイズ用クラスも同時に維持する仕組みに修正
             let sizeClass = 'text-sm';
             if (savedSize === 'sm') sizeClass = 'text-xs';
             if (savedSize === 'lg') sizeClass = 'text-base';
@@ -738,7 +703,7 @@
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
-            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v62</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v50</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
             
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
             currentEndLoadedIndex = filteredMessages.length; 
@@ -871,7 +836,7 @@
                     const isMe = (msg.sender === currentMe); const msgWrapper = document.createElement('div'); msgWrapper.id = `msg-${globalIndex}`;
                     if (isMe) { 
                         msgWrapper.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 rounded-lg flex-shrink-0'; 
-                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative text-[13px] shadow-sm break-all whitespace-pre-wrap select-text"><span>${msg.body}</span></div>`; 
+                        msgWrapper.innerHTML = `<span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span><div class="bubble-me relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>`; 
                     } 
                     else { 
                         msgWrapper.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 rounded-lg flex-shrink-0'; 
@@ -880,7 +845,7 @@
                             <div class="flex flex-col">
                                 <span class="text-[11px] text-white/80 mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
                                 <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative text-[13px] shadow-sm break-all whitespace-pre-wrap select-text"><span>${msg.body}</span></div>
+                                    <div class="bubble-other relative rounded-xl px-3 py-2 text-[13px] shadow-sm break-all whitespace-pre-wrap select-text">${msg.body}</div>
                                     <span class="text-[9px] text-white/70 select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
                                 </div>
                             </div>`; 
@@ -957,6 +922,7 @@
             const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
             const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
             
+            // 💡 【超厳格化】単なる漢字1文字の誤認識を永久追放。前後のスペース、カッコ「()」での曜日囲みを完全必須条件に指定。
             const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)(?:\s*|\s*\)\s*)$/i; 
             
             const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
@@ -978,6 +944,7 @@
                     messages.push(newMsg); 
                     currentMsgRef = newMsg;
                 } 
+                // 💡 完全に独立した曜日スタンプ行形式のときのみ安全に日付変更処理を通す
                 else if (dateRegex.test(trimmedLine)) { 
                     messages.push({ type: 'date', text: trimmedLine }); 
                     currentMsgRef = null; 
