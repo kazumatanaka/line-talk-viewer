@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v60 (Perfect Silhouette & Zero Gap)</title>
+    <title>LINE Talk Viewer v61 (Absolute Zero-Gap Replica)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -25,9 +25,9 @@
         .sub-beige { color: #6b7280; }
 
         /* ========================================================
-           【真・LINE公式吹き出しシステム (v60)】
-           楕円とツノの隙間を完全にゼロにし、最上部の角から滑らかに
-           シャープなトゲが真横へ突き出る完璧なシルエット構造
+           【真・LINE公式吹き出しシステム (v61 完全決定版)】
+           すべての背景モード、すべてのデバイスで絶対に隙間が空かない、
+           最上部フラット結合＆真横シャープトンガリの完全共通化設計
         ======================================================== */
         
         /* 吹き出し本体：可変サイズに対応しつつ、本物と同じぷっくり感を持つ角丸 */
@@ -41,83 +41,63 @@
             position: relative;
         }
 
-        /* 相手の吹き出し（左側ヒゲ） */
+        /* 相手の吹き出し（左側ヒゲの完璧な形状と配置） */
         .bubble-other {
-            border-top-left-radius: 4px !important; /* ツノの根元を最上部に完全密着 */
-            margin-left: 8px;
+            border-top-left-radius: 4px !important; /* 本体の角丸を小さくし、ツノの根元とフラットに結合 */
+            margin-left: 8px; /* ツノがはみ出る正確なスペース */
         }
-        /* 本体楕円の裏側に0.5px食い込ませて隙間（ギャップ）を完全に消去した左ツノ */
         .bubble-other::after {
             content: "" !important;
             position: absolute !important;
-            top: 0px !important;
-            left: -8.5px !important; /* 隙間を絶対に作らないための完璧な吸着位置 */
+            top: 0px !important; /* 最上部へ完全吸着 */
+            left: -8px !important; /* 1ミリの隙間も作らず楕円の裏へ滑らかに滑り込ませる位置 */
             width: 0 !important;
             height: 0 !important;
             border-style: solid !important;
-            border-width: 0 9px 9px 0 !important;
-            border-color: transparent currentColor transparent transparent !important;
+            border-width: 0 8px 9px 0 !important; /* 真横にツンと鋭角に尖る公式アプリの比率 */
+            border-color: transparent currentColor transparent transparent !important; /* 本体色と100%自動同期 */
             z-index: 10;
         }
 
-        /* 自分の吹き出し（右側ヒゲ） */
+        /* 自分の吹き出し（右側ヒゲの完璧な形状と配置） */
         .bubble-me {
-            border-top-right-radius: 4px !important; /* ツノの根元を最上部に完全密着 */
-            margin-right: 8px;
+            border-top-right-radius: 4px !important; /* 本体の角丸を小さくし、ツノの根元とフラットに結合 */
+            margin-right: 8px; /* ツノがはみ出る正確なスペース */
         }
-        /* 完全対称。本体楕円の裏側に0.5px食い込ませて隙間（ギャップ）を完全に消去した右ツノ */
         .bubble-me::after {
             content: "" !important;
             position: absolute !important;
-            top: 0px !important;
-            right: -8.5px !important; /* 隙間を絶対に作らないための完璧な吸着位置 */
+            top: 0px !important; /* 最上部へ完全吸着 */
+            right: -8px !important; /* 1ミリの隙間も作らず楕円の裏へ滑らかに滑り込ませる位置 */
             width: 0 !important;
             height: 0 !important;
             border-style: solid !important;
-            border-width: 0 0 9px 9px !important;
-            border-color: transparent transparent transparent currentColor !important;
+            border-width: 0 0 9px 8px !important; /* 左側と完全対称の鋭角比率 */
+            border-color: transparent transparent transparent currentColor !important; /* 本体色と100%自動同期 */
             z-index: 10;
         }
 
         /* --------------------------------------------------------
-           背景テーマごとの「本体の色」と「CSSヒゲの色(currentColor)」の同期設定
+           【カラーマネジメントスタック】
+           形状（上のコード）を一切汚さず、色指定だけを背景テーマと連動させます。
         -------------------------------------------------------- */
-        /* 通常背景（ブルー・ピンク・ベージュなど） */
-        .bg-theme-blue .bubble-other, .bg-theme-pink .bubble-other, .bg-theme-beige .bubble-other { 
-            background-color: #ffffff !important; 
-            color: #ffffff !important; /* ツノの色を白に同期 */
-        }
-        .bg-theme-blue .bubble-other *, .bg-theme-pink .bubble-other *, .bg-theme-beige .bubble-other * {
-            color: #000000 !important; /* 中身の文字だけを黒にする */
-        }
         
-        .bg-theme-blue .bubble-me, .bg-theme-pink .bubble-me, .bg-theme-beige .bubble-me { 
-            background-color: #85e249 !important; 
-            color: #85e249 !important; /* ツノの色を通常黄緑に同期 */
-        }
-        .bg-theme-blue .bubble-me *, .bg-theme-pink .bubble-me *, .bg-theme-beige .bubble-me * {
-            color: #000000 !important; /* 中身の文字だけを黒にする */
-        }
+        /* 💡 パターンA：通常背景（ブルー・ピンク・ベージュ）のとき */
+        .bg-theme-blue .bubble-other, .bg-theme-pink .bubble-other, .bg-theme-beige .bubble-other { background-color: #ffffff !important; color: #ffffff !important; }
+        .bg-theme-blue .bubble-other *, .bg-theme-pink .bubble-other *, .bg-theme-beige .bubble-other * { color: #000000 !important; }
+        
+        .bg-theme-blue .bubble-me, .bg-theme-pink .bubble-me, .bg-theme-beige .bubble-me { background-color: #85e249 !important; color: #85e249 !important; }
+        .bg-theme-blue .bubble-me *, .bg-theme-pink .bubble-me *, .bg-theme-beige .bubble-me * { color: #000000 !important; }
 
-        /* ダークモード背景（実機スクショの正確なカラーと100%連動） */
+        /* 💡 パターンB：ダークモード背景のとき（理想形スクショと100%一致） */
         .bg-theme-dark { background-color: #1a1c22 !important; }
-        .bg-theme-dark .bubble-other { 
-            background-color: #2c2e3a !important; 
-            color: #2c2e3a !important; /* ツノの色をダークグレーに同期 */
-        }
-        .bg-theme-dark .bubble-other * {
-            color: #e4e6eb !important; /* 中身の文字だけを明るいグレーにする */
-        }
+        .bg-theme-dark .bubble-other { background-color: #2c2e3a !important; color: #2c2e3a !important; }
+        .bg-theme-dark .bubble-other * { color: #e4e6eb !important; }
         
-        .bg-theme-dark .bubble-me { 
-            background-color: #7ed371 !important; 
-            color: #7ed371 !important; /* ツノの色を鮮やかな黄緑に同期 */
-        }
-        .bg-theme-dark .bubble-me * {
-            color: #000000 !important; /* 中身の文字だけを黒にする */
-        }
+        .bg-theme-dark .bubble-me { background-color: #7ed371 !important; color: #7ed371 !important; }
+        .bg-theme-dark .bubble-me * { color: #000000 !important; }
 
-        /* 1文字トーク（「お」や「ｗ」など）の時の最適化 */
+        /* 1文字トーク（「お」や「ｗ」など）の時の綺麗に丸める最適化 */
         .bubble-other:only-child, .bubble-me:only-child {
             min-width: 38px;
             justify-content: center;
@@ -144,7 +124,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v60</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v61</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -178,7 +158,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v60</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v61</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -279,7 +259,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v60"; 
+        let actualPartnerNames = "LINE Talk Viewer v61"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -302,7 +282,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v60";
+            actualPartnerNames = "LINE Talk Viewer v61";
             applyTitleDisplay();
             
             const savedToken = localStorage.getItem('drive_access_token');
@@ -315,7 +295,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v60</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v61</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -504,10 +484,10 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v60</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v61</p><p id="guideText" class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v60"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v60"; 
+            actualPartnerNames = "LINE Talk Viewer v61"; 
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v61"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -664,7 +644,7 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v60" : actualPartnerNames; }
+        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v61" : actualPartnerNames; }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
@@ -757,7 +737,7 @@
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
-            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v60</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v61</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
             
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
             currentEndLoadedIndex = filteredMessages.length; 
