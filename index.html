@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v54 (Perfect Date Parsing & Real Back Button)</title>
+    <title>LINE Talk Viewer v55 (Perfect Date Parsing & Real Back Button)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定 */
@@ -40,35 +40,27 @@
         }
 
         /* ダークモード時の吹き出し・ヒゲの着色上書き */
-        .text-xs.bg-theme-dark .bubble-other,
         .text-sm.bg-theme-dark .bubble-other,
         .text-base.bg-theme-dark .bubble-other,
-        .text-lg.bg-theme-dark .bubble-other,
-        .text-xl.bg-theme-dark .bubble-other {
+        .text-lg.bg-theme-dark .bubble-other {
             background-color: #2c2e3a !important;
             color: #e4e6eb !important;
         }
-        .text-xs.bg-theme-dark .bubble-other::after,
         .text-sm.bg-theme-dark .bubble-other::after,
         .text-base.bg-theme-dark .bubble-other::after,
-        .text-lg.bg-theme-dark .bubble-other::after,
-        .text-xl.bg-theme-dark .bubble-other::after {
+        .text-lg.bg-theme-dark .bubble-other::after {
             border-color: transparent #2c2e3a transparent transparent !important;
         }
 
-        .text-xs.bg-theme-dark .bubble-me,
         .text-sm.bg-theme-dark .bubble-me,
         .text-base.bg-theme-dark .bubble-me,
-        .text-lg.bg-theme-dark .bubble-me,
-        .text-xl.bg-theme-dark .bubble-me {
+        .text-lg.bg-theme-dark .bubble-me {
             background-color: #7ed371 !important; /* 添付画像の鮮やかな緑色に一致 */
             color: #000000 !important;             /* 画像の文字色(黒)に一致 */
         }
-        .text-xs.bg-theme-dark .bubble-me::after,
         .text-sm.bg-theme-dark .bubble-me::after,
         .text-base.bg-theme-dark .bubble-me::after,
-        .text-lg.bg-theme-dark .bubble-me::after,
-        .text-xl.bg-theme-dark .bubble-me::after {
+        .text-lg.bg-theme-dark .bubble-me::after {
             border-color: transparent transparent transparent #7ed371 !important;
         }
 
@@ -93,7 +85,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v54</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v55</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -127,7 +119,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 bg-theme-blue flex flex-col space-y-4 select-text h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v54</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v55</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -180,13 +172,11 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1.5">🔍 文字サイズ変更 (5段階)</label>
-                        <div class="grid grid-cols-5 gap-1">
-                            <button id="size-xs" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">極小</button>
-                            <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">小</button>
-                            <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-[10px] py-1 rounded font-bold cursor-pointer">中</button>
-                            <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">大</button>
-                            <button id="size-xl" class="bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer">極大</button>
+                        <label class="block text-xs font-bold text-gray-500 mb-1.5">🔍 文字サイズ変更 (小・中・大)</label>
+                        <div class="grid grid-cols-3 gap-1">
+                            <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">小</button>
+                            <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer">中</button>
+                            <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">大</button>
                         </div>
                     </div>
                 </div>
@@ -230,7 +220,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v54"; 
+        let actualPartnerNames = "LINE Talk Viewer v55"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -253,7 +243,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v54";
+            actualPartnerNames = "LINE Talk Viewer v55";
             applyTitleDisplay();
             
             const savedToken = localStorage.getItem('drive_access_token');
@@ -266,7 +256,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v54</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v55</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -306,11 +296,9 @@
             if (targetId === "theme-dark") changeTheme('dark');
             if (targetId === "theme-pink") changeTheme('pink');
             if (targetId === "theme-beige") changeTheme('beige');
-            if (targetId === "size-xs") changeFontSize('xs');
             if (targetId === "size-sm") changeFontSize('sm');
             if (targetId === "size-md") changeFontSize('md');
             if (targetId === "size-lg") changeFontSize('lg');
-            if (targetId === "size-xl") changeFontSize('xl');
             if (targetId === "authBtn") triggerGoogleAuth();
             if (targetId === "logoutBtn") triggerLogoutProcessing();
             if (targetId === "batchLoadBtn") triggerBatchLoadFiles();
@@ -469,10 +457,10 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderSearchBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v54</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v55</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v54"; 
-            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v54"; 
+            actualPartnerNames = "LINE Talk Viewer v55"; 
+            if (getEl('talkTitle')) getEl('talkTitle').innerText = "LINE Talk Viewer v55"; 
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
             alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
@@ -628,18 +616,16 @@
             } else { box.classList.add('hidden'); }
         }
 
-        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v54" : actualPartnerNames; }
+        function applyTitleDisplay() { if (getEl('talkTitle')) getEl('talkTitle').innerText = isCamouflageMode ? "LINE Talk Viewer v55" : actualPartnerNames; }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
             const savedSize = localStorage.getItem('user_font_size') || 'md';
             
             let sizeClass = 'text-base';
-            if (savedSize === 'xs') sizeClass = 'text-xs';
             if (savedSize === 'sm') sizeClass = 'text-sm';
             if (savedSize === 'md') sizeClass = 'text-base';
             if (savedSize === 'lg') sizeClass = 'text-lg';
-            if (savedSize === 'xl') sizeClass = 'text-xl';
             
             if (getEl('chatContainer')) {
                 getEl('chatContainer').className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} ${sizeClass} h-full w-full relative`;
@@ -667,23 +653,21 @@
 
         function changeFontSize(sizeName) {
             if (getEl('chatContainer')) {
-                getEl('chatContainer').classList.remove('text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl');
-                if (sizeName === 'xs') getEl('chatContainer').classList.add('text-xs');
+                getEl('chatContainer').classList.remove('text-sm', 'text-base', 'text-lg');
                 if (sizeName === 'sm') getEl('chatContainer').classList.add('text-sm');
                 if (sizeName === 'md') getEl('chatContainer').classList.add('text-base');
                 if (sizeName === 'lg') getEl('chatContainer').classList.add('text-lg');
-                if (sizeName === 'xl') getEl('chatContainer').classList.add('text-xl');
             }
             localStorage.setItem('user_font_size', sizeName);
             
-            const sizeButtons = [getEl('size-xs'), getEl('size-sm'), getEl('size-md'), getEl('size-lg'), getEl('size-xl')];
+            const sizeButtons = [getEl('size-sm'), getEl('size-md'), getEl('size-lg')];
             sizeButtons.forEach(btn => { 
-                if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-[10px] py-1 rounded cursor-pointer"; 
+                if(btn) btn.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer"; 
             });
             
             const activeBtn = getEl(`size-${sizeName}`); 
             if(activeBtn) {
-                activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-[10px] py-1 rounded font-bold cursor-pointer";
+                activeBtn.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
             }
         }
 
@@ -735,7 +719,7 @@
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
-            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v54</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
+            if (filteredMessages.length === 0) { if (getEl('chatContainer')) getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v55</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; return; }
             
             currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
             currentEndLoadedIndex = filteredMessages.length; 
@@ -758,7 +742,7 @@
             renderChatSegment(additionalSegment, 'prepend', currentLoadedIndex);
             
             const newHeight = getEl('chatContainer').scrollHeight; 
-            if (getEl('chatContainer')) getEl('chatContainer').scrollTop = oldTop + (newHeight - oldScrollHeight);
+            if (getEl('chatContainer')) getEl('chatContainer').scrollTop = oldTop + (newHeight - oldHeight);
             isLoadingMore = false;
         }
 
@@ -918,75 +902,3 @@
                             } 
                         }, 100);
                     };
-                    if (getEl('searchResults')) getEl('searchResults').appendChild(item);
-                }
-            });
-            if (getEl('searchResults')) { getEl('searchResults').classList.toggle('hidden', matchCount === 0); if(matchCount === 0) { getEl('searchResults').innerHTML = '<div class="p-3 text-center text-gray-400 text-xs">見つかりませんでした</div>'; getEl('searchResults').classList.remove('hidden'); } }
-        }
-
-        function saveDataToIndexedDb(dataArray) { const request = indexedDB.open("LineViewerCacheDB", 1); request.onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").put({ id: "last_timeline", data: dataArray }); }; }
-
-        function openDatabaseAndLoadCache() {
-            const request = indexedDB.open("LineViewerCacheDB", 1);
-            request.onupgradeneeded = function(e) { const db = e.target.result; if (!db.objectStoreNames.contains("timeline")) db.createObjectStore("timeline", { keyPath: "id" }); };
-            request.onsuccess = function(e) {
-                const db = e.target.result; const tx = db.transaction("timeline", "readonly"); const store = tx.objectStore("timeline"); const getReq = store.get("last_timeline");
-                getReq.onsuccess = function() {
-                    if (getReq.result && getReq.result.data && getReq.result.data.length > 0) {
-                        globalMessages = getReq.result.data; filteredMessages = [...globalMessages]; let senderCounts = {}; globalMessages.forEach(m => { if(m.type === 'msg') senderCounts[m.sender] = (senderCounts[m.sender] || 0) + 1; }); globalSenders = Object.keys(senderCounts);
-                        if (getEl('meSelector')) getEl('meSelector').innerHTML = '';
-                        for (const [sender, count] of Object.entries(senderCounts)) { const option = document.createElement('option'); option.value = sender; option.innerText = `${sender} (${count}回)`; if (getEl('meSelector')) getEl('meSelector').appendChild(option); }
-                        const savedMe = localStorage.getItem('cached_me_user'); if (savedMe && senderCounts[savedMe]) { currentMe = savedMe; if(getEl('meSelector')) { getEl('meSelector').value = savedMe; getEl('meSelector').disabled = false; } }
-                        
-                        if (getEl('talkSub')) getEl('talkSub').innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
-                        
-                        updateHeaderTitle(); startRender();
-                    } else { clearUiToUnauthenticated(); }
-                };
-            };
-        }
-
-        function clearIndexedDbCache() { indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); }; }
-        function parseToTimestamp(dateStr, timeStr) { const dMatches = dateStr.match(/\d+/g); const tMatches = timeStr.match(/\d+/g); if (!dMatches || dMatches.length < 3) return 0; const hour = tMatches ? parseInt(tMatches[0], 10) : 0; const min = tMatches ? parseInt(tMatches[1], 10) : 0; return new Date(parseInt(dMatches[0], 10), parseInt(dMatches[1], 10) - 1, parseInt(dMatches[2], 10), hour, min, 0).getTime(); }
-        function updateHeaderTitle() { if (globalSenders.length === 0) return; const partners = globalSenders.filter(sender => sender !== currentMe); actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; applyTitleDisplay(); }
-
-        function parseLineText(text, filename) {
-            const lines = text.split(/\r?\n/); const messages = []; const senderCounts = {}; let chatPartner = "";
-            const fileTitleMatch = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (fileTitleMatch) chatPartner = fileTitleMatch[1];
-            
-            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2})(?:\s+|\s*\(\s*)([月火水木金土日]|MON|TUE|WED|THU|FRI|SAT|SUN)(?:\s*|\s*\)\s*)$/i; 
-            
-            const msgRegex1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
-            const msgRegex2 = /^(\d{1,2}:\d{2})\s+([^\s]+)\s+(.*)$/;
-            let currentMsgRef = null;
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i]; const trimmedLine = line.trim(); 
-                if (trimmedLine === "") { if (currentMsgRef) currentMsgRef.body += '<br>'; continue; }
-                
-                let match = line.match(msgRegex1) || line.match(msgRegex2);
-                if (match) {
-                    const [_, time, sender, body] = match; const cleanedSender = sender.trim(); senderCounts[cleanedSender] = (senderCounts[cleanedSender] || 0) + 1;
-                    let cleanBody = body.replace(/\\n/g, '<br>'); 
-                    if (cleanBody === '[スタンプ]' || cleanBody === '[Sticker]') { cleanBody = '🎨 [スタンプ]'; } 
-                    else if (cleanBody === '[写真]' || cleanBody === '[Photo]') { cleanBody = '📸 [写真]'; } 
-                    else if (cleanBody === '[動画]' || cleanBody === '[Video]') { cleanBody = '🎬 [動画]'; }
-                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanedSender, body: cleanBody }; 
-                    messages.push(newMsg); 
-                    currentMsgRef = newMsg;
-                } 
-                else if (dateRegex.test(trimmedLine)) { 
-                    messages.push({ type: 'date', text: trimmedLine }); 
-                    currentMsgRef = null; 
-                } 
-                else if (currentMsgRef) { 
-                    currentMsgRef.body += '<br>' + line; 
-                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
-                    messages[messages.length - 1].body += '<br>' + line; 
-                }
-            }
-            return { messages, senderCounts, chatPartner };
-        }
-    </script>
-</body>
-</html>
