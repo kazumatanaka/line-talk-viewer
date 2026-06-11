@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Line Talk Viewer v72</title>
+    <title>Internal Data Viewer v72</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -109,14 +109,11 @@
                 </svg>
             </div>
             <h2 class="text-xl font-bold mb-2">Internal Data Viewer v72</h2>
-            <p class="text-xs text-gray-400 mb-6">このアプリは生体認証でロックされています</p>
+            <p class="text-xs text-gray-400 mb-6">指紋または顔認証でロックを解除します</p>
             
             <div class="space-y-3">
-                <button id="passkeyLoginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition cursor-pointer">
-                    パスキーでロック解除
-                </button>
-                <button id="passkeyRegBtn" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-medium py-2 px-6 rounded-full transition cursor-pointer">
-                    新しいデバイスを登録する
+                <button id="passkeyLoginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition cursor-pointer等">
+                    生体認証でロック解除
                 </button>
             </div>
         </div>
@@ -409,7 +406,6 @@
                 return;
             }
 
-            // タイトルタップでカモフラージュ切り替え
             if (e.target.closest("#titleArea")) {
                 if (globalMessages.length === 0) return;
                 isCamouflageMode = !isCamouflageMode;
@@ -457,7 +453,6 @@
                 };
             }
 
-            // ローカルファイルの読み込み
             if (getEl('fileInput')) {
                 getEl('fileInput').onchange = async (e) => {
                     const files = e.target.files; if (!files || files.length === 0) return;
@@ -517,6 +512,7 @@
                             window.location.hash = ""; 
                             setAuthSuccess(); 
                             renderExplorer('root'); 
+                            unlockApp(); // Google認証成功時にロック解除
                             return;
                         }
                     }
@@ -526,6 +522,7 @@
                     if (t && exp && Date.now() < parseInt(exp, 10)) {
                         gapi.client.setToken({ access_token: t }); 
                         setAuthSuccess();
+                        unlockApp(); // すでにログイン認証が生きていれば自動パス
                         const history = localStorage.getItem('explorer_folder_history');
                         if (history) { 
                             folderHistory = JSON.parse(history); 
@@ -575,8 +572,8 @@
             isCamouflageMode = false;
             applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
-            alert("連携情報を完全に削除しました。"); 
-            toggleDrawer(false);
+            alert("連携情報を完全に削除しました。リロードすると再度ロックされます。"); 
+            location.reload();
         }
 
         function setAuthSuccess() {
@@ -1020,7 +1017,7 @@
                 } else { 
                     c.appendChild(frag); 
                 } 
-                }
+            }
         }
 
         function triggerSearch() {
@@ -1178,58 +1175,9 @@
             return { messages, counts, partner };
         }
 
-        // --- パスキー（簡易ロック・ボタン分離版）実装 ---
+        // --- 画面ロック解除ロジック（Google認証呼び出し） ---
         const lockScreen = getEl('passkeyLockScreen');
         const loginBtn = getEl('passkeyLoginBtn');
-        const regBtn = getEl('passkeyRegBtn');
-
-        const generateRandomBuffer = (length) => crypto.getRandomValues(new Uint8Array(length));
-
-        // 新規登録処理
-        async function handleRegister() {
-            try {
-                const createOptions = {
-                    publicKey: {
-                        challenge: generateRandomBuffer(32),
-                        rp: { name: "Internal Viewer" },
-                        user: {
-                            id: generateRandomBuffer(16),
-                            name: "viewer_user",
-                            displayName: "Viewer User"
-                        },
-                        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-                        authenticatorSelection: { userVerification: "required" },
-                        timeout: 60000,
-                    }
-                };
-
-                await navigator.credentials.create(createOptions);
-                alert("デバイスの認証キー登録が完了しました！次からは「ロック解除」ボタンを使えます。");
-                unlockApp();
-            } catch (err) {
-                console.error("WebAuthn Register Error:", err);
-                alert("登録がキャンセルされたか、またはブラウザ環境が非対応です。");
-            }
-        }
-
-        // ログイン（認証）処理
-        async function handleLogin() {
-            try {
-                const getOptions = {
-                    publicKey: {
-                        challenge: generateRandomBuffer(32),
-                        userVerification: "required",
-                        timeout: 60000,
-                    }
-                };
-
-                await navigator.credentials.get(getOptions);
-                unlockApp();
-            } catch (err) {
-                console.error("WebAuthn Login Error:", err);
-                alert("認証に失敗しました。まだ登録していないか、キーが見つからない場合は下の「新しいデバイスを登録する」をお試しください。");
-            }
-        }
 
         function unlockApp() {
             if (lockScreen) {
@@ -1238,8 +1186,12 @@
             }
         }
 
-        if (loginBtn) loginBtn.addEventListener('click', handleLogin);
-        if (regBtn) regBtn.addEventListener('click', handleRegister);
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                // ドライブ連携（OAuth2）をトリガーにしてGoogle公式の生体認証（パスキー）画面を間借りする
+                triggerAuth();
+            });
+        }
     </script>
 </body>
 </html>
