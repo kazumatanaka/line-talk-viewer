@@ -13,15 +13,15 @@
         .bg-theme-beige { background-color: #f5f5dc !important; }
 
         /* テーマ連動型のヘッダー（メニューバー）の背景色設定 */
-        .header-blue { background-color: #92afd9; color: #374151; }
+        .header-blue { background-color: #92afd9; color: #ffffff; }
         .header-dark { background-color: #1a1a1a; color: #ffffff; }
-        .header-pink { background-color: #fbcfe8; color: #374151; }
+        .header-pink { background-color: #fbcfe8; color: #ffffff; }
         .header-beige { background-color: #f5f5dc; color: #374151; }
 
         /* テーマ連動型のヘッダーサブテキストの文字色設定 */
-        .sub-blue { color: #6b7280; }
+        .sub-blue { color: #dbeafe; }
         .sub-dark { color: #9ca3af; }
-        .sub-pink { color: #6b7280; }
+        .sub-pink { color: #fdf2f8; }
         .sub-beige { color: #6b7280; }
 
         /* 吹き出しの基本スタイル（Blue等のLightテーマ用） */
@@ -100,6 +100,21 @@
     </style>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
+
+    <div id="passkeyLockScreen" class="fixed inset-0 bg-gray-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300 w-full h-full">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 border border-gray-700">
+            <div class="mb-6 flex justify-center">
+                <svg class="w-16 h-16 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold mb-2">LINE Talk Viewer v71</h2>
+            <p id="passkeyStatusText" class="text-xs text-gray-400 mb-8">このアプリは生体認証でロックされています</p>
+            <button id="passkeyBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition cursor-pointer">
+                パスキーでロック解除
+            </button>
+        </div>
+    </div>
 
     <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
         <div class="flex items-center space-x-1.5">
@@ -446,7 +461,6 @@
                         const txt = await new Promise((res) => { const r = new FileReader(); r.onload = (evt) => res(evt.target.result); r.readAsText(f, 'UTF-8'); });
                         texts.push({ text: txt, name: f.name });
                     }
-                    // ローカルファイルも Drive と同じ関数を通り、自動保存されます
                     processMultipleTexts(texts);
                 };
             }
@@ -657,7 +671,7 @@
                                 for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
                                 partnerCustomAvatarUrl = `data:${file.mimeType};base64,` + window.btoa(binary);
                                 hasDriveCustomImage = true;
-                                saveCache(globalMessages); // アイコン設定時にキャッシュも更新して次回起動時に保持
+                                saveCache(globalMessages); 
                                 startRender();
                                 alert("選択した画像を相手のアイコンに設定しました！");
                             } catch(err) { console.error(err); }
@@ -691,7 +705,6 @@
             } else { box.classList.add('hidden'); }
         }
 
-        // タイトル表示の切り替え関数
         function applyTitle() { 
             const t = getEl('talkTitle'); 
             if (t) {
@@ -826,9 +839,9 @@
             const sub = getEl('talkSub');
             if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             
-            isCamouflageMode = false; // 新規ロード時は相手の名前を表示
+            isCamouflageMode = false; 
             updateTitleText(); 
-            saveCache(globalMessages); // キャッシュ保存（画像・履歴）
+            saveCache(globalMessages); 
             startRender(); 
             toggleDrawer(false);
         }
@@ -1046,7 +1059,6 @@
             }
         }
 
-        // --- キャッシュ・自動ロード部分の強化 ---
         function saveCache(data) { 
             indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { 
                 e.target.result.transaction("timeline", "readwrite")
@@ -1060,7 +1072,6 @@
             }; 
         }
 
-        // 開いた時に自動で読み込む処理
         function openDbAndLoad() {
             const req = indexedDB.open("LineViewerCacheDB", 1);
             req.onupgradeneeded = function(e) { 
@@ -1078,7 +1089,6 @@
                         globalMessages = res.data; 
                         filteredMessages = [...globalMessages]; 
                         
-                        // 画像データをキャッシュから復元
                         partnerCustomAvatarUrl = res.avatar || "";
                         hasDriveCustomImage = res.hasCustom || false;
 
@@ -1098,7 +1108,7 @@
                         const sub = getEl('talkSub');
                         if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         
-                        isCamouflageMode = false; // 自動ロード時も最初は相手の名前を表示
+                        isCamouflageMode = false; 
                         updateTitleText(); 
                         startRender();
                     } else { 
@@ -1116,7 +1126,6 @@
 
         function parseTimestamp(dStr, tStr) { const dM = dStr.match(/\d+/g); const tM = tStr.match(/\d+/g); if (!dM || dM.length < 3) return 0; const h = tM ? parseInt(tM[0], 10) : 0; const m = tM ? parseInt(tM[1], 10) : 0; return new Date(parseInt(dM[0], 10), parseInt(dM[1], 10) - 1, parseInt(dM[2], 10), h, m, 0).getTime(); }
         
-        // タイトルテキストの更新
         function updateTitleText() { 
             if (globalSenders.length === 0) return; 
             const partners = globalSenders.filter(s => s !== currentMe); 
@@ -1161,6 +1170,71 @@
                 }
             }
             return { messages, counts, partner };
+        }
+
+        // --- パスキー（簡易ロック）実装 ---
+        const lockScreen = getEl('passkeyLockScreen');
+        const passkeyBtn = getEl('passkeyBtn');
+        const passkeyStatusText = getEl('passkeyStatusText');
+
+        const generateRandomBuffer = (length) => crypto.getRandomValues(new Uint8Array(length));
+
+        async function handlePasskeyAuth() {
+            const isRegistered = localStorage.getItem('local_dummy_passkey_enabled');
+
+            try {
+                if (!isRegistered) {
+                    passkeyStatusText.innerText = "初回登録：端末のパスキーを作成します";
+                    const createOptions = {
+                        publicKey: {
+                            challenge: generateRandomBuffer(32),
+                            rp: { name: "Local Viewer" },
+                            user: {
+                                id: generateRandomBuffer(16),
+                                name: "viewer_user",
+                                displayName: "Viewer User"
+                            },
+                            pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+                            authenticatorSelection: { userVerification: "required" },
+                            timeout: 60000,
+                        }
+                    };
+
+                    await navigator.credentials.create(createOptions);
+                    localStorage.setItem('local_dummy_passkey_enabled', 'true');
+                    unlockApp();
+                } else {
+                    const getOptions = {
+                        publicKey: {
+                            challenge: generateRandomBuffer(32),
+                            userVerification: "required",
+                            timeout: 60000,
+                        }
+                    };
+
+                    await navigator.credentials.get(getOptions);
+                    unlockApp();
+                }
+            } catch (err) {
+                console.error("WebAuthn Error:", err);
+                alert("認証がキャンセルされたか、お使いの環境（localhost以外など）ではサポートされていません。");
+            }
+        }
+
+        function unlockApp() {
+            if (lockScreen) {
+                lockScreen.style.opacity = '0';
+                setTimeout(() => {
+                    lockScreen.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        if (passkeyBtn) {
+            passkeyBtn.addEventListener('click', handlePasskeyAuth);
+            if (!localStorage.getItem('local_dummy_passkey_enabled')) {
+                passkeyBtn.innerText = "パスキーを新規登録して開く";
+            }
         }
     </script>
 </body>
