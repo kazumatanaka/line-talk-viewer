@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v74 (Custom SVG Icons)</title>
+    <title>LINE Talk Viewer v75 (Custom SVG Icons)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -119,7 +119,7 @@
             </div>
         </div>
 
-        <div id="dummyDataZone" class="hidden w-full max-w-xl px-4 flex flex-col items-center space-y-6 animate-fade-in">
+        <div id="dummyDataZone" class="hidden w-full max-w-xl px-4 flex flex-col items-center space-y-6">
             <div class="text-center">
                 <h2 class="text-lg font-bold tracking-wider text-emerald-400">Internal Data Summary</h2>
                 <p class="text-xs text-gray-400 mt-1">Sector Analysis Report</p>
@@ -186,7 +186,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v74</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v75</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -232,7 +232,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v74</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v75</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -289,7 +289,7 @@
                         <div class="grid grid-cols-3 gap-1">
                             <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">小</button>
                             <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer">中</button>
-                            <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">大</button>
+                            <td id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">大</button>
                         </div>
                     </div>
                 </div>
@@ -333,7 +333,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v74"; 
+        let actualPartnerNames = "LINE Talk Viewer v75"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -357,7 +357,7 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の再生成
+        // ロック画面（目隠しレイヤー）の生成
         function forceLockScreen() {
             isCurrentlyAuthenticated = false;
             let lockScreen = getEl('biometricLockScreen');
@@ -381,7 +381,7 @@
                             </p>
                         </div>
                     </div>
-                    <div id="dummyDataZone" class="hidden w-full max-w-xl px-4 flex flex-col items-center space-y-6 animate-fade-in">
+                    <div id="dummyDataZone" class="hidden w-full max-w-xl px-4 flex flex-col items-center space-y-6">
                         <div class="text-center">
                             <h2 class="text-lg font-bold tracking-wider text-emerald-400">Internal Data Summary</h2>
                             <p class="text-xs text-gray-400 mt-1">Sector Analysis Report</p>
@@ -439,68 +439,28 @@
                 `;
                 document.body.appendChild(lockDiv);
             } else {
-                // すでにロック画面が存在する場合はダミー表示を閉じて初期画面に戻す
+                // バックグラウンド切り替えから戻った際は表示を初期メイン画面（ボタン配置）に戻す
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('dummyDataZone').classList.add('hidden');
             }
 
-            // 各要素のイベントバインド
-            getEl('dummyAuthBtn').onclick = switchToDummyPage;
-            getEl('realAuthTrigger').onclick = verifyBiometrics;
-
-            // 初期ロード、またはバックグラウンド復帰時は、自動で「本物の認証」をトリガーする
-            setTimeout(() => { verifyBiometrics(); }, 300);
+            // 【修正】自動トリガーを廃止し、クリックイベントのみをバインド
+            getEl('dummyAuthBtn').onclick = () => handleAuthAttempt('dummy');
+            getEl('realAuthTrigger').onclick = () => handleAuthAttempt('real');
         }
 
-        // ダミーボタンが押された時の遷移
-        function switchToDummyPage() {
-            getEl('lockMainZone').classList.add('hidden');
-            getEl('dummyDataZone').classList.remove('hidden');
-        }
-
-        async function registerBiometrics() {
-            try {
-                const challenge = new Uint8Array(32);
-                window.crypto.getRandomValues(challenge);
-                const userId = new Uint8Array(16);
-                window.crypto.getRandomValues(userId);
-
-                const publicKeyCredentialCreationOptions = {
-                    challenge: challenge,
-                    rp: { name: "LINE Talk Viewer", id: window.location.hostname },
-                    user: {
-                        id: userId,
-                        name: "user@lineviewer.local",
-                        displayName: "Local User"
-                    },
-                    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-                    authenticatorSelection: {
-                        authenticatorAttachment: "platform",
-                        userVerification: "required"
-                    },
-                    timeout: 60000
-                };
-
-                const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
-                const credIdBase64 = bufferToBase64Url(credential.rawId);
-                
-                localStorage.setItem(CONFIG_KEY, credIdBase64);
-                unlockScreen();
-            } catch (err) {
-                console.error("登録失敗:", err);
-                if(getEl('lockMessage')) getEl('lockMessage').innerText = "登録に失敗しました。再試行してください。";
-            }
-        }
-
-        async function verifyBiometrics() {
+        // 認証処理用共通ハンドラー
+        async function handleAuthAttempt(targetMode) {
             const storedCredId = localStorage.getItem(CONFIG_KEY);
             
+            // 初回デバイス登録
             if (!storedCredId) {
-                if(getEl('lockMessage')) getEl('lockMessage').innerText = "初回セットアップ：このデバイスの生体認証を登録します。";
-                await registerBiometrics();
+                if(getEl('lockMessage')) getEl('lockMessage').innerText = "初回登録：このデバイスの生体認証を登録します...";
+                await registerBiometrics(targetMode);
                 return;
             }
 
+            // 指紋認証検証の実行
             try {
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
@@ -516,10 +476,52 @@
                 };
 
                 await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
-                unlockScreen();
+                
+                // 【認証成功時の挙動分岐】
+                if (targetMode === 'dummy') {
+                    // ダミー画面へ遷移
+                    getEl('lockMainZone').classList.add('hidden');
+                    getEl('dummyDataZone').classList.remove('hidden');
+                } else if (targetMode === 'real') {
+                    // 本物のアプリへ遷移
+                    unlockScreen();
+                }
             } catch (err) {
                 console.error("認証失敗:", err);
-                if(getEl('lockMessage')) getEl('lockMessage').innerText = "認証が拒否、またはキャンセルされました。";
+                // 失敗時はダミーデータを開かず、ロック画面でエラー文言表示にとどめる
+                if(getEl('lockMessage')) getEl('lockMessage').innerText = "認証に失敗したか、キャンセルされました。";
+            }
+        }
+
+        async function registerBiometrics(targetMode) {
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                const userId = new Uint8Array(16);
+                window.crypto.getRandomValues(userId);
+
+                const publicKeyCredentialCreationOptions = {
+                    challenge: challenge,
+                    rp: { name: "LINE Talk Viewer", id: window.location.hostname },
+                    user: { id: userId, name: "user@lineviewer.local", displayName: "Local User" },
+                    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+                    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                    timeout: 60000
+                };
+
+                const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+                const credIdBase64 = bufferToBase64Url(credential.rawId);
+                localStorage.setItem(CONFIG_KEY, credIdBase64);
+                
+                if (targetMode === 'dummy') {
+                    getEl('lockMainZone').classList.add('hidden');
+                    getEl('dummyDataZone').classList.remove('hidden');
+                } else {
+                    unlockScreen();
+                }
+            } catch (err) {
+                console.error("登録失敗:", err);
+                if(getEl('lockMessage')) getEl('lockMessage').innerText = "デバイス登録に失敗しました。";
             }
         }
 
@@ -532,7 +534,7 @@
             }
         }
 
-        // バックグラウンド・アプリ切り替え監視
+        // バックグラウンド・アプリ切り替え監視（自動ポップアップはさせず、目隠しロックのみ配置）
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 forceLockScreen();
@@ -591,7 +593,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v74";
+            actualPartnerNames = "LINE Talk Viewer v75";
             isCamouflageMode = false;
             applyTitle();
             
@@ -605,7 +607,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v74</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v75</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -694,8 +696,8 @@
         });
 
         window.addEventListener("DOMContentLoaded", () => {
-            // 初回セットアップ＆読み込み
             if (window.PublicKeyCredential) {
+                // 初期ロード時に目隠しロックを設置（ただしポップアップの自動発火は無し）
                 forceLockScreen();
             } else {
                 getEl('lockMessage').innerText = "Unsupported environment for biometric WebAuthn.";
@@ -840,9 +842,9 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v74</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v75</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v74"; 
+            actualPartnerNames = "LINE Talk Viewer v75"; 
             isCamouflageMode = false;
             applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
@@ -986,9 +988,9 @@
             const t = getEl('talkTitle'); 
             if (t) {
                 if (globalMessages.length === 0) {
-                    t.innerText = "LINE Talk Viewer v74";
+                    t.innerText = "LINE Talk Viewer v75";
                 } else {
-                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v74" : actualPartnerNames;
+                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v75" : actualPartnerNames;
                 }
             }
         }
@@ -1130,7 +1132,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v74</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v75</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
@@ -1349,7 +1351,6 @@
             }; 
         }
 
-        // IndexedDB キャッシュ自動ロード処理
         function openDbAndLoad() {
             const req = indexedDB.open("LineViewerCacheDB", 1);
             req.onupgradeneeded = function(e) { 
