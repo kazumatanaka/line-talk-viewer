@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Internal Data Viewer v72</title>
+    <title>LINE Talk Viewer v72 (Custom SVG Icons)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -101,21 +101,20 @@
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
 
-    <div id="passkeyLockScreen" class="fixed inset-0 bg-gray-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300 w-full h-full">
-        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 border border-gray-700">
-            <div class="mb-6 flex justify-center">
-                <svg class="w-16 h-16 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+    <div id="biometricLockScreen" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300">
+        <div class="text-center space-y-6 max-w-sm px-6">
+            <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30 animate-pulse">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11V7a4 4 0 118 0v4c0 .621.03 1.23.088 1.833M17.433 17.433a8.962 8.962 0 01-3.604 2.85m2.572-2.114l-.054.09"></path>
                 </svg>
             </div>
-            <h2 class="text-xl font-bold mb-2">Internal Data Viewer v72</h2>
-            <p class="text-xs text-gray-400 mb-6">指紋または顔認証でロックを解除します</p>
-            
-            <div class="space-y-3">
-                <button id="passkeyLoginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition cursor-pointer等">
-                    生体認証でロック解除
-                </button>
+            <div>
+                <h2 class="text-xl font-bold tracking-wider text-blue-400">Internal Data</h2>
+                <p class="text-xs text-gray-400 mt-2" id="lockMessage">アクセスを許可するには指紋（生体）認証が必要です。</p>
             </div>
+            <button id="retryAuthBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2.5 px-4 rounded-full font-bold shadow-md transition cursor-pointer">
+                認証を開始する
+            </button>
         </div>
     </div>
 
@@ -127,7 +126,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">Internal Data Viewer v72</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v72</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -173,7 +172,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & Internal Viewer v72</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v72</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -274,12 +273,101 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "Internal Data Viewer v72"; 
+        let actualPartnerNames = "LINE Talk Viewer v72"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
 
         const getEl = (id) => document.getElementById(id);
+
+        // --- 簡易型 WebAuthn（指紋生体認証）制御用ロジック ---
+        const CONFIG_KEY = 'bio_auth_credential_id';
+
+        function bufferToBase64Url(buffer) {
+            return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+        function base64UrlToBuffer(base64url) {
+            const padding = '='.repeat((4 - base64url.length % 4) % 4);
+            const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const raw = window.atob(base64);
+            const buffer = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) buffer[i] = raw.charCodeAt(i);
+            return buffer.buffer;
+        }
+
+        async function registerBiometrics() {
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                const userId = new Uint8Array(16);
+                window.crypto.getRandomValues(userId);
+
+                const publicKeyCredentialCreationOptions = {
+                    challenge: challenge,
+                    rp: { name: "LINE Talk Viewer", id: window.location.hostname },
+                    user: {
+                        id: userId,
+                        name: "user@lineviewer.local",
+                        displayName: "Local User"
+                    },
+                    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        userVerification: "required"
+                    },
+                    timeout: 60000
+                };
+
+                const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+                const credIdBase64 = bufferToBase64Url(credential.rawId);
+                
+                localStorage.setItem(CONFIG_KEY, credIdBase64);
+                unlockScreen();
+            } catch (err) {
+                console.error("登録失敗:", err);
+                getEl('lockMessage').innerText = "登録に失敗しました。再試行してください。";
+            }
+        }
+
+        async function verifyBiometrics() {
+            const storedCredId = localStorage.getItem(CONFIG_KEY);
+            
+            if (!storedCredId) {
+                getEl('lockMessage').innerText = "初回セットアップ：このデバイスの生体認証を登録します。";
+                await registerBiometrics();
+                return;
+            }
+
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                const publicKeyCredentialRequestOptions = {
+                    challenge: challenge,
+                    allowCredentials: [{
+                        id: base64UrlToBuffer(storedCredId),
+                        type: 'public-key'
+                    }],
+                    userVerification: "required",
+                    timeout: 60000
+                };
+
+                await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
+                unlockScreen();
+            } catch (err) {
+                console.error("認証失敗:", err);
+                getEl('lockMessage').innerText = "認証が拒否、またはキャンセルされました。";
+            }
+        }
+
+        function unlockScreen() {
+            const lockScreen = getEl('biometricLockScreen');
+            if (lockScreen) {
+                lockScreen.classList.add('opacity-0');
+                setTimeout(() => lockScreen.remove(), 300);
+            }
+        }
 
         function toggleDrawer(show) {
             const drawer = getEl('drawerMenu');
@@ -323,7 +411,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
 
-            actualPartnerNames = "Internal Data Viewer v72";
+            actualPartnerNames = "LINE Talk Viewer v72";
             isCamouflageMode = false;
             applyTitle();
             
@@ -337,7 +425,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & Internal Viewer v72</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v72</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -426,6 +514,15 @@
         });
 
         window.addEventListener("DOMContentLoaded", () => {
+            // 生体認証のブートストラップチェック
+            if (window.PublicKeyCredential) {
+                setTimeout(() => { verifyBiometrics(); }, 400);
+                getEl('retryAuthBtn').addEventListener('click', verifyBiometrics);
+            } else {
+                getEl('lockMessage').innerText = "Unsupported environment for biometric WebAuthn.";
+                getEl('retryAuthBtn').classList.add('hidden');
+            }
+
             const theme = localStorage.getItem('user_theme') || 'blue';
             const size = localStorage.getItem('user_font_size') || 'md';
             changeTheme(theme);
@@ -512,7 +609,6 @@
                             window.location.hash = ""; 
                             setAuthSuccess(); 
                             renderExplorer('root'); 
-                            unlockApp(); // Google認証成功時にロック解除
                             return;
                         }
                     }
@@ -522,7 +618,6 @@
                     if (t && exp && Date.now() < parseInt(exp, 10)) {
                         gapi.client.setToken({ access_token: t }); 
                         setAuthSuccess();
-                        unlockApp(); // すでにログイン認証が生きていれば自動パス
                         const history = localStorage.getItem('explorer_folder_history');
                         if (history) { 
                             folderHistory = JSON.parse(history); 
@@ -566,14 +661,14 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & Internal Viewer v72</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v72</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "Internal Data Viewer v72"; 
+            actualPartnerNames = "LINE Talk Viewer v72"; 
             isCamouflageMode = false;
             applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
-            alert("連携情報を完全に削除しました。リロードすると再度ロックされます。"); 
-            location.reload();
+            alert("連携情報を完全に削除しました。"); 
+            toggleDrawer(false);
         }
 
         function setAuthSuccess() {
@@ -712,9 +807,9 @@
             const t = getEl('talkTitle'); 
             if (t) {
                 if (globalMessages.length === 0) {
-                    t.innerText = "Internal Data Viewer v72";
+                    t.innerText = "LINE Talk Viewer v72";
                 } else {
-                    t.innerText = isCamouflageMode ? "Internal Data Viewer v72" : actualPartnerNames;
+                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v72" : actualPartnerNames;
                 }
             }
         }
@@ -774,7 +869,7 @@
             }
         }
 
-        function updateBreadcrumb() {
+        grid = updateBreadcrumb = function() {
             const bc = getEl('breadcrumb');
             if (!bc) return; bc.innerHTML = '';
             folderHistory.forEach((f, idx) => {
@@ -842,7 +937,7 @@
             const sub = getEl('talkSub');
             if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
             
-            isCamouflageMode = false; 
+            isCamouflageMode = false;
             updateTitleText(); 
             saveCache(globalMessages); 
             startRender(); 
@@ -856,7 +951,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & Internal Viewer v72</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v72</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
@@ -1173,24 +1268,6 @@
                 }
             }
             return { messages, counts, partner };
-        }
-
-        // --- 画面ロック解除ロジック（Google認証呼び出し） ---
-        const lockScreen = getEl('passkeyLockScreen');
-        const loginBtn = getEl('passkeyLoginBtn');
-
-        function unlockApp() {
-            if (lockScreen) {
-                lockScreen.style.opacity = '0';
-                setTimeout(() => { lockScreen.style.display = 'none'; }, 300);
-            }
-        }
-
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
-                // ドライブ連携（OAuth2）をトリガーにしてGoogle公式の生体認証（パスキー）画面を間借りする
-                triggerAuth();
-            });
         }
     </script>
 </body>
