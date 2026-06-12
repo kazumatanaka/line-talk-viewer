@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v77 (Custom SVG Icons)</title>
+    <title>LINE Talk Viewer v78 (Custom SVG Icons)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -98,7 +98,7 @@
             padding: 0;
         }
 
-        /* ダミー表示ゾーンのみ選択やスクロールを完全に許可する安定化スタイル */
+        /* ダミー表示ゾーン用安定化スタイル */
         .allow-select-and-scroll {
             user-select: text !important;
             -webkit-user-select: text !important;
@@ -128,7 +128,7 @@
             </div>
         </div>
 
-        <div id="dummyDataZone" class="hidden w-full max-w-2xl px-4 py-8 flex-col items-center space-y-6 max-h-full allow-select-and-scroll">
+        <div id="dummyDataZone" class="hidden w-full max-w-2xl px-4 py-8 flex flex-col items-center space-y-6 max-h-full allow-select-and-scroll">
             <div class="text-center flex-shrink-0">
                 <h2 class="text-lg font-bold tracking-wider text-emerald-400">Internal Data Summary</h2>
                 <p class="text-xs text-gray-400 mt-1">Sector Analysis Report (Live)</p>
@@ -198,7 +198,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v77</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v78</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -244,7 +244,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v77</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v78</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -345,17 +345,17 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v77"; 
+        let actualPartnerNames = "LINE Talk Viewer v78"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
 
         const getEl = (id) => document.getElementById(id);
 
-        // --- 簡易型 WebAuthn（指紋生体認証）制御用ロジック ---
+        // --- WebAuthn制御用ロジック ---
         const CONFIG_KEY = 'bio_auth_credential_id';
         let isCurrentlyAuthenticated = false; 
-        let isProcessingBiometrics = false; // 認証ポップアップ表示中の多重バグ防止ガードフラグ
+        let isProcessingBiometrics = false; 
 
         function bufferToBase64Url(buffer) {
             return btoa(String.fromCharCode(...new Uint8Array(buffer)))
@@ -370,14 +370,8 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の生成・安定化
+        // ロック画面（目隠しレイヤー）の生成・再配置
         function forceLockScreen() {
-            // ダミー画面が表示されている（すでに認証通過してデータ閲覧中）なら、リセットしない
-            const dummyZone = getEl('dummyDataZone');
-            if (dummyZone && !dummyZone.classList.contains('hidden')) {
-                return; 
-            }
-
             isCurrentlyAuthenticated = false;
             let lockScreen = getEl('biometricLockScreen');
             
@@ -461,19 +455,20 @@
                 `;
                 document.body.appendChild(lockDiv);
             } else {
-                getEl('lockMainZone').style.display = 'block';
+                // 【修正】離脱からの復帰時は、ダミーデータ画面を隠し、必ず最初の「未認証ボタン画面」へ戻す
                 getEl('lockMainZone').classList.remove('hidden');
-                getEl('dummyDataZone').style.display = 'none';
+                getEl('lockMainZone').style.display = 'block';
                 getEl('dummyDataZone').classList.add('hidden');
+                getEl('dummyDataZone').style.display = 'none';
             }
 
             getEl('dummyAuthBtn').onclick = () => handleAuthAttempt('dummy');
             getEl('realAuthTrigger').onclick = () => handleAuthAttempt('real');
         }
 
-        // 認証処理
+        // 認証判定
         async function handleAuthAttempt(targetMode) {
-            if (isProcessingBiometrics) return; // 多重発火ガード
+            if (isProcessingBiometrics) return; 
             
             const storedCredId = localStorage.getItem(CONFIG_KEY);
             if (!storedCredId) {
@@ -499,16 +494,13 @@
 
                 await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
                 
-                // 認証成功時
                 if (targetMode === 'dummy') {
-                    // 表示の完全切り替えと安定化
                     getEl('lockMainZone').classList.add('hidden');
                     getEl('lockMainZone').style.display = 'none';
                     
                     getEl('dummyDataZone').classList.remove('hidden');
                     getEl('dummyDataZone').style.display = 'flex';
                     
-                    // ダミーデータ表示中フラグをセット
                     isCurrentlyAuthenticated = false; 
                 } else if (targetMode === 'real') {
                     unlockScreen();
@@ -522,7 +514,6 @@
                 getEl('dummyDataZone').classList.add('hidden');
                 getEl('dummyDataZone').style.display = 'none';
             } finally {
-                // ポップアップが閉じた後、わずかに遅延させてガードフラグを解除（フォーカスバグ防止）
                 setTimeout(() => { isProcessingBiometrics = false; }, 500);
             }
         }
@@ -548,7 +539,7 @@
                 localStorage.setItem(CONFIG_KEY, credIdBase64);
                 
                 if (targetMode === 'dummy') {
-                    getEl('lockMainZone').style.display = 'none';
+                    getEl('lockMainZone').style.style.display = 'none';
                     getEl('dummyDataZone').style.display = 'flex';
                 } else {
                     unlockScreen();
@@ -568,37 +559,26 @@
             }
         }
 
-        // バックグラウンド・アプリ切り替え監視（認証中、またはすでにダミーデータ表示中なら強制ロックを無視する構造に変更）
+        // --- 【超重要】ページ離脱・アプリ切り替えの強制監視の復活 ---
+        // 1. タブを閉じたりアプリが完全に非表示（スリープ、別アプリ）になった瞬間
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                // ダミーデータ表示中であるかチェック
-                const dummyZone = getEl('dummyDataZone');
-                if (dummyZone && !dummyZone.classList.contains('hidden')) {
-                    // ダミーデータ画面を表示している時は、アプリ切り替え時にメインの「ボタン画面」へ戻す
-                    forceLockScreen();
-                } else if (!isCurrentlyAuthenticated) {
-                    forceLockScreen();
-                }
+                forceLockScreen();
             }
         });
 
+        // 2. スマホ等でタスクバーを引っ張り出したり、別の小ウィンドウにフォーカスが外れた瞬間
         window.addEventListener('blur', () => {
-            if (!isProcessingBiometrics) { // 認証ポップアップによるblurを回避
-                const dummyZone = getEl('dummyDataZone');
-                if (dummyZone && !dummyZone.classList.contains('hidden')) {
-                    forceLockScreen();
-                } else if (!isCurrentlyAuthenticated) {
-                    forceLockScreen();
-                }
+            // 指紋認証ダイアログそのものが立ち上がる時のblurは、フラグ保護で除外する
+            if (!isProcessingBiometrics) {
+                forceLockScreen();
             }
         });
 
+        // 3. 再度ブラウザに戻ってきたときの再検証防衛
         window.addEventListener('focus', () => {
             if (!isCurrentlyAuthenticated && !isProcessingBiometrics) {
-                const dummyZone = getEl('dummyDataZone');
-                if (!dummyZone || dummyZone.classList.contains('hidden')) {
-                    forceLockScreen();
-                }
+                forceLockScreen();
             }
         });
 
@@ -644,7 +624,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v77";
+            actualPartnerNames = "LINE Talk Viewer v78";
             isCamouflageMode = false;
             applyTitle();
             
@@ -658,7 +638,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v77</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v78</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -892,9 +872,9 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v77</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v78</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v77"; 
+            actualPartnerNames = "LINE Talk Viewer v78"; 
             isCamouflageMode = false;
             applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
@@ -1038,9 +1018,9 @@
             const t = getEl('talkTitle'); 
             if (t) {
                 if (globalMessages.length === 0) {
-                    t.innerText = "LINE Talk Viewer v77";
+                    t.innerText = "LINE Talk Viewer v78";
                 } else {
-                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v77" : actualPartnerNames;
+                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v78" : actualPartnerNames;
                 }
             }
         }
@@ -1182,7 +1162,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v77</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v78</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
