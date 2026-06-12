@@ -6,22 +6,22 @@
     <title>Sales Attainment Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
+        /* テーマごとの背景色設定 */
         .bg-theme-blue { background-color: #92afd9 !important; }
         .bg-theme-dark { background-color: #1a1a1a !important; }
         .bg-theme-pink { background-color: #fbcfe8 !important; }
         .bg-theme-beige { background-color: #f5f5dc !important; }
 
-        /* テーマ連動型のヘッダー（メニューバー）の背景色設定 */
-        .header-blue { background-color: #92afd9; color: #ffffff; }
+        /* テーマ連動型のヘッダー背景色設定 */
+        .header-blue { background-color: #92afd9; color: #374151; }
         .header-dark { background-color: #1a1a1a; color: #ffffff; }
-        .header-pink { background-color: #fbcfe8; color: #ffffff; }
+        .header-pink { background-color: #fbcfe8; color: #374151; }
         .header-beige { background-color: #f5f5dc; color: #374151; }
 
         /* テーマ連動型のヘッダーサブテキストの文字色設定 */
-        .sub-blue { color: #dbeafe; }
+        .sub-blue { color: #6b7280; }
         .sub-dark { color: #9ca3af; }
-        .sub-pink { color: #fdf2f8; }
+        .sub-pink { color: #6b7280; }
         .sub-beige { color: #6b7280; }
 
         /* 吹き出しの基本スタイル（Lightテーマ用） */
@@ -56,11 +56,11 @@
             border-color: transparent #ffffff transparent transparent !important;
         }
 
-        /* 文字色（既読・時間・名前）の基本（Lightテーマ用） */
+        /* 文字色（既読・時間・名前）の基本 */
         .time-text { color: #546173 !important; font-weight: 500; } 
         .name-text { color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.15); } 
 
-        /* ダークモード時の着色上書き（完全再現） */
+        /* ダークモード時の着色上書き */
         .text-xs.bg-theme-dark .bubble-other,
         .text-sm.bg-theme-dark .bubble-other,
         .text-base.bg-theme-dark .bubble-other {
@@ -714,7 +714,8 @@
                     let texts = [];
                     localStorage.removeItem('tracked_folder_id');
                     localStorage.removeItem('tracked_file_ids');
-                    localStorage.removeItem('tracked_folder_history'); // 手動時はクリア
+                    localStorage.removeItem('tracked_folder_history');
+                    localStorage.removeItem('tracked_image_id');
                     for (let f of files) {
                         const txt = await new Promise((res) => { const r = new FileReader(); r.onload = (evt) => res(evt.target.result); r.readAsText(f, 'UTF-8'); });
                         texts.push({ text: txt, name: f.name });
@@ -769,7 +770,6 @@
                             window.location.hash = ""; 
                             setAuthSuccess(); 
                             
-                            // 固定履歴があればダイレクトジャンプ
                             const trackedHistory = localStorage.getItem('tracked_folder_history');
                             if (trackedHistory) {
                                 folderHistory = JSON.parse(trackedHistory);
@@ -788,7 +788,6 @@
                         gapi.client.setToken({ access_token: t }); 
                         setAuthSuccess();
                         
-                        // 固定履歴があればダイレクトジャンプ優先
                         const trackedHistory = localStorage.getItem('tracked_folder_history');
                         if (trackedHistory) {
                             folderHistory = JSON.parse(trackedHistory);
@@ -831,6 +830,8 @@
             localStorage.removeItem('tracked_folder_id');
             localStorage.removeItem('tracked_file_ids');
             localStorage.removeItem('tracked_folder_history');
+            localStorage.removeItem('tracked_image_id');
+            
             if (typeof gapi !== 'undefined' && gapi.client) gapi.client.setToken(null); 
             clearCache();
             
@@ -903,7 +904,6 @@
                 currentFolderFiles = [];
                 currentFolderImageFile = null; 
 
-                // 【追加】固定フォルダ表示バッジ
                 if (currentFolderId === localStorage.getItem('tracked_folder_id')) {
                     const pinInfo = document.createElement('div');
                     pinInfo.className = 'text-[10px] text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded mb-2 text-center border border-emerald-200 flex-shrink-0';
@@ -1050,7 +1050,6 @@
             });
         }
 
-        // 【修正】一括読み込み時に、フォルダパスを記憶
         async function triggerBatchLoad() {
             if (currentFolderFiles.length === 0) return; 
             const title = getEl('talkTitle');
@@ -1065,7 +1064,12 @@
                     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
                     partnerCustomAvatarUrl = `data:${currentFolderImageFile.mimeType};base64,` + window.btoa(binary);
                     hasDriveCustomImage = true;
+                    localStorage.setItem('tracked_image_id', currentFolderImageFile.id);
                 } catch(e) { console.error("Batch load image fetch failed", e); }
+            } else {
+                localStorage.removeItem('tracked_image_id');
+                hasDriveCustomImage = false;
+                partnerCustomAvatarUrl = "";
             }
 
             let texts = [];
@@ -1078,14 +1082,12 @@
                 } catch (err) { console.error(err); } 
             }
             
-            // 履歴ごとオートセーブ（ピン留め）
             localStorage.setItem('tracked_folder_id', currentFolderId);
             localStorage.setItem('tracked_file_ids', JSON.stringify(fileIds));
             localStorage.setItem('tracked_folder_history', JSON.stringify(folderHistory));
             processMultipleTexts(texts);
         }
 
-        // 【修正】単一読み込み時も、フォルダパスを記憶
         async function processSingleDrive(fileId, filename) { 
             try { 
                 const title = getEl('talkTitle');
@@ -1100,12 +1102,16 @@
                         for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
                         partnerCustomAvatarUrl = `data:${currentFolderImageFile.mimeType};base64,` + window.btoa(binary);
                         hasDriveCustomImage = true;
+                        localStorage.setItem('tracked_image_id', currentFolderImageFile.id);
                     } catch(e) { console.error("Single load image fetch failed", e); }
+                } else {
+                    localStorage.removeItem('tracked_image_id');
+                    hasDriveCustomImage = false;
+                    partnerCustomAvatarUrl = "";
                 }
 
                 const res = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); 
                 
-                // 履歴ごとオートセーブ（ピン留め）
                 localStorage.setItem('tracked_folder_id', currentFolderId);
                 localStorage.setItem('tracked_file_ids', JSON.stringify([fileId]));
                 localStorage.setItem('tracked_folder_history', JSON.stringify(folderHistory));
@@ -1128,17 +1134,55 @@
 
             try {
                 const res = await gapi.client.drive.files.list({
-                    q: `'${folderId}' in parents and mimeType = 'text/plain' and trashed = false`,
-                    fields: 'files(id, name)'
+                    q: `'${folderId}' in parents and (mimeType = 'text/plain' or mimeType = 'image/jpeg' or mimeType = 'image/png') and trashed = false`,
+                    fields: 'files(id, name, mimeType)',
+                    orderBy: 'name'
                 });
                 const files = res.result.files || [];
-                const newFiles = files.filter(f => !processedIds.includes(f.id));
+                
+                const imageFiles = files.filter(f => f.mimeType.startsWith('image/'));
+                const textFiles = files.filter(f => f.mimeType === 'text/plain');
 
-                if (newFiles.length > 0) {
-                    if (titleElement) titleElement.innerText = `新着トークを追加中 (${newFiles.length}件)...`;
+                let cacheNeedsUpdate = false;
+                let requiresRender = false;
+
+                if (imageFiles.length > 0) {
+                    const imgFile = imageFiles[0]; 
+                    const currentImageId = localStorage.getItem('tracked_image_id');
+                    
+                    if (imgFile.id !== currentImageId || !hasDriveCustomImage) {
+                        try {
+                            const imgRes = await gapi.client.drive.files.get({ fileId: imgFile.id, alt: 'media' });
+                            const bytes = new Uint8Array(imgRes.body.length);
+                            for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
+                            let binary = '';
+                            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                            
+                            partnerCustomAvatarUrl = `data:${imgFile.mimeType};base64,` + window.btoa(binary);
+                            hasDriveCustomImage = true;
+                            localStorage.setItem('tracked_image_id', imgFile.id);
+                            
+                            cacheNeedsUpdate = true;
+                            requiresRender = true;
+                        } catch(e) { console.error("画像自動同期エラー", e); }
+                    }
+                } else {
+                    if (hasDriveCustomImage) {
+                        hasDriveCustomImage = false;
+                        partnerCustomAvatarUrl = "";
+                        localStorage.removeItem('tracked_image_id');
+                        cacheNeedsUpdate = true;
+                        requiresRender = true;
+                    }
+                }
+
+                const newTextFiles = textFiles.filter(f => !processedIds.includes(f.id));
+
+                if (newTextFiles.length > 0) {
+                    if (titleElement) titleElement.innerText = `新着トークを追加中 (${newTextFiles.length}件)...`;
                     let newTexts = [];
                     
-                    for (let nf of newFiles) {
+                    for (let nf of newTextFiles) {
                         try {
                             const fileRes = await gapi.client.drive.files.get({ fileId: nf.id, alt: 'media' });
                             newTexts.push({ text: fileRes.body, name: nf.name });
@@ -1197,12 +1241,16 @@
                         if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         
                         updateTitleText();
-                        saveCache(globalMessages);
-                        startRender();
+                        cacheNeedsUpdate = true;
+                        requiresRender = true;
                     }
-                } else {
-                    if (titleElement) titleElement.innerText = originalTitle;
                 }
+
+                if (cacheNeedsUpdate) saveCache(globalMessages);
+                if (requiresRender) startRender();
+
+                if (titleElement) titleElement.innerText = originalTitle;
+                
             } catch (err) {
                 console.error("自動バックグラウンドチェックエラー:", err);
                 if (titleElement) titleElement.innerText = originalTitle;
