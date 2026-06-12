@@ -69,9 +69,9 @@
         .bg-theme-dark .time-text { color: #8a8a8a !important; }
         .bg-theme-dark .name-text { color: #a0a0a0 !important; text-shadow: none; }
 
-        /* === GChat Mode Styles (Material Design 3) === */
+        /* === GChat Mode Styles (Material Design 3 - 淡いパステルカラー) === */
         .header-gchat-light { background-color: #ffffff !important; color: #202124 !important; border-bottom: 1px solid #e0e0e0; box-shadow: none !important; }
-        .header-gchat-dark { background-color: #1f1f1f !important; color: #e8eaed !important; border-bottom: 1px solid #3c4043; box-shadow: none !important; }
+        .header-gchat-dark { background-color: #202124 !important; color: #e8eaed !important; border-bottom: 1px solid #3c4043; box-shadow: none !important; }
         
         .header-gchat-light svg { stroke: #5f6368 !important; color: #5f6368 !important; }
         .header-gchat-dark svg { stroke: #9aa0a6 !important; color: #9aa0a6 !important; }
@@ -81,36 +81,39 @@
         .mode-gchat #headerAvatar { display: block !important; } 
 
         .mode-gchat .bubble-me, .mode-gchat .bubble-other {
-            box-shadow: none !important;
-            border-radius: 18px !important; 
+            box-shadow: none !important; border-radius: 18px !important; 
         }
-        .mode-gchat .bubble-me::after, .mode-gchat .bubble-other::after {
-            display: none !important; 
-        }
-        .mode-gchat .date-line {
-            display: none !important; 
-        }
+        .mode-gchat .bubble-me::after, .mode-gchat .bubble-other::after { display: none !important; }
+        .mode-gchat .date-line { display: none !important; }
         .mode-gchat .date-stamp-node {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            font-weight: bold;
+            background-color: transparent !important; border: none !important; box-shadow: none !important; font-weight: bold;
         }
+        .mode-gchat .name-text { font-size: 12px; font-weight: 500; }
 
-        .bg-theme-gchat-light { background-color: #ffffff !important; }
-        .sub-gchat-light { color: #5f6368 !important; }
-        .bg-theme-gchat-light .bubble-me { background-color: #e3f2fd !important; color: #202124 !important; }
+        /* GChat Light - 淡い色 */
+        .bg-theme-gchat-light { background-color: #f8f9fa !important; }
+        .gchat-light-blue .bubble-me { background-color: #e8f0fe !important; color: #174ea6 !important; }
+        .gchat-light-red .bubble-me { background-color: #fce8e6 !important; color: #c5221f !important; }
+        .gchat-light-purple .bubble-me { background-color: #f3e8fd !important; color: #681da8 !important; }
+        .gchat-light-green .bubble-me { background-color: #e6f4ea !important; color: #137333 !important; }
+        .gchat-light-yellow .bubble-me { background-color: #fef7e0 !important; color: #b06000 !important; }
+        
         .bg-theme-gchat-light .bubble-other { background-color: #f1f3f4 !important; color: #202124 !important; }
         .bg-theme-gchat-light .time-text { color: #5f6368 !important; }
-        .bg-theme-gchat-light .name-text { color: #3c4043 !important; text-shadow: none !important; }
+        .bg-theme-gchat-light .name-text { color: #5f6368 !important; text-shadow: none !important; }
         .bg-theme-gchat-light .date-stamp-node { color: #5f6368 !important; }
 
+        /* GChat Dark - 淡い色 */
         .bg-theme-gchat-dark { background-color: #202124 !important; }
-        .sub-gchat-dark { color: #9aa0a6 !important; }
-        .bg-theme-gchat-dark .bubble-me { background-color: #004a77 !important; color: #e8eaed !important; }
+        .gchat-dark-blue .bubble-me { background-color: #1f385c !important; color: #d2e3fc !important; }
+        .gchat-dark-red .bubble-me { background-color: #5c1e19 !important; color: #f8d9d5 !important; }
+        .gchat-dark-purple .bubble-me { background-color: #42105c !important; color: #e6c9ff !important; }
+        .gchat-dark-green .bubble-me { background-color: #134621 !important; color: #ceead6 !important; }
+        .gchat-dark-yellow .bubble-me { background-color: #593900 !important; color: #fef7e0 !important; }
+
         .bg-theme-gchat-dark .bubble-other { background-color: #3c4043 !important; color: #e8eaed !important; }
         .bg-theme-gchat-dark .time-text { color: #9aa0a6 !important; }
-        .bg-theme-gchat-dark .name-text { color: #e8eaed !important; text-shadow: none !important; }
+        .bg-theme-gchat-dark .name-text { color: #9aa0a6 !important; text-shadow: none !important; }
         .bg-theme-gchat-dark .date-stamp-node { color: #9aa0a6 !important; }
 
         /* アイコンの切り替え */
@@ -224,7 +227,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                     <svg class="w-6 h-6 stroke-current icon-gchat" fill="none" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4M4 12l6-6M4 12l6 6"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                 </button>
                 <div id="titleArea" class="flex items-center cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
@@ -261,7 +264,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                     <svg class="w-full h-full pointer-events-none icon-gchat" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v.01M12 12v.01M12 18v.01"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 12h.01M12 12h.01M18 12h.01"></path>
                     </svg>
                 </button>
             </div>
@@ -340,11 +343,23 @@
                                 </div>
                             </div>
                             
-                            <div id="gchat-theme-selector" class="hidden">
-                                <label class="block text-xs font-bold text-gray-500 mb-1.5 mt-2">🎨 背景色 (Google Chat用)</label>
-                                <div class="grid grid-cols-2 gap-1">
-                                    <button id="theme-gchat-light" class="bg-white text-gray-800 text-[10px] py-1 rounded font-medium border border-gray-300 cursor-pointer shadow-sm">ライト</button>
-                                    <button id="theme-gchat-dark" class="bg-[#202124] text-[#e8eaed] text-[10px] py-1 rounded font-medium border border-[#3c4043] cursor-pointer shadow-sm">ダーク</button>
+                            <div id="gchat-theme-selector" class="hidden space-y-2">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-500 mb-1">モード</label>
+                                    <div class="grid grid-cols-2 gap-1">
+                                        <button id="theme-gchat-light" class="bg-white text-gray-800 text-[10px] py-1 rounded font-medium border border-gray-300 cursor-pointer shadow-sm">☀ ライト</button>
+                                        <button id="theme-gchat-dark" class="bg-[#202124] text-[#e8eaed] text-[10px] py-1 rounded font-medium border border-[#3c4043] cursor-pointer shadow-sm">🌙 ダーク</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-500 mb-1">淡いカラーパレット</label>
+                                    <div class="grid grid-cols-5 gap-1">
+                                        <button id="gchat-color-blue" class="w-full h-6 rounded bg-[#c2e7ff] dark:bg-[#1f385c] border border-transparent cursor-pointer" title="青系"></button>
+                                        <button id="gchat-color-red" class="w-full h-6 rounded bg-[#fce8e6] dark:bg-[#5c1e19] border border-transparent cursor-pointer" title="赤系"></button>
+                                        <button id="gchat-color-purple" class="w-full h-6 rounded bg-[#f3e8fd] dark:bg-[#42105c] border border-transparent cursor-pointer" title="紫系"></button>
+                                        <button id="gchat-color-green" class="w-full h-6 rounded bg-[#e6f4ea] dark:bg-[#134621] border border-transparent cursor-pointer" title="緑系"></button>
+                                        <button id="gchat-color-yellow" class="w-full h-6 rounded bg-[#fef7e0] dark:bg-[#593900] border border-transparent cursor-pointer" title="黄色系"></button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -381,7 +396,8 @@
 
         let currentAppMode = 'line'; 
         let currentLineTheme = 'blue';
-        let currentGChatTheme = 'gchat-light';
+        let gchatModeState = 'light'; // 'light' or 'dark'
+        let gchatModeColor = 'blue';  // 'blue', 'red', 'purple', 'green', 'yellow'
         let currentThemeName = 'blue'; 
         let hasDriveCustomImage = false;
 
@@ -593,7 +609,7 @@
 
         function getThemeDefaultAvatar() {
             if (currentAppMode === 'gchat') {
-                return currentThemeName === 'gchat-dark' ? 'default-dark.png' : 'default-light.png';
+                return gchatModeState === 'dark' ? 'default-dark.png' : 'default-light.png';
             }
             return currentThemeName === 'dark' ? 'default-dark.png' : 'default-light.png';
         }
@@ -741,9 +757,24 @@
             if (targetId === "theme-pink") { currentLineTheme = 'pink'; localStorage.setItem('user_theme', 'pink'); applyCurrentMode(); }
             if (targetId === "theme-beige") { currentLineTheme = 'beige'; localStorage.setItem('user_theme', 'beige'); applyCurrentMode(); }
             
-            // --- 追加: GChatモードの色選択イベント ---
-            if (targetId === "theme-gchat-light") { currentGChatTheme = 'gchat-light'; localStorage.setItem('gchat_theme', 'gchat-light'); applyCurrentMode(); }
-            if (targetId === "theme-gchat-dark") { currentGChatTheme = 'gchat-dark'; localStorage.setItem('gchat_theme', 'gchat-dark'); applyCurrentMode(); }
+            // GChat手動テーマ切り替え
+            if (targetId === "theme-gchat-light") {
+                gchatModeState = 'light';
+                localStorage.setItem('gchat_state', 'light');
+                changeTheme('gchat-' + gchatModeColor);
+            }
+            if (targetId === "theme-gchat-dark") {
+                gchatModeState = 'dark';
+                localStorage.setItem('gchat_state', 'dark');
+                changeTheme('gchat-' + gchatModeColor);
+            }
+
+            // GChat淡いパステルカラーの選択
+            if (targetId === "gchat-color-blue") { gchatModeColor = 'blue'; changeTheme('gchat-blue'); }
+            if (targetId === "gchat-color-red") { gchatModeColor = 'red'; changeTheme('gchat-red'); }
+            if (targetId === "gchat-color-purple") { gchatModeColor = 'purple'; changeTheme('gchat-purple'); }
+            if (targetId === "gchat-color-green") { gchatModeColor = 'green'; changeTheme('gchat-green'); }
+            if (targetId === "gchat-color-yellow") { gchatModeColor = 'yellow'; changeTheme('gchat-yellow'); }
 
             if (targetId === "size-sm") changeFontSize('sm');
             if (targetId === "size-md") changeFontSize('md');
@@ -767,7 +798,8 @@
 
             currentAppMode = localStorage.getItem('app_mode') || 'line';
             currentLineTheme = localStorage.getItem('user_theme') || 'blue';
-            currentGChatTheme = localStorage.getItem('gchat_theme') || 'gchat-light';
+            gchatModeState = localStorage.getItem('gchat_state') || 'light';
+            gchatModeColor = localStorage.getItem('gchat_color') || 'blue';
             applyCurrentMode();
 
             const size = localStorage.getItem('user_font_size') || 'md';
@@ -848,227 +880,6 @@
             attemptInit();
         });
 
-        function gapiLoadedTrig() { 
-            attemptInit(); 
-        }
-        
-        function attemptInit() {
-            if (typeof gapi === 'undefined' || typeof gapi.load === 'undefined') return;
-            if (isGapiClientReady) return;
-
-            isGapiClientReady = true;
-            gapi.load('client', async () => {
-                try {
-                    await gapi.client.init({}); 
-                    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-                    
-                    const hash = window.location.hash;
-                    if (hash && hash.includes('access_token')) {
-                        const params = new URLSearchParams(hash.substring(1)); 
-                        const token = params.get('access_token'); 
-                        const expires = params.get('expires_in');
-                        
-                        if (token) {
-                            localStorage.setItem('drive_access_token', token); 
-                            localStorage.setItem('drive_token_expiry', Date.now() + (parseInt(expires, 10) * 1000));
-                            gapi.client.setToken({ access_token: token }); 
-                            window.location.hash = ""; 
-                            setAuthSuccess(); 
-                            
-                            const trackedHistory = localStorage.getItem('tracked_folder_history');
-                            if (trackedHistory) {
-                                folderHistory = JSON.parse(trackedHistory);
-                                renderExplorer(folderHistory[folderHistory.length - 1].id);
-                            } else {
-                                renderExplorer('root'); 
-                            }
-                            autoCheckNewFiles(); 
-                            return;
-                        }
-                    }
-
-                    const t = localStorage.getItem('drive_access_token'); 
-                    const exp = localStorage.getItem('drive_token_expiry');
-                    if (t && exp && Date.now() < parseInt(exp, 10)) {
-                        gapi.client.setToken({ access_token: t }); 
-                        setAuthSuccess();
-                        
-                        const trackedHistory = localStorage.getItem('tracked_folder_history');
-                        if (trackedHistory) {
-                            folderHistory = JSON.parse(trackedHistory);
-                            renderExplorer(folderHistory[folderHistory.length - 1].id);
-                        } else {
-                            const history = localStorage.getItem('explorer_folder_history');
-                            if (history) { 
-                                folderHistory = JSON.parse(history); 
-                                renderExplorer(folderHistory[folderHistory.length - 1].id); 
-                            } else { 
-                                renderExplorer('root'); 
-                            }
-                        }
-                        autoCheckNewFiles(); 
-                        return;
-                    }
-                    
-                    if (globalMessages.length === 0) clearAuthUi();
-
-                } catch (err) {
-                    console.error("GAPI initialization error:", err);
-                    isGapiClientReady = false;
-                }
-            });
-        }
-
-        function triggerAuth() { 
-            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`; 
-        }
-
-        function triggerLogout() {
-            const t = localStorage.getItem('drive_access_token'); 
-            if (t && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) { 
-                try { google.accounts.oauth2.revokeToken(t, () => {}); } catch(e){}
-            }
-            localStorage.removeItem('drive_access_token'); 
-            localStorage.removeItem('drive_token_expiry'); 
-            localStorage.removeItem('explorer_folder_history'); 
-            localStorage.removeItem('cached_me_user');
-            localStorage.removeItem('tracked_folder_id');
-            localStorage.removeItem('tracked_file_ids');
-            localStorage.removeItem('tracked_folder_history');
-            localStorage.removeItem('tracked_image_id');
-            
-            if (typeof gapi !== 'undefined' && gapi.client) gapi.client.setToken(null); 
-            clearCache();
-            
-            globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = ""; 
-            partnerCustomAvatarUrl = "";
-            hasDriveCustomImage = false;
-            clearAuthUi();
-            if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
-            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
-            toggleHeaderBox(false);
-            if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
-            }
-            actualPartnerNames = "Line Talk Viewer"; 
-            isCamouflageMode = false;
-            applyTitle();
-            if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
-            alert("連携情報を完全に削除しました。"); 
-            toggleDrawer(false);
-        }
-
-        function setAuthSuccess() {
-            const btn = getEl('authBtn');
-            if (btn) { 
-                btn.innerText = "✓ 連携完了"; 
-                btn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none"; 
-            }
-            const lBtn = getEl('logoutBtn');
-            if (lBtn) lBtn.classList.remove('hidden');
-            const guide = getEl('guideText');
-            if (globalMessages.length === 0 && guide) {
-                guide.innerText = "自動ログイン成功！フォルダを選択してください。";
-                const sub = getEl('talkSub');
-                if (sub) sub.innerText = "フォルダを探してください";
-            }
-        }
-
-        function clearAuthUi() {
-            const btn = getEl('authBtn');
-            if (btn) { 
-                btn.innerText = "Googleドライブと連携する"; 
-                btn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer"; 
-            }
-            const lBtn = getEl('logoutBtn');
-            if (lBtn) lBtn.classList.add('hidden');
-            const ph = getEl('explorerPlaceholder');
-            if (ph) ph.innerText = "連携するとフォルダが表示されます";
-            const el = getEl('explorerList');
-            if (el) el.innerHTML = '<p class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>';
-            const sub = getEl('talkSub');
-            if (sub) sub.innerText = "未連携";
-            currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
-        }
-
-        async function renderExplorer(folderId) {
-            currentFolderId = folderId; 
-            const el = getEl('explorerList');
-            if (el) el.innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
-            updateBreadcrumb(); 
-            localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
-            try {
-                const res = await gapi.client.drive.files.list({ 
-                    q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain' or mimeType = 'image/jpeg' or mimeType = 'image/png') and trashed = false`, 
-                    fields: 'files(id, name, mimeType)', 
-                    pageSize: 100, 
-                    orderBy: 'folder,name' 
-                });
-                const files = res.result.files; 
-                if (el) el.innerHTML = ''; 
-                currentFolderFiles = [];
-                currentFolderImageFile = null; 
-
-                if (currentFolderId === localStorage.getItem('tracked_folder_id')) {
-                    const pinInfo = document.createElement('div');
-                    pinInfo.className = 'text-[10px] text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded mb-2 text-center border border-emerald-200 flex-shrink-0';
-                    pinInfo.innerText = '📌 起動時の固定フォルダとして設定されています';
-                    if(el) el.appendChild(pinInfo);
-                }
-
-                if ((!files || files.length === 0) && el) { 
-                    el.innerHTML += '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
-                    return; 
-                }
-                let textCount = 0;
-                files.forEach(file => {
-                    const isFolder = (file.mimeType === 'application/vnd.google-apps.folder'); 
-                    const isImage = (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png');
-                    const item = document.createElement('div');
-                    item.className = 'p-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer transition select-none';
-                    
-                    if (isFolder) { 
-                        item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`; 
-                        item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); }; 
-                    } else if (isImage) {
-                        currentFolderImageFile = file; 
-                        item.innerHTML = `<span class="text-emerald-600 truncate flex-1">🖼️ ${file.name} (アイコン画像)</span>`;
-                        item.onclick = async () => {
-                            try {
-                                const imgRes = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
-                                const bytes = new Uint8Array(imgRes.body.length);
-                                for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
-                                let binary = '';
-                                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                                partnerCustomAvatarUrl = `data:${file.mimeType};base64,` + window.btoa(binary);
-                                hasDriveCustomImage = true;
-                                saveCache(globalMessages); 
-                                startRender();
-                                applyTitle();
-                                alert("選択した画像を相手のアイコンに設定しました！");
-                            } catch(err) { console.error(err); }
-                        };
-                    } else { 
-                        item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`; 
-                        currentFolderFiles.push(file); 
-                        textCount++; 
-                        item.onclick = () => processSingleDrive(file.id, file.name); 
-                    }
-                    if (el) el.appendChild(item);
-                });
-                const bBtn = getEl('batchLoadBtn');
-                if (textCount > 0 && bBtn) { 
-                    bBtn.innerText = `⚡ このフォルダ内の一括結合 (${textCount}個)`; 
-                    bBtn.classList.remove('hidden'); 
-                } else if(bBtn) {
-                    bBtn.classList.add('hidden');
-                }
-            } catch (err) { 
-                console.error(err); 
-                if (el) el.innerHTML = '<p class="text-red-500 text-center py-4">⚠️ ドライブ情報の取得に失敗しました</p>';
-            }
-        }
-
         function applyCurrentMode() {
             if (currentAppMode === 'line') {
                 document.body.classList.remove('mode-gchat');
@@ -1091,7 +902,7 @@
                 getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
                 getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded font-bold bg-blue-600 text-white cursor-pointer shadow-sm border border-transparent transition";
 
-                changeTheme(currentGChatTheme);
+                changeTheme('gchat-' + gchatModeColor);
             }
         }
 
@@ -1119,14 +930,22 @@
                 sub.className = `text-[10px] sub-${themeName}`;
             }
 
+            // アクティブなテーマボタンのハイライト処理
             if (currentAppMode === 'line') {
                 const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
                 buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-yellow-400'); });
                 const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
             } else {
-                const buttons = [getEl('theme-gchat-light'), getEl('theme-gchat-dark')];
-                buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-blue-400'); });
-                const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-blue-400');
+                const btnLight = getEl('theme-gchat-light');
+                const btnDark = getEl('theme-gchat-dark');
+                if(btnLight) btnLight.classList.remove('ring-4', 'ring-blue-400');
+                if(btnDark) btnDark.classList.remove('ring-4', 'ring-blue-400');
+                
+                if (themeName.startsWith('gchat-dark')) {
+                    if(btnDark) btnDark.classList.add('ring-4', 'ring-blue-400');
+                } else {
+                    if(btnLight) btnLight.classList.add('ring-4', 'ring-blue-400');
+                }
             }
             
             if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
@@ -1542,12 +1361,15 @@
             const defAvatar = getThemeDefaultAvatar();
             
             const isGChat = currentAppMode === 'gchat';
-            const isDarkGChat = currentThemeName === 'gchat-dark';
+            const isDarkGChat = currentThemeName.includes('dark');
 
             const gMeBg = isDarkGChat ? 'bg-[#004a77] text-[#e8eaed]' : 'bg-[#c2e7ff] text-[#001d35]';
             const gOtherBg = isDarkGChat ? 'bg-[#3c4043] text-[#e8eaed]' : 'bg-[#f2f2f4] text-[#202124]';
             const gTimeText = isDarkGChat ? 'text-[#9aa0a6]' : 'text-[#5f6368]';
-            const gNameText = isDarkGChat ? 'text-[#e8eaed]' : 'text-[#202124]';
+            
+            // ★名前の色を時間と同じトーンのグレーにして文字色を薄くした
+            const gNameText = isDarkGChat ? 'text-[#9aa0a6]' : 'text-[#5f6368]';
+            
             const gDateBg = isDarkGChat ? 'bg-[#3c4043] text-[#9aa0a6]' : 'bg-[#f1f3f4] text-[#5f6368]';
 
             msgs.forEach((msg, idx) => {
