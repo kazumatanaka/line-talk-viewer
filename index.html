@@ -88,6 +88,47 @@
         .bg-theme-dark .time-text { color: #8a8a8a !important; }
         .bg-theme-dark .name-text { color: #a0a0a0 !important; text-shadow: none; }
 
+        /* --- GChat Mode Styles (システムテーマ連動) --- */
+        .mode-gchat .bubble-me, .mode-gchat .bubble-other {
+            box-shadow: none !important;
+            border-radius: 18px !important; /* GChat風の丸み */
+        }
+        .mode-gchat .bubble-me::after, .mode-gchat .bubble-other::after {
+            display: none !important; /* しっぽを消す */
+        }
+        .mode-gchat .date-line {
+            display: none !important; /* 日付の両脇の線を消す */
+        }
+        .mode-gchat .date-stamp-node {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-weight: bold;
+        }
+
+        /* GChat Light Theme */
+        .bg-theme-gchat-light { background-color: #ffffff !important; }
+        .header-gchat-light { background-color: #ffffff !important; color: #202124 !important; border-bottom: 1px solid #e0e0e0; }
+        .sub-gchat-light { color: #5f6368 !important; }
+        
+        .bg-theme-gchat-light .bubble-me { background-color: #e3f2fd !important; color: #202124 !important; }
+        .bg-theme-gchat-light .bubble-other { background-color: #f1f3f4 !important; color: #202124 !important; }
+        .bg-theme-gchat-light .time-text { color: #5f6368 !important; }
+        .bg-theme-gchat-light .name-text { color: #3c4043 !important; text-shadow: none !important; }
+        .bg-theme-gchat-light .date-stamp-node { color: #5f6368 !important; }
+
+        /* GChat Dark Theme */
+        .bg-theme-gchat-dark { background-color: #202124 !important; }
+        .header-gchat-dark { background-color: #202124 !important; color: #e8eaed !important; border-bottom: 1px solid #3c4043; }
+        .sub-gchat-dark { color: #9aa0a6 !important; }
+
+        .bg-theme-gchat-dark .bubble-me { background-color: #004a77 !important; color: #e8eaed !important; }
+        .bg-theme-gchat-dark .bubble-other { background-color: #3c4043 !important; color: #e8eaed !important; }
+        .bg-theme-gchat-dark .time-text { color: #9aa0a6 !important; }
+        .bg-theme-gchat-dark .name-text { color: #e8eaed !important; text-shadow: none !important; }
+        .bg-theme-gchat-dark .date-stamp-node { color: #9aa0a6 !important; }
+
+
         html, body {
             overflow: hidden !important;
             position: relative;
@@ -309,12 +350,23 @@
 
                     <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 flex-shrink-0">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 mb-1.5">🎨 背景着せ替え</label>
-                            <div class="grid grid-cols-4 gap-1">
-                                <button id="theme-blue" class="bg-[#7494c0] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ブルー</button>
-                                <button id="theme-dark" class="bg-[#0b0b0b] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ダーク</button>
-                                <button id="theme-pink" class="bg-[#fbcfe8] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ピンク</button>
-                                <button id="theme-beige" class="bg-[#f5f5dc] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ベージュ</button>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5">📱 表示モード設定</label>
+                            <div class="flex space-x-2 mb-3">
+                                <button id="mode-line" class="flex-1 py-1.5 text-xs rounded border font-bold bg-[#06c755] text-white cursor-pointer shadow-sm border-transparent transition">LINE風</button>
+                                <button id="mode-gchat" class="flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition">Google Chat風</button>
+                            </div>
+
+                            <div id="line-theme-selector">
+                                <label class="block text-xs font-bold text-gray-500 mb-1.5">🎨 背景色 (LINEモード用)</label>
+                                <div class="grid grid-cols-4 gap-1">
+                                    <button id="theme-blue" class="bg-[#7494c0] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ブルー</button>
+                                    <button id="theme-dark" class="bg-[#0b0b0b] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ダーク</button>
+                                    <button id="theme-pink" class="bg-[#fbcfe8] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ピンク</button>
+                                    <button id="theme-beige" class="bg-[#f5f5dc] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ベージュ</button>
+                                </div>
+                            </div>
+                            <div id="gchat-theme-info" class="hidden text-[10px] text-gray-500 bg-gray-200/60 p-2 rounded border border-gray-200">
+                                💡 Google Chat風モードは、デバイスのダークモード設定（ライト/ダーク）に自動連動して色が切り替わります。
                             </div>
                         </div>
                         <div>
@@ -348,7 +400,9 @@
 
         const DEFAULT_PARTNER_AVATAR = "default.png";
 
-        let currentThemeName = 'blue';
+        let currentAppMode = 'line'; // 'line' or 'gchat'
+        let currentLineTheme = 'blue';
+        let currentThemeName = 'blue'; // internally used for rendering class
         let hasDriveCustomImage = false;
 
         let globalMessages = []; 
@@ -532,24 +586,20 @@
         });
 
         // --- 予測防御ハック（OSのスクショより早く動くための裏技） ---
-
-        // 1. タッチキャンセル検知（iOSのホームスワイプ等で発火する確率が高い）
         document.addEventListener('touchcancel', () => {
             if (!isProcessingBiometrics) forceLockScreen();
         }, { passive: true });
 
-        // 2. 画面外へのポインター離脱検知（上部のURLバーや、画面外へのスワイプを検知）
         document.addEventListener('mouseleave', (e) => {
-            // 上方向（URLバーや通知センター）または下方向（ホームバー）への離脱を検知
             if (e.clientY <= 0 || e.clientY >= window.innerHeight - 10) {
                 if (!isProcessingBiometrics) forceLockScreen();
             }
         });
 
-        // 3. 戻る・進む操作の予測検知（ブラウザのUI操作によるスクショ対策）
         window.addEventListener('popstate', () => {
             if (!isProcessingBiometrics) forceLockScreen();
         });
+
 
         function toggleDrawer(show) {
             const drawer = getEl('drawerMenu');
@@ -578,6 +628,10 @@
         }
 
         function getThemeDefaultAvatar() {
+            // Google Chat風モードの場合はライト/ダークに応じて、LINEは既存通り
+            if (currentAppMode === 'gchat') {
+                return currentThemeName === 'gchat-dark' ? 'default-dark.png' : 'default-light.png';
+            }
             return currentThemeName === 'dark' ? 'default-dark.png' : 'default-light.png';
         }
 
@@ -682,10 +736,25 @@
                 applyTitle();
                 return;
             }
-            if (targetId === "theme-blue") changeTheme('blue');
-            if (targetId === "theme-dark") changeTheme('dark');
-            if (targetId === "theme-pink") changeTheme('pink');
-            if (targetId === "theme-beige") changeTheme('beige');
+
+            // --- モード切替のイベント ---
+            if (targetId === "mode-line") {
+                currentAppMode = 'line';
+                localStorage.setItem('app_mode', 'line');
+                applyCurrentMode();
+            }
+            if (targetId === "mode-gchat") {
+                currentAppMode = 'gchat';
+                localStorage.setItem('app_mode', 'gchat');
+                applyCurrentMode();
+            }
+
+            // --- 色切替のイベント（LINEモード専用） ---
+            if (targetId === "theme-blue") { currentLineTheme = 'blue'; localStorage.setItem('user_theme', 'blue'); applyCurrentMode(); }
+            if (targetId === "theme-dark") { currentLineTheme = 'dark'; localStorage.setItem('user_theme', 'dark'); applyCurrentMode(); }
+            if (targetId === "theme-pink") { currentLineTheme = 'pink'; localStorage.setItem('user_theme', 'pink'); applyCurrentMode(); }
+            if (targetId === "theme-beige") { currentLineTheme = 'beige'; localStorage.setItem('user_theme', 'beige'); applyCurrentMode(); }
+            
             if (targetId === "size-sm") changeFontSize('sm');
             if (targetId === "size-md") changeFontSize('md');
             if (targetId === "size-lg") changeFontSize('lg');
@@ -706,10 +775,20 @@
                 getEl('dummyAuthBtn').classList.add('hidden');
             }
 
-            const theme = localStorage.getItem('user_theme') || 'blue';
+            // 初期モードの読み込み
+            currentAppMode = localStorage.getItem('app_mode') || 'line';
+            currentLineTheme = localStorage.getItem('user_theme') || 'blue';
+            applyCurrentMode();
+
             const size = localStorage.getItem('user_font_size') || 'md';
-            changeTheme(theme);
             changeFontSize(size);
+            
+            // GChatモード用: デバイスのダークモード切り替えを監視
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (currentAppMode === 'gchat') {
+                    changeTheme(e.matches ? 'gchat-dark' : 'gchat-light');
+                }
+            });
             
             setupIndependentMenuEvents();
             
@@ -769,261 +848,45 @@
             attemptInit();
         });
 
-        function gapiLoadedTrig() { 
-            attemptInit(); 
-        }
-        
-        function attemptInit() {
-            if (typeof gapi === 'undefined' || typeof gapi.load === 'undefined') return;
-            if (isGapiClientReady) return;
+        // アプリモードの切り替えを一括管理する関数
+        function applyCurrentMode() {
+            if (currentAppMode === 'line') {
+                getEl('line-theme-selector').classList.remove('hidden');
+                getEl('gchat-theme-info').classList.add('hidden');
 
-            isGapiClientReady = true;
-            gapi.load('client', async () => {
-                try {
-                    await gapi.client.init({}); 
-                    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-                    
-                    const hash = window.location.hash;
-                    if (hash && hash.includes('access_token')) {
-                        const params = new URLSearchParams(hash.substring(1)); 
-                        const token = params.get('access_token'); 
-                        const expires = params.get('expires_in');
-                        
-                        if (token) {
-                            localStorage.setItem('drive_access_token', token); 
-                            localStorage.setItem('drive_token_expiry', Date.now() + (parseInt(expires, 10) * 1000));
-                            gapi.client.setToken({ access_token: token }); 
-                            window.location.hash = ""; 
-                            setAuthSuccess(); 
-                            
-                            const trackedHistory = localStorage.getItem('tracked_folder_history');
-                            if (trackedHistory) {
-                                folderHistory = JSON.parse(trackedHistory);
-                                renderExplorer(folderHistory[folderHistory.length - 1].id);
-                            } else {
-                                renderExplorer('root'); 
-                            }
-                            autoCheckNewFiles(); 
-                            return;
-                        }
-                    }
+                getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded font-bold bg-[#06c755] text-white cursor-pointer shadow-sm border border-transparent transition";
+                getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
 
-                    const t = localStorage.getItem('drive_access_token'); 
-                    const exp = localStorage.getItem('drive_token_expiry');
-                    if (t && exp && Date.now() < parseInt(exp, 10)) {
-                        gapi.client.setToken({ access_token: t }); 
-                        setAuthSuccess();
-                        
-                        const trackedHistory = localStorage.getItem('tracked_folder_history');
-                        if (trackedHistory) {
-                            folderHistory = JSON.parse(trackedHistory);
-                            renderExplorer(folderHistory[folderHistory.length - 1].id);
-                        } else {
-                            const history = localStorage.getItem('explorer_folder_history');
-                            if (history) { 
-                                folderHistory = JSON.parse(history); 
-                                renderExplorer(folderHistory[folderHistory.length - 1].id); 
-                            } else { 
-                                renderExplorer('root'); 
-                            }
-                        }
-                        autoCheckNewFiles(); 
-                        return;
-                    }
-                    
-                    if (globalMessages.length === 0) clearAuthUi();
+                changeTheme(currentLineTheme);
+            } else {
+                getEl('line-theme-selector').classList.add('hidden');
+                getEl('gchat-theme-info').classList.remove('hidden');
 
-                } catch (err) {
-                    console.error("GAPI initialization error:", err);
-                    isGapiClientReady = false;
-                }
-            });
-        }
+                getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
+                getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded font-bold bg-blue-600 text-white cursor-pointer shadow-sm border border-transparent transition";
 
-        function triggerAuth() { 
-            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`; 
-        }
-
-        function triggerLogout() {
-            const t = localStorage.getItem('drive_access_token'); 
-            if (t && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) { 
-                try { google.accounts.oauth2.revokeToken(t, () => {}); } catch(e){}
-            }
-            localStorage.removeItem('drive_access_token'); 
-            localStorage.removeItem('drive_token_expiry'); 
-            localStorage.removeItem('explorer_folder_history'); 
-            localStorage.removeItem('cached_me_user');
-            localStorage.removeItem('tracked_folder_id');
-            localStorage.removeItem('tracked_file_ids');
-            localStorage.removeItem('tracked_folder_history');
-            localStorage.removeItem('tracked_image_id');
-            
-            if (typeof gapi !== 'undefined' && gapi.client) gapi.client.setToken(null); 
-            clearCache();
-            
-            globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = ""; 
-            partnerCustomAvatarUrl = "";
-            hasDriveCustomImage = false;
-            clearAuthUi();
-            if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
-            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
-            toggleHeaderBox(false);
-            if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
-            }
-            actualPartnerNames = "Line Talk Viewer"; 
-            isCamouflageMode = false;
-            applyTitle();
-            if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
-            alert("連携情報を完全に削除しました。"); 
-            toggleDrawer(false);
-        }
-
-        function setAuthSuccess() {
-            const btn = getEl('authBtn');
-            if (btn) { 
-                btn.innerText = "✓ 連携完了"; 
-                btn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none"; 
-            }
-            const lBtn = getEl('logoutBtn');
-            if (lBtn) lBtn.classList.remove('hidden');
-            const guide = getEl('guideText');
-            if (globalMessages.length === 0 && guide) {
-                guide.innerText = "自動ログイン成功！フォルダを選択してください。";
-                const sub = getEl('talkSub');
-                if (sub) sub.innerText = "フォルダを探してください";
-            }
-        }
-
-        function clearAuthUi() {
-            const btn = getEl('authBtn');
-            if (btn) { 
-                btn.innerText = "Googleドライブと連携する"; 
-                btn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer"; 
-            }
-            const lBtn = getEl('logoutBtn');
-            if (lBtn) lBtn.classList.add('hidden');
-            const ph = getEl('explorerPlaceholder');
-            if (ph) ph.innerText = "連携するとフォルダが表示されます";
-            const el = getEl('explorerList');
-            if (el) el.innerHTML = '<p class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>';
-            const sub = getEl('talkSub');
-            if (sub) sub.innerText = "未連携";
-            currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
-        }
-
-        async function renderExplorer(folderId) {
-            currentFolderId = folderId; 
-            const el = getEl('explorerList');
-            if (el) el.innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
-            updateBreadcrumb(); 
-            localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
-            try {
-                const res = await gapi.client.drive.files.list({ 
-                    q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain' or mimeType = 'image/jpeg' or mimeType = 'image/png') and trashed = false`, 
-                    fields: 'files(id, name, mimeType)', 
-                    pageSize: 100, 
-                    orderBy: 'folder,name' 
-                });
-                const files = res.result.files; 
-                if (el) el.innerHTML = ''; 
-                currentFolderFiles = [];
-                currentFolderImageFile = null; 
-
-                if (currentFolderId === localStorage.getItem('tracked_folder_id')) {
-                    const pinInfo = document.createElement('div');
-                    pinInfo.className = 'text-[10px] text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded mb-2 text-center border border-emerald-200 flex-shrink-0';
-                    pinInfo.innerText = '📌 起動時の固定フォルダとして設定されています';
-                    if(el) el.appendChild(pinInfo);
-                }
-
-                if ((!files || files.length === 0) && el) { 
-                    el.innerHTML += '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
-                    return; 
-                }
-                let textCount = 0;
-                files.forEach(file => {
-                    const isFolder = (file.mimeType === 'application/vnd.google-apps.folder'); 
-                    const isImage = (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png');
-                    const item = document.createElement('div');
-                    item.className = 'p-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer transition select-none';
-                    
-                    if (isFolder) { 
-                        item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`; 
-                        item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); }; 
-                    } else if (isImage) {
-                        currentFolderImageFile = file; 
-                        item.innerHTML = `<span class="text-emerald-600 truncate flex-1">🖼️ ${file.name} (アイコン画像)</span>`;
-                        item.onclick = async () => {
-                            try {
-                                const imgRes = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
-                                const bytes = new Uint8Array(imgRes.body.length);
-                                for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
-                                let binary = '';
-                                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                                partnerCustomAvatarUrl = `data:${file.mimeType};base64,` + window.btoa(binary);
-                                hasDriveCustomImage = true;
-                                saveCache(globalMessages); 
-                                startRender();
-                                alert("選択した画像を相手のアイコンに設定しました！");
-                            } catch(err) { console.error(err); }
-                        };
-                    } else { 
-                        item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`; 
-                        currentFolderFiles.push(file); 
-                        textCount++; 
-                        item.onclick = () => processSingleDrive(file.id, file.name); 
-                    }
-                    if (el) el.appendChild(item);
-                });
-                const bBtn = getEl('batchLoadBtn');
-                if (textCount > 0 && bBtn) { 
-                    bBtn.innerText = `⚡ このフォルダ内の一括結合 (${textCount}個)`; 
-                    bBtn.classList.remove('hidden'); 
-                } else if(bBtn) {
-                    bBtn.classList.add('hidden');
-                }
-            } catch (err) { 
-                console.error(err); 
-                if (el) el.innerHTML = '<p class="text-red-500 text-center py-4">⚠️ ドライブ情報の取得に失敗しました</p>';
-            }
-        }
-        
-        function toggleHeaderBox(forceState) {
-            const box = getEl('headerSearchBox'); if (!box) return;
-            const isHidden = box.classList.contains('hidden'); const toShow = (forceState !== undefined) ? forceState : isHidden;
-            if (toShow) {
-                box.classList.remove('hidden'); const input = getEl('searchKeyword');
-                if (input) { input.value = ''; input.focus(); }
-                if (getEl('searchResults')) getEl('searchResults').classList.add('hidden');
-            } else { box.classList.add('hidden'); }
-        }
-
-        function applyTitle() { 
-            const t = getEl('talkTitle'); 
-            if (t) {
-                if (globalMessages.length === 0) {
-                    t.innerText = "Line Talk Viewer";
-                } else {
-                    t.innerText = isCamouflageMode ? "Line Talk Viewer" : actualPartnerNames;
-                }
+                // デバイスのダークモード設定をチェック
+                const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                changeTheme(isDark ? 'gchat-dark' : 'gchat-light');
             }
         }
 
         function changeTheme(themeName) {
             currentThemeName = themeName; 
-            const savedSize = localStorage.getItem('user_font_size') || 'md';
             
+            const savedSize = localStorage.getItem('user_font_size') || 'md';
             let sizeClass = 'text-sm';
             if (savedSize === 'sm') sizeClass = 'text-xs';
             if (savedSize === 'md') sizeClass = 'text-sm';
             if (savedSize === 'lg') sizeClass = 'text-base';
             
+            // GChatモードのクラス着脱
+            const gchatClass = currentAppMode === 'gchat' ? 'mode-gchat' : '';
+
             const c = getEl('chatContainer');
             if (c) {
-                c.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} ${sizeClass} h-full w-full relative`;
+                c.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} ${sizeClass} h-full w-full relative ${gchatClass}`;
             }
-            localStorage.setItem('user_theme', themeName);
             
             const header = getEl('mainHeader');
             if (header) {
@@ -1035,12 +898,15 @@
                 sub.className = `text-[10px] sub-${themeName}`;
             }
 
-            const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
-            buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-yellow-400'); });
-            const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
+            // LINEモードの色選択ボタンのリング調整
+            if (currentAppMode === 'line') {
+                const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
+                buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-yellow-400'); });
+                const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
+            }
             
             if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
-                startRender();
+                startRender(); // 吹き出しの色などを再適用させるために再描画
             }
         }
 
@@ -1449,11 +1315,11 @@
                     const w = document.createElement('div');
                     w.className = 'w-full flex items-center justify-center my-4 select-none z-10 px-4 flex-shrink-0';
                     w.innerHTML = `
-                        <div class="flex-1 border-t border-white/20"></div>
+                        <div class="flex-1 border-t border-white/20 date-line"></div>
                         <div class="date-stamp-node text-center text-white text-[11px] font-bold bg-black/30 rounded-full px-4 py-1 mx-3 shadow-sm border border-white/10">
                             ${msg.text}
                         </div>
-                        <div class="flex-1 border-t border-white/20"></div>
+                        <div class="flex-1 border-t border-white/20 date-line"></div>
                     `;
                     frag.appendChild(w); 
                 } 
