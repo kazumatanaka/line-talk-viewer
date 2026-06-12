@@ -231,7 +231,7 @@
                     <div id="headerAvatarContainer" class="hidden mr-2.5 flex-shrink-0">
                         <img id="headerAvatar" src="default-light.png" class="w-8 h-8 rounded-full object-cover">
                     </div>
-                    <div class="flex flex-col justify-center">
+                    <div id="headerTextContainer" class="flex flex-col justify-center">
                         <h1 id="talkTitle" class="font-bold text-base leading-tight">Line Talk Viewer</h1>
                         <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
                     </div>
@@ -417,6 +417,9 @@
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
+
+        // カモフラージュ用ランダムアバター配列
+        const CAMOUFLAGE_AVATARS = ["carl.png", "saka.png", "ivy.png"];
 
         const getEl = (id) => document.getElementById(id);
 
@@ -626,11 +629,9 @@
             } else { box.classList.add('hidden'); }
         }
 
-        // --- GChat用：現在の色設定に基づく相手の吹き出しカラーコード取得関数 ---
         function getGChatOtherBubbleColorHex() {
             const isDark = currentThemeName.includes('gchat-dark');
-            if (!isDark) return '#f0f0f0'; // ライトモード相手は一律固定
-            // ダークモード相手は一律固定
+            if (!isDark) return '#f0f0f0'; 
             return '#212121';
         }
 
@@ -646,9 +647,9 @@
                     if (sub) sub.style.display = isGChat ? 'none' : 'block';
                 } else {
                     if (isGChat && isCamouflageMode) {
-                        // ★変更点：カモフラージュ用のHTMLテキスト構造（改行とサイズ調整）
+                        // テキスト部分に不要な枠線や背景がかからない独立構造に修正
                         t.innerHTML = `<span class="block font-bold text-[15px] leading-tight">Team Kawasaki</span><span class="block text-[11px] font-normal text-gray-500 mt-0.5 leading-none">5人のメンバー・限定公開</span>`;
-                        if (sub) sub.style.display = 'none'; // GChatの標準仕様に合わせてサブは非表示
+                        if (sub) sub.style.display = 'none'; 
                     } else {
                         t.innerText = isCamouflageMode ? "Line Talk Viewer" : actualPartnerNames;
                         if (sub) sub.style.display = isGChat ? 'none' : 'block';
@@ -660,7 +661,7 @@
                 if (isGChat) {
                     avatarContainer.classList.remove('hidden');
                     if (isCamouflageMode) {
-                        // ★変更点：カモフラージュONの時は相手の吹き出し色（同期）の角丸正方形＋餃子文字
+                        // 枠線はぎょうざアイコンの周囲のみに限定
                         const currentOtherColor = getGChatOtherBubbleColorHex();
                         avatarContainer.innerHTML = `<div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background-color: ${currentOtherColor};">🥟</div>`;
                     } else {
@@ -674,7 +675,7 @@
 
         function returnToInitialWelcome() {
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
-            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
+            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             toggleHeaderBox(false);
 
             actualPartnerNames = "Line Talk Viewer";
@@ -1196,7 +1197,6 @@
                 });
             }
             
-            // 名前の切り替え判定リフレッシュ
             applyTitle();
 
             if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
@@ -1674,9 +1674,18 @@
                                 </div>
                             `; 
                         } else { 
+                            // ★変更点：カモフラージュモードがONの時は3種類の指定画像からメッセージごとにランダム抽選
+                            let finalOtherAvatar = avatar;
+                            if (isCamouflageMode) {
+                                // 送信者名やインデックスをベースに一意に固定する場合は計算式を挟みますが、
+                                // 今回はシンプルにランダムな割り当てを行います
+                                const randomIndex = Math.floor(Math.random() * CAMOUFLAGE_AVATARS.length);
+                                finalOtherAvatar = CAMOUFLAGE_AVATARS[randomIndex];
+                            }
+
                             w.className = 'flex items-start space-x-3 max-w-[85%] self-start p-0.5 mb-2'; 
                             w.innerHTML = `
-                                <img src="${avatar}" class="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" alt="avatar" onerror="this.src='${defAvatar}'">
+                                <img src="${finalOtherAvatar}" class="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" alt="avatar" onerror="this.src='${defAvatar}'">
                                 <div class="flex flex-col items-start">
                                     <div class="flex items-baseline space-x-2 mb-1 ml-1">
                                         <span class="text-[12px] font-medium ${gNameText}">${msg.sender}</span>
