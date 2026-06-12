@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sales Attainment Viewer</title>
+    <title>Sales Attainment Viewer v81</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -106,11 +106,12 @@
             overflow-x: hidden !important;
         }
 
-        /* 【v80 追加】残像を完全に抹殺するためのステルスクラス */
+        /* 【v81 追加】残像を完全に抹殺するためのステルスクラス */
         .force-hide-content {
             opacity: 0 !important;
             visibility: hidden !important;
             transition: none !important;
+            pointer-events: none !important;
         }
     </style>
 </head>
@@ -252,7 +253,7 @@
             
             <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
                 <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                    <p class="font-bold mb-1">Google Drive & LINE Viewer v80</p>
+                    <p class="font-bold mb-1">Google Drive & LINE Viewer v81</p>
                     <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
                 </div>
             </main>
@@ -379,9 +380,9 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の生成
+        // ロック画面（目隠しレイヤー）の生成（v81: DOM再構築を防ぎ、即座に表示する）
         function forceLockScreen() {
-            // 【v80 強化のキモ】離脱した瞬間に、本体コンテンツコンテナ全体をCSSレベルで透過・非表示にする
+            // 【v81 強化のキモ】離脱した瞬間に、本体コンテンツコンテナ全体をCSSレベルで透過・非表示にする
             if (getEl('appBodyContent')) {
                 getEl('appBodyContent').classList.add('force-hide-content');
             }
@@ -389,94 +390,22 @@
             isCurrentlyAuthenticated = false;
             let lockScreen = getEl('biometricLockScreen');
             
-            if (!lockScreen) {
-                const lockDiv = document.createElement('div');
-                lockDiv.id = 'biometricLockScreen';
-                lockDiv.className = 'fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300';
-                lockDiv.innerHTML = `
-                    <div id="lockMainZone" class="text-center space-y-6 max-w-sm px-6 w-full block flex-shrink-0">
-                        <div class="pt-8">
-                            <h2 class="text-xl font-bold tracking-wider text-blue-400">Internal Data</h2>
-                            <p class="text-xs text-gray-400 mt-2" id="lockMessage">アクセスを許可するには指紋（生体）認証が必要です。</p>
-                        </div>
-                        <button id="dummyAuthBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2.5 px-4 rounded-full font-bold shadow-md transition cursor-pointer">
-                            認証を開始する
-                        </button>
-                        <div class="pt-2">
-                            <p id="realAuthTrigger" class="text-[11px] text-gray-500 hover:text-gray-400 active:scale-98 transition-all cursor-pointer select-none inline-block">
-                                The data on this site is strictly confidential.
-                            </p>
-                        </div>
-                    </div>
-                    <div id="dummyDataZone" class="hidden w-full max-w-2xl px-4 py-8 flex flex-col items-center space-y-6 max-h-full allow-select-and-scroll">
-                        <div class="text-center flex-shrink-0">
-                            <h2 class="text-lg font-bold tracking-wider text-emerald-400">Internal Data Summary</h2>
-                            <p class="text-xs text-gray-400 mt-1">Sector Analysis Report (Live)</p>
-                        </div>
-                        <div class="w-full overflow-x-auto bg-slate-800 rounded-xl border border-slate-700 shadow-xl touch-pan-x touch-pan-y select-text">
-                            <table class="w-full text-left text-xs font-mono min-w-[500px]">
-                                <thead class="bg-slate-700/50 text-gray-300 border-b border-slate-700 select-none">
-                                    <tr>
-                                        <th class="p-3 sticky left-0 bg-slate-800">Category</th>
-                                        <th class="p-3">Sector1</th>
-                                        <th class="p-3">Sector2</th>
-                                        <th class="p-3">Sector3</th>
-                                        <th class="p-3">Sector4</th>
-                                        <th class="p-3 font-bold text-emerald-400">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-700/40 text-gray-300 select-text">
-                                    <tr class="hover:bg-slate-700/20">
-                                        <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">Search</td>
-                                        <td class="p-3">99.8</td>
-                                        <td class="p-3">102.1</td>
-                                        <td class="p-3">100.1</td>
-                                        <td class="p-3">99.1</td>
-                                        <td class="p-3 font-bold">101.1</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-700/20">
-                                        <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">YouTube</td>
-                                        <td class="p-3">102.1</td>
-                                        <td class="p-3">103.9</td>
-                                        <td class="p-3">89.8</td>
-                                        <td class="p-3">95.3</td>
-                                        <td class="p-3 font-bold">99.8</td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-700/20">
-                                        <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">Display</td>
-                                        <td class="p-3">89.6</td>
-                                        <td class="p-3">92.3</td>
-                                        <td class="p-3">97.6</td>
-                                        <td class="p-3">94.6</td>
-                                        <td class="p-3 font-bold">93.2</td>
-                                    </tr>
-                                    <tr class="bg-slate-700/30 text-emerald-400 font-bold border-t border-slate-600">
-                                        <td class="p-3 font-sans sticky left-0 bg-slate-800 select-none">Total</td>
-                                        <td class="p-3">99.3</td>
-                                        <td class="p-3">100.6</td>
-                                        <td class="p-3">98.9</td>
-                                        <td class="p-3">96.8</td>
-                                        <td class="p-3 text-white">99.6</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="text-center space-y-1 flex-shrink-0 select-none">
-                            <p class="text-[10px] text-gray-500">Session ID: local_active_report_secured</p>
-                            <p class="text-[9px] text-slate-600">Encrypted internal endpoint connection stable.</p>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(lockDiv);
-            } else {
+            if (lockScreen) {
+                // アニメーションを一時的に無効化して即座に表示（スクリーンショット対策）
+                lockScreen.style.transition = 'none';
+                lockScreen.classList.remove('hidden', 'opacity-0');
+                lockScreen.style.display = 'flex';
+
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('lockMainZone').style.display = 'block';
                 getEl('dummyDataZone').classList.add('hidden');
                 getEl('dummyDataZone').style.display = 'none';
-            }
 
-            getEl('dummyAuthBtn').onclick = () => handleAuthAttempt('dummy');
-            getEl('realAuthTrigger').onclick = () => handleAuthAttempt('real');
+                // 次回の解除フェードのためにアニメーションを即座に復旧
+                setTimeout(() => {
+                    if (lockScreen) lockScreen.style.transition = '';
+                }, 50);
+            }
         }
 
         // 認証判定
@@ -566,7 +495,7 @@
         function unlockScreen() {
             isCurrentlyAuthenticated = true;
             
-            // 【v80 強化】認証が成功したときだけ、本体コンテンツの非表示クラスを取り除く
+            // 【v81 強化】認証が成功したときだけ、本体コンテンツの非表示クラスを取り除く
             if (getEl('appBodyContent')) {
                 getEl('appBodyContent').classList.remove('force-hide-content');
             }
@@ -574,32 +503,34 @@
             const lockScreen = getEl('biometricLockScreen');
             if (lockScreen) {
                 lockScreen.classList.add('opacity-0');
-                setTimeout(() => { if(lockScreen) lockScreen.remove(); }, 300);
+                // v81: removeせずに非表示化しておく
+                setTimeout(() => { 
+                    if(lockScreen) {
+                        lockScreen.classList.add('hidden');
+                        lockScreen.style.display = 'none';
+                    }
+                }, 300);
             }
         }
 
         // --- 強制隠蔽トリガー（同期的かつ最速実行） ---
-        
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                forceLockScreen(); 
-            }
+            if (document.visibilityState === 'hidden') forceLockScreen(); 
         });
 
-        window.addEventListener('pagehide', () => {
-            forceLockScreen(); 
-        });
+        window.addEventListener('pagehide', () => forceLockScreen());
 
         window.addEventListener('blur', () => {
-            if (!isProcessingBiometrics) {
-                forceLockScreen();
-            }
+            if (!isProcessingBiometrics) forceLockScreen();
         });
 
         window.addEventListener('focus', () => {
-            if (!isCurrentlyAuthenticated && !isProcessingBiometrics) {
-                forceLockScreen();
-            }
+            if (!isCurrentlyAuthenticated && !isProcessingBiometrics) forceLockScreen();
+        });
+
+        // v81 追加: BFCache (戻るボタン) でページが即座に復元された場合の対策
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted && !isCurrentlyAuthenticated) forceLockScreen();
         });
 
         function toggleDrawer(show) {
@@ -658,7 +589,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v80</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v81</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -747,6 +678,10 @@
         });
 
         window.addEventListener("DOMContentLoaded", () => {
+            // v81: イベントリスナーを一元化して重複を防止
+            if (getEl('dummyAuthBtn')) getEl('dummyAuthBtn').onclick = () => handleAuthAttempt('dummy');
+            if (getEl('realAuthTrigger')) getEl('realAuthTrigger').onclick = () => handleAuthAttempt('real');
+
             if (window.PublicKeyCredential) {
                 forceLockScreen();
             } else {
@@ -892,7 +827,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v80</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v81</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
             actualPartnerNames = "Sales Attainment Viewer"; 
             isCamouflageMode = false;
@@ -1182,7 +1117,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v80</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v81</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
