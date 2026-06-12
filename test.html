@@ -396,85 +396,89 @@
             }
         }
 
+        // --- ★認証プロセスのバグを修正：シールドを100%張る ---
         async function handleAuthAttempt(targetMode) {
             if (isProcessingBiometrics) return; 
-            
-            const storedCredId = localStorage.getItem(CONFIG_KEY);
-            if (!storedCredId) {
-                if(getEl('lockMessage')) getEl('lockMessage').innerText = "初回登録：生体認証をデバイスに紐付けます...";
-                await registerBiometrics(targetMode);
-                return;
-            }
+            isProcessingBiometrics = true; // ここで確実に防御機能をロック（シールド展開）
 
             try {
-                isProcessingBiometrics = true;
-                const challenge = new Uint8Array(32);
-                window.crypto.getRandomValues(challenge);
+                const storedCredId = localStorage.getItem(CONFIG_KEY);
+                if (!storedCredId) {
+                    if(getEl('lockMessage')) getEl('lockMessage').innerText = "生体認証をデバイスに登録します...";
+                    await registerBiometrics(targetMode);
+                } else {
+                    const challenge = new Uint8Array(32);
+                    window.crypto.getRandomValues(challenge);
 
-                const publicKeyCredentialRequestOptions = {
-                    challenge: challenge,
-                    allowCredentials: [{
-                        id: base64UrlToBuffer(storedCredId),
-                        type: 'public-key'
-                    }],
-                    userVerification: "required",
-                    timeout: 60000
-                };
+                    const publicKeyCredentialRequestOptions = {
+                        challenge: challenge,
+                        allowCredentials: [{
+                            id: base64UrlToBuffer(storedCredId),
+                            type: 'public-key'
+                        }],
+                        userVerification: "required",
+                        timeout: 60000
+                    };
 
-                await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
-                
-                if (targetMode === 'dummy') {
-                    getEl('lockMainZone').classList.add('hidden');
-                    getEl('lockMainZone').style.display = 'none';
-                    getEl('dummyDataZone').classList.remove('hidden');
-                    getEl('dummyDataZone').style.display = 'flex';
-                    isCurrentlyAuthenticated = false; 
-                } else if (targetMode === 'real') {
-                    unlockScreen();
+                    await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
+                    
+                    if (targetMode === 'dummy') {
+                        getEl('lockMainZone').classList.add('hidden');
+                        getEl('lockMainZone').style.display = 'none';
+                        getEl('dummyDataZone').classList.remove('hidden');
+                        getEl('dummyDataZone').style.display = 'flex';
+                        isCurrentlyAuthenticated = false; 
+                    } else if (targetMode === 'real') {
+                        unlockScreen();
+                    }
                 }
             } catch (err) {
-                console.error("認証失敗:", err);
-                if(getEl('lockMessage')) getEl('lockMessage').innerText = "認証に失敗したか、キャンセルされました。";
+                console.error("Auth Error:", err);
+                const msg = getEl('lockMessage');
+                if (msg) {
+                    if (err.name === 'NotAllowedError') msg.innerText = "キャンセルされました。もう一度お試しください。";
+                    else msg.innerText = "エラー: " + (err.message || err.name || "認証失敗");
+                }
+                
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('lockMainZone').style.display = 'block';
                 getEl('dummyDataZone').classList.add('hidden');
                 getEl('dummyDataZone').style.display = 'none';
             } finally {
-                setTimeout(() => { isProcessingBiometrics = false; }, 500);
+                // OSのポップアップが閉じた後、画面のフォーカスが完全に戻るまでのタイムラグを吸収するため、少し長めにシールドを維持
+                setTimeout(() => { isProcessingBiometrics = false; }, 800);
             }
         }
 
         async function registerBiometrics(targetMode) {
-            try {
-                const challenge = new Uint8Array(32);
-                window.crypto.getRandomValues(challenge);
-                const userId = new Uint8Array(16);
-                window.crypto.getRandomValues(userId);
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+            const userId = new Uint8Array(16);
+            window.crypto.getRandomValues(userId);
 
-                const publicKeyCredentialCreationOptions = {
-                    challenge: challenge,
-                    rp: { name: "LINE Talk Viewer", id: window.location.hostname },
-                    user: { id: userId, name: "user@lineviewer.local", displayName: "Local User" },
-                    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-                    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
-                    timeout: 60000
-                };
+            const publicKeyCredentialCreationOptions = {
+                challenge: challenge,
+                rp: { name: "Internal System", id: window.location.hostname },
+                user: { id: userId, name: "user@local", displayName: "Authorized User" },
+                pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+                authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                timeout: 60000
+            };
 
-                const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
-                const credIdBase64 = bufferToBase64Url(credential.rawId);
-                localStorage.setItem(CONFIG_KEY, credIdBase64);
-                
-                if (targetMode === 'dummy') {
-                    getEl('lockMainZone').style.display = 'none';
-                    getEl('dummyDataZone').style.display = 'flex';
-                } else {
-                    unlockScreen();
-                }
-            } catch (err) {
-                console.error("登録失敗:", err);
-                if(getEl('lockMessage')) getEl('lockMessage').innerText = "生体認証の登録に失敗しました。";
+            const credential = await navigator.credentials.create({ publicKey: publicKeyCredentialCreationOptions });
+            const credIdBase64 = bufferToBase64Url(credential.rawId);
+            localStorage.setItem(CONFIG_KEY, credIdBase64);
+            
+            if (targetMode === 'dummy') {
+                getEl('lockMainZone').classList.add('hidden');
+                getEl('lockMainZone').style.display = 'none';
+                getEl('dummyDataZone').classList.remove('hidden');
+                getEl('dummyDataZone').style.display = 'flex';
+            } else {
+                unlockScreen();
             }
         }
+        // ----------------------------------------------------
 
         function unlockScreen() {
             isCurrentlyAuthenticated = true;
@@ -1380,7 +1384,6 @@
             toggleDrawer(false);
         }
 
-        // --- ★UIレンダーの分岐処理（GChat/LINE） ---
         function startRender() {
             const c = getEl('chatContainer');
             if (c) c.innerHTML = ''; 
@@ -1515,10 +1518,8 @@
                 if (msg.type === 'date') { 
                     w.className = 'w-full flex items-center justify-center my-4 select-none z-10 px-4 flex-shrink-0';
                     if (isGChat) {
-                        // GChat特有のカプセル型の日付
                         w.innerHTML = `<div class="text-center text-[11px] font-medium rounded-full px-3 py-1 ${gDateBg}">${msg.text}</div>`;
                     } else {
-                        // LINE特有のライン入りの日付
                         w.innerHTML = `
                             <div class="flex-1 border-t border-white/20 date-line"></div>
                             <div class="date-stamp-node text-center text-white text-[11px] font-bold bg-black/30 rounded-full px-4 py-1 mx-3 shadow-sm border border-white/10">
@@ -1532,7 +1533,6 @@
                     const isMe = (msg.sender === currentMe); 
                     
                     if (isGChat) {
-                        // === Google Chat 構造 ===
                         if (isMe) { 
                             w.className = 'flex items-end justify-end space-x-2 max-w-[85%] self-end p-0.5 mb-2'; 
                             w.innerHTML = `
@@ -1556,7 +1556,6 @@
                                 </div>`; 
                         }
                     } else {
-                        // === LINE 構造 ===
                         if (isMe) { 
                             w.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 flex-shrink-0 mb-1'; 
                             w.innerHTML = `
@@ -1592,7 +1591,6 @@
                 } 
             }
         }
-        // ------------------------------------------
 
         function triggerSearch() {
             const kw = getEl('searchKeyword').value.trim().toLowerCase(); 
@@ -1744,4 +1742,38 @@
             const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2}).*$/; 
             const reg1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
             const reg2 = /^(\d{1,2}:\d{2})\s+([^\t\n]+?)\s+(.*)$/;
-            let
+            let ref = null;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i]; const trim = line.trim(); 
+                if (trim === "") { if (ref) ref.body += '<br>'; continue; }
+                
+                let m = line.match(reg1) || line.match(reg2);
+                if (m) {
+                    const time = m[1] || "";
+                    const sender = m[2] || "";
+                    const body = m[3] || "";
+                    const cleanS = sender.trim(); counts[cleanS] = (counts[cleanS] || 0) + 1;
+                    let cleanB = body.replace(/\\n/g, '<br>'); 
+                    if (cleanB === '[スタンプ]' || cleanB === '[Sticker]') { cleanB = '🎨 [スタンプ]'; } 
+                    else if (cleanB === '[写真]' || cleanB === '[Photo]') { cleanB = '📸 [写真]'; } 
+                    else if (cleanB === '[動画]' || cleanB === '[Video]') { cleanB = '🎬 [動画]'; }
+                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanS, body: cleanB }; 
+                    messages.push(newMsg); 
+                    ref = newMsg;
+                } 
+                else if (dateRegex.test(trim)) { 
+                    messages.push({ type: 'date', text: trim }); 
+                    ref = null; 
+                } 
+                else if (ref) { 
+                    ref.body += '<br>' + line; 
+                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
+                    messages[messages.length - 1].body += '<br>' + line; 
+                }
+            }
+            return { messages, counts, partner };
+        }
+    </script>
+</body>
+</html>
