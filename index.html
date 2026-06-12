@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sales Attainment Viewer v81</title>
+    <title>Sales Attainment Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -106,7 +106,7 @@
             overflow-x: hidden !important;
         }
 
-        /* 【v81 追加】残像を完全に抹殺するためのステルスクラス */
+        /* 残像を完全に抹殺するためのステルスクラス */
         .force-hide-content {
             opacity: 0 !important;
             visibility: hidden !important;
@@ -253,7 +253,7 @@
             
             <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
                 <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                    <p class="font-bold mb-1">Google Drive & LINE Viewer v81</p>
+                    <p class="font-bold mb-1">Google Drive & LINE Viewer v82</p>
                     <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
                 </div>
             </main>
@@ -380,9 +380,8 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の生成（v81: DOM再構築を防ぎ、即座に表示する）
+        // ロック画面（目隠しレイヤー）の生成
         function forceLockScreen() {
-            // 【v81 強化のキモ】離脱した瞬間に、本体コンテンツコンテナ全体をCSSレベルで透過・非表示にする
             if (getEl('appBodyContent')) {
                 getEl('appBodyContent').classList.add('force-hide-content');
             }
@@ -391,7 +390,6 @@
             let lockScreen = getEl('biometricLockScreen');
             
             if (lockScreen) {
-                // アニメーションを一時的に無効化して即座に表示（スクリーンショット対策）
                 lockScreen.style.transition = 'none';
                 lockScreen.classList.remove('hidden', 'opacity-0');
                 lockScreen.style.display = 'flex';
@@ -401,7 +399,6 @@
                 getEl('dummyDataZone').classList.add('hidden');
                 getEl('dummyDataZone').style.display = 'none';
 
-                // 次回の解除フェードのためにアニメーションを即座に復旧
                 setTimeout(() => {
                     if (lockScreen) lockScreen.style.transition = '';
                 }, 50);
@@ -495,7 +492,6 @@
         function unlockScreen() {
             isCurrentlyAuthenticated = true;
             
-            // 【v81 強化】認証が成功したときだけ、本体コンテンツの非表示クラスを取り除く
             if (getEl('appBodyContent')) {
                 getEl('appBodyContent').classList.remove('force-hide-content');
             }
@@ -503,17 +499,18 @@
             const lockScreen = getEl('biometricLockScreen');
             if (lockScreen) {
                 lockScreen.classList.add('opacity-0');
-                // v81: removeせずに非表示化しておく
                 setTimeout(() => { 
                     if(lockScreen) {
                         lockScreen.classList.add('hidden');
                         lockScreen.style.display = 'none';
                     }
+                    // 【v82 追加】ロック解除後に一度バックグラウンドでの新着ファイルスキャンを試行する
+                    autoCheckNewFiles();
                 }, 300);
             }
         }
 
-        // --- 強制隠蔽トリガー（同期的かつ最速実行） ---
+        // --- 強制隠蔽トリガー ---
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') forceLockScreen(); 
         });
@@ -528,7 +525,6 @@
             if (!isCurrentlyAuthenticated && !isProcessingBiometrics) forceLockScreen();
         });
 
-        // v81 追加: BFCache (戻るボタン) でページが即座に復元された場合の対策
         window.addEventListener('pageshow', (e) => {
             if (e.persisted && !isCurrentlyAuthenticated) forceLockScreen();
         });
@@ -589,7 +585,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v81</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v82</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -678,7 +674,6 @@
         });
 
         window.addEventListener("DOMContentLoaded", () => {
-            // v81: イベントリスナーを一元化して重複を防止
             if (getEl('dummyAuthBtn')) getEl('dummyAuthBtn').onclick = () => handleAuthAttempt('dummy');
             if (getEl('realAuthTrigger')) getEl('realAuthTrigger').onclick = () => handleAuthAttempt('real');
 
@@ -721,6 +716,9 @@
                     const files = e.target.files; if (!files || files.length === 0) return;
                     if (getEl('talkTitle')) getEl('talkTitle').innerText = "ファイルを結合中...";
                     let texts = [];
+                    // ローカル読み込み時は管理フォルダの追跡対象外とするためメタデータをクリア
+                    localStorage.removeItem('tracked_folder_id');
+                    localStorage.removeItem('tracked_file_ids');
                     for (let f of files) {
                         const txt = await new Promise((res) => { const r = new FileReader(); r.onload = (evt) => res(evt.target.result); r.readAsText(f, 'UTF-8'); });
                         texts.push({ text: txt, name: f.name });
@@ -775,6 +773,7 @@
                             window.location.hash = ""; 
                             setAuthSuccess(); 
                             renderExplorer('root'); 
+                            autoCheckNewFiles(); // 認証成功時に新着チェック
                             return;
                         }
                     }
@@ -791,6 +790,7 @@
                         } else { 
                             renderExplorer('root'); 
                         }
+                        autoCheckNewFiles(); // 自動ログイン成功時に新着チェック
                         return;
                     }
                     
@@ -816,6 +816,8 @@
             localStorage.removeItem('drive_token_expiry'); 
             localStorage.removeItem('explorer_folder_history'); 
             localStorage.removeItem('cached_me_user');
+            localStorage.removeItem('tracked_folder_id');
+            localStorage.removeItem('tracked_file_ids');
             if (typeof gapi !== 'undefined' && gapi.client) gapi.client.setToken(null); 
             clearCache();
             
@@ -827,7 +829,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v81</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
             actualPartnerNames = "Sales Attainment Viewer"; 
             isCamouflageMode = false;
@@ -1051,20 +1053,136 @@
             const title = getEl('talkTitle');
             if (title) title.innerText = "全自動結合中...";
             let texts = [];
+            let fileIds = [];
             for (let f of currentFolderFiles) { 
                 try { 
                     const res = await gapi.client.drive.files.get({ fileId: f.id, alt: 'media' }); 
                     texts.push({ text: res.body, name: f.name }); 
+                    fileIds.push(f.id);
                 } catch (err) { console.error(err); } 
             }
+            // 【v82 追加】現在の管理対象フォルダIDと構成ファイルID群を記憶
+            localStorage.setItem('tracked_folder_id', currentFolderId);
+            localStorage.setItem('tracked_file_ids', JSON.stringify(fileIds));
             processMultipleTexts(texts);
         }
 
         async function processSingleDrive(fileId, filename) { 
             try { 
                 const res = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); 
+                // 単一選択の場合は、その親フォルダを管理対象とする
+                localStorage.setItem('tracked_folder_id', currentFolderId);
+                localStorage.setItem('tracked_file_ids', JSON.stringify([fileId]));
                 processMultipleTexts([{ text: res.body, name: filename }]); 
             } catch (err) { console.error(err); } 
+        }
+
+        // 【v82 追加】裏側での新着ファイル自動スキャン・同期ロジック
+        async function autoCheckNewFiles() {
+            const folderId = localStorage.getItem('tracked_folder_id');
+            const processedStr = localStorage.getItem('tracked_file_ids');
+            
+            // ロードされた履歴情報(GAPI準備完了)がなければ処理を抜ける
+            if (!folderId || !processedStr || !isGapiClientReady || !isCurrentlyAuthenticated) return;
+            
+            let processedIds = [];
+            try { processedIds = JSON.parse(processedStr); } catch(e) { return; }
+
+            const titleElement = getEl('talkTitle');
+            const originalTitle = titleElement ? titleElement.innerText : "";
+            if (titleElement) titleElement.innerText = "同期データをチェック中...";
+
+            try {
+                // 指定フォルダ内のプレーンテキストファイルを再走査
+                const res = await gapi.client.drive.files.list({
+                    q: `'${folderId}' in parents and mimeType = 'text/plain' and trashed = false`,
+                    fields: 'files(id, name)'
+                });
+                const files = res.result.files || [];
+                
+                // まだ未処理（記憶しているID一覧に含まれない）の新しいファイルのみを検出
+                const newFiles = files.filter(f => !processedIds.includes(f.id));
+
+                if (newFiles.length > 0) {
+                    if (titleElement) titleElement.innerText = `新着トークを追加中 (${newFiles.length}件)...`;
+                    let newTexts = [];
+                    
+                    for (let nf of newFiles) {
+                        try {
+                            const fileRes = await gapi.client.drive.files.get({ fileId: nf.id, alt: 'media' });
+                            newTexts.push({ text: fileRes.body, name: nf.name });
+                            processedIds.push(nf.id);
+                        } catch(e) { console.error("新着ファイルのフェッチ失敗:", e); }
+                    }
+
+                    if (newTexts.length > 0) {
+                        // 既存の管理ファイルIDリストを更新
+                        localStorage.setItem('tracked_file_ids', JSON.stringify(processedIds));
+                        
+                        // 既存の globalMessages からパース済みの生メッセージを抽出し直してマージ
+                        let currentFlat = [];
+                        let currentDateStr = "";
+                        globalMessages.forEach(m => {
+                            if (m.type === 'date') currentDateStr = m.text;
+                            else if (m.type === 'msg' && currentDateStr) {
+                                currentFlat.push({ dateStr: currentDateStr, time: m.time, sender: m.sender, body: m.body });
+                            }
+                        });
+
+                        // 新しいファイルの内容をパースして追加
+                        newTexts.forEach(obj => {
+                            const { messages } = parseText(obj.text, obj.name);
+                            let targetDate = "";
+                            messages.forEach(m => {
+                                if (m.type === 'date') targetDate = m.text;
+                                else if (m.type === 'msg' && targetDate) {
+                                    currentFlat.push({ dateStr: targetDate, time: m.time, sender: m.sender, body: m.body });
+                                }
+                            });
+                        });
+
+                        // 全データを時系列ソート
+                        currentFlat.sort((a, b) => parseTimestamp(a.dateStr, a.time) - parseTimestamp(b.dateStr, b.time));
+
+                        // 重複排除して再構築
+                        let timeline = [];
+                        let uniqueKeys = new Set();
+                        let lastDateStr = "";
+                        let counts = {};
+
+                        currentFlat.forEach(m => {
+                            const key = `${m.dateStr}_${m.time}_${m.sender}_${m.body}`;
+                            if (!uniqueKeys.has(key)) {
+                                uniqueKeys.add(key);
+                                if (m.dateStr !== lastDateStr) {
+                                    timeline.push({ type: 'date', text: m.dateStr });
+                                    lastDateStr = m.dateStr;
+                                }
+                                timeline.push({ type: 'msg', time: m.time, sender: m.sender, body: m.body });
+                                counts[m.sender] = (counts[m.sender] || 0) + 1;
+                            }
+                        });
+
+                        globalMessages = timeline;
+                        filteredMessages = [...globalMessages];
+                        globalSenders = Object.keys(counts);
+
+                        // ヘッダー情報とIndexedDBのキャッシュを書き換え
+                        const sub = getEl('talkSub');
+                        if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+                        
+                        updateTitleText();
+                        saveCache(globalMessages);
+                        startRender();
+                    }
+                } else {
+                    // 新しいファイルがなければ元のタイトル表示に戻す
+                    if (titleElement) titleElement.innerText = originalTitle;
+                }
+            } catch (err) {
+                console.error("自動バックグラウンドチェックエラー:", err);
+                if (titleElement) titleElement.innerText = originalTitle;
+            }
         }
 
         function processMultipleTexts(fileObjects) {
@@ -1117,7 +1235,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v81</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
