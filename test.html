@@ -97,12 +97,12 @@
             font-weight: bold;
         }
 
-        /* --- GChat 背景ベース定義 --- */
-        .bg-theme-gchat-light-blue   { background-color: #f4f7fa !important; }
-        .bg-theme-gchat-light-red    { background-color: #faf5f5 !important; }
-        .bg-theme-gchat-light-purple { background-color: #f6f5fa !important; }
-        .bg-theme-gchat-light-green  { background-color: #f4faf5 !important; }
-        .bg-theme-gchat-light-yellow { background-color: #fafaf2 !important; }
+        /* --- GChat 背景定義 (ライトモードは一律 #f5f5f5 に統一) --- */
+        .bg-theme-gchat-light-blue   { background-color: #f5f5f5 !important; }
+        .bg-theme-gchat-light-red    { background-color: #f5f5f5 !important; }
+        .bg-theme-gchat-light-purple { background-color: #f5f5f5 !important; }
+        .bg-theme-gchat-light-green  { background-color: #f5f5f5 !important; }
+        .bg-theme-gchat-light-yellow { background-color: #f5f5f5 !important; }
 
         .bg-theme-gchat-dark-blue    { background-color: #1e222b !important; }
         .bg-theme-gchat-dark-red     { background-color: #241e1e !important; }
@@ -1584,19 +1584,21 @@
 
             if (isGChat) {
                 if (!isDarkGChat) {
-                    // ライトモード用配色設定（紫系のトーン・比率に統一調整）
-                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#dbedff]'; gOtherBg = 'bg-[#eef4f9]'; }
-                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#ffdbe5]'; gOtherBg = 'bg-[#f9eef1]'; }
-                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#f0dbff]'; gOtherBg = 'bg-[#f6eef5]'; } // 指定コード
-                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#dbffd6]'; gOtherBg = 'bg-[#eef9f1]'; }
-                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#fffcd6]'; gOtherBg = 'bg-[#f9f9ee]'; }
+                    // ライトモード用：背景は一律 #f5f5f5、相手の吹き出しは一律 #f0f0f0
+                    gOtherBg = 'bg-[#f0f0f0]';
+                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#dbedff]'; }
+                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#ffdbe5]'; }
+                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#f0dbff]'; } 
+                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#dbffd6]'; }
+                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#fffcd6]'; }
                 } else {
-                    // ダークモード用配色設定（紫系のトーン・比率に統一調整）
-                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#21293f]'; gOtherBg = 'bg-[#1a1c25]'; }
-                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#3f2128]'; gOtherBg = 'bg-[#251a1d]'; }
-                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#372c3f]'; gOtherBg = 'bg-[#221e25]'; } // 指定コード
-                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#213f26]'; gOtherBg = 'bg-[#1a251c]'; }
-                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#3f3b21]'; gOtherBg = 'bg-[#25251a]'; }
+                    // ダークモード用：相手の吹き出しは一律 #212121
+                    gOtherBg = 'bg-[#212121]';
+                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#21293f]'; }
+                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#3f2128]'; }
+                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#372c3f]'; } 
+                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#213f26]'; }
+                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#3f3b21]'; }
                 }
             }
 
