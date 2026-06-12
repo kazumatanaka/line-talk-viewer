@@ -70,7 +70,6 @@
         .bg-theme-dark .name-text { color: #a0a0a0 !important; text-shadow: none; }
 
         /* === GChat Mode Styles (Material Design 3) === */
-        /* ヘッダーのスタイル（GChat風） */
         .header-gchat-light { background-color: #ffffff !important; color: #202124 !important; border-bottom: 1px solid #e0e0e0; box-shadow: none !important; }
         .header-gchat-dark { background-color: #1f1f1f !important; color: #e8eaed !important; border-bottom: 1px solid #3c4043; box-shadow: none !important; }
         
@@ -78,13 +77,46 @@
         .header-gchat-dark svg { stroke: #9aa0a6 !important; color: #9aa0a6 !important; }
 
         .mode-gchat #talkTitle { font-family: "Google Sans", Roboto, Arial, sans-serif; font-weight: 500; font-size: 17px; }
-        .mode-gchat #talkSub { display: none !important; } /* サブテキストを隠す */
-        .mode-gchat #headerAvatar { display: block !important; } /* GChat時はヘッダーにアイコン表示 */
+        .mode-gchat #talkSub { display: none !important; } 
+        .mode-gchat #headerAvatar { display: block !important; } 
 
-        /* チャット背景（GChat風） */
+        .mode-gchat .bubble-me, .mode-gchat .bubble-other {
+            box-shadow: none !important;
+            border-radius: 18px !important; 
+        }
+        .mode-gchat .bubble-me::after, .mode-gchat .bubble-other::after {
+            display: none !important; 
+        }
+        .mode-gchat .date-line {
+            display: none !important; 
+        }
+        .mode-gchat .date-stamp-node {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-weight: bold;
+        }
+
         .bg-theme-gchat-light { background-color: #ffffff !important; }
-        .bg-theme-gchat-dark { background-color: #1f1f1f !important; }
+        .sub-gchat-light { color: #5f6368 !important; }
+        .bg-theme-gchat-light .bubble-me { background-color: #e3f2fd !important; color: #202124 !important; }
+        .bg-theme-gchat-light .bubble-other { background-color: #f1f3f4 !important; color: #202124 !important; }
+        .bg-theme-gchat-light .time-text { color: #5f6368 !important; }
+        .bg-theme-gchat-light .name-text { color: #3c4043 !important; text-shadow: none !important; }
+        .bg-theme-gchat-light .date-stamp-node { color: #5f6368 !important; }
 
+        .bg-theme-gchat-dark { background-color: #202124 !important; }
+        .sub-gchat-dark { color: #9aa0a6 !important; }
+        .bg-theme-gchat-dark .bubble-me { background-color: #004a77 !important; color: #e8eaed !important; }
+        .bg-theme-gchat-dark .bubble-other { background-color: #3c4043 !important; color: #e8eaed !important; }
+        .bg-theme-gchat-dark .time-text { color: #9aa0a6 !important; }
+        .bg-theme-gchat-dark .name-text { color: #e8eaed !important; text-shadow: none !important; }
+        .bg-theme-gchat-dark .date-stamp-node { color: #9aa0a6 !important; }
+
+        /* アイコンの切り替え */
+        .icon-gchat { display: none !important; }
+        .mode-gchat .icon-line { display: none !important; }
+        .mode-gchat .icon-gchat { display: block !important; }
 
         html, body {
             overflow: hidden !important; position: relative; width: 100% !important; max-width: 100% !important; height: 100%; margin: 0; padding: 0;
@@ -188,8 +220,11 @@
         <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
             <div class="flex items-center space-x-1.5">
                 <button id="backBtn" class="p-2 -ml-1 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
-                    <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 stroke-current icon-line" fill="none" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <svg class="w-6 h-6 stroke-current icon-gchat" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4M4 12l6-6M4 12l6 6"></path>
                     </svg>
                 </button>
                 <div id="titleArea" class="flex items-center cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
@@ -222,8 +257,11 @@
                 </div>
 
                 <button id="menuBtn" class="w-10 h-10 p-2 flex items-center justify-center hover:bg-black/5 rounded-full transition cursor-pointer z-10">
-                    <svg class="w-full h-full pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-full h-full pointer-events-none icon-line" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                    <svg class="w-full h-full pointer-events-none icon-gchat" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v.01M12 12v.01M12 18v.01"></path>
                     </svg>
                 </button>
             </div>
@@ -293,7 +331,7 @@
                             </div>
 
                             <div id="line-theme-selector">
-                                <label class="block text-xs font-bold text-gray-500 mb-1.5">🎨 背景色 (LINEモード用)</label>
+                                <label class="block text-xs font-bold text-gray-500 mb-1.5">🎨 背景色 (LINE用)</label>
                                 <div class="grid grid-cols-4 gap-1">
                                     <button id="theme-blue" class="bg-[#7494c0] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ブルー</button>
                                     <button id="theme-dark" class="bg-[#0b0b0b] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ダーク</button>
@@ -301,8 +339,13 @@
                                     <button id="theme-beige" class="bg-[#f5f5dc] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ベージュ</button>
                                 </div>
                             </div>
-                            <div id="gchat-theme-info" class="hidden text-[10px] text-gray-500 bg-gray-200/60 p-2 rounded border border-gray-200">
-                                💡 Google Chat風モードは、デバイスのダークモード設定（ライト/ダーク）に自動連動して色が切り替わります。
+                            
+                            <div id="gchat-theme-selector" class="hidden">
+                                <label class="block text-xs font-bold text-gray-500 mb-1.5 mt-2">🎨 背景色 (Google Chat用)</label>
+                                <div class="grid grid-cols-2 gap-1">
+                                    <button id="theme-gchat-light" class="bg-white text-gray-800 text-[10px] py-1 rounded font-medium border border-gray-300 cursor-pointer shadow-sm">ライト</button>
+                                    <button id="theme-gchat-dark" class="bg-[#202124] text-[#e8eaed] text-[10px] py-1 rounded font-medium border border-[#3c4043] cursor-pointer shadow-sm">ダーク</button>
+                                </div>
                             </div>
                         </div>
                         <div>
@@ -338,6 +381,7 @@
 
         let currentAppMode = 'line'; 
         let currentLineTheme = 'blue';
+        let currentGChatTheme = 'gchat-light';
         let currentThemeName = 'blue'; 
         let hasDriveCustomImage = false;
 
@@ -396,10 +440,9 @@
             }
         }
 
-        // --- ★認証プロセスのバグを修正：シールドを100%張る ---
         async function handleAuthAttempt(targetMode) {
             if (isProcessingBiometrics) return; 
-            isProcessingBiometrics = true; // ここで確実に防御機能をロック（シールド展開）
+            isProcessingBiometrics = true; 
 
             try {
                 const storedCredId = localStorage.getItem(CONFIG_KEY);
@@ -445,7 +488,6 @@
                 getEl('dummyDataZone').classList.add('hidden');
                 getEl('dummyDataZone').style.display = 'none';
             } finally {
-                // OSのポップアップが閉じた後、画面のフォーカスが完全に戻るまでのタイムラグを吸収するため、少し長めにシールドを維持
                 setTimeout(() => { isProcessingBiometrics = false; }, 800);
             }
         }
@@ -478,7 +520,6 @@
                 unlockScreen();
             }
         }
-        // ----------------------------------------------------
 
         function unlockScreen() {
             isCurrentlyAuthenticated = true;
@@ -700,6 +741,10 @@
             if (targetId === "theme-pink") { currentLineTheme = 'pink'; localStorage.setItem('user_theme', 'pink'); applyCurrentMode(); }
             if (targetId === "theme-beige") { currentLineTheme = 'beige'; localStorage.setItem('user_theme', 'beige'); applyCurrentMode(); }
             
+            // --- 追加: GChatモードの色選択イベント ---
+            if (targetId === "theme-gchat-light") { currentGChatTheme = 'gchat-light'; localStorage.setItem('gchat_theme', 'gchat-light'); applyCurrentMode(); }
+            if (targetId === "theme-gchat-dark") { currentGChatTheme = 'gchat-dark'; localStorage.setItem('gchat_theme', 'gchat-dark'); applyCurrentMode(); }
+
             if (targetId === "size-sm") changeFontSize('sm');
             if (targetId === "size-md") changeFontSize('md');
             if (targetId === "size-lg") changeFontSize('lg');
@@ -722,22 +767,11 @@
 
             currentAppMode = localStorage.getItem('app_mode') || 'line';
             currentLineTheme = localStorage.getItem('user_theme') || 'blue';
+            currentGChatTheme = localStorage.getItem('gchat_theme') || 'gchat-light';
             applyCurrentMode();
 
             const size = localStorage.getItem('user_font_size') || 'md';
             changeFontSize(size);
-            
-            const mql = window.matchMedia('(prefers-color-scheme: dark)');
-            const handleDarkTheme = (e) => {
-                if (currentAppMode === 'gchat') {
-                    changeTheme(e.matches ? 'gchat-dark' : 'gchat-light');
-                }
-            };
-            if (mql.addEventListener) {
-                mql.addEventListener('change', handleDarkTheme);
-            } else if (mql.addListener) {
-                mql.addListener(handleDarkTheme);
-            }
             
             setupIndependentMenuEvents();
             
@@ -1039,7 +1073,9 @@
             if (currentAppMode === 'line') {
                 document.body.classList.remove('mode-gchat');
                 getEl('line-theme-selector').classList.remove('hidden');
-                getEl('gchat-theme-info').classList.add('hidden');
+                
+                const gchatSel = getEl('gchat-theme-selector');
+                if(gchatSel) gchatSel.classList.add('hidden');
 
                 getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded font-bold bg-[#06c755] text-white cursor-pointer shadow-sm border border-transparent transition";
                 getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
@@ -1048,13 +1084,14 @@
             } else {
                 document.body.classList.add('mode-gchat');
                 getEl('line-theme-selector').classList.add('hidden');
-                getEl('gchat-theme-info').classList.remove('hidden');
+                
+                const gchatSel = getEl('gchat-theme-selector');
+                if(gchatSel) gchatSel.classList.remove('hidden');
 
                 getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
                 getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded font-bold bg-blue-600 text-white cursor-pointer shadow-sm border border-transparent transition";
 
-                const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                changeTheme(isDark ? 'gchat-dark' : 'gchat-light');
+                changeTheme(currentGChatTheme);
             }
         }
 
@@ -1086,6 +1123,10 @@
                 const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
                 buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-yellow-400'); });
                 const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
+            } else {
+                const buttons = [getEl('theme-gchat-light'), getEl('theme-gchat-dark')];
+                buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-blue-400'); });
+                const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-blue-400');
             }
             
             if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
@@ -1503,7 +1544,6 @@
             const isGChat = currentAppMode === 'gchat';
             const isDarkGChat = currentThemeName === 'gchat-dark';
 
-            // Google Chat用のカラーパレット
             const gMeBg = isDarkGChat ? 'bg-[#004a77] text-[#e8eaed]' : 'bg-[#c2e7ff] text-[#001d35]';
             const gOtherBg = isDarkGChat ? 'bg-[#3c4043] text-[#e8eaed]' : 'bg-[#f2f2f4] text-[#202124]';
             const gTimeText = isDarkGChat ? 'text-[#9aa0a6]' : 'text-[#5f6368]';
