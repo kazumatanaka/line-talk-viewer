@@ -106,18 +106,30 @@
             overflow-x: hidden !important;
         }
 
-        /* 残像を完全に抹殺するためのステルスクラス */
-        .force-hide-content {
+        /* --- ここから常駐ステルスレイヤー用CSS --- */
+        .stealth-layer-standby {
             opacity: 0 !important;
-            visibility: hidden !important;
-            transition: none !important;
             pointer-events: none !important;
+            will-change: opacity; /* GPUに事前準備させる */
+            transform: translateZ(0); /* ハードウェアアクセラレーションを強制 */
+            visibility: visible !important; 
+            display: flex !important; /* display:noneによるレイアウト再計算を防ぐ */
         }
+
+        .stealth-layer-active {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transition: none !important; /* アニメーションを無効化し即時発動 */
+            z-index: 99999 !important;
+            visibility: visible !important;
+            display: flex !important;
+        }
+        /* ------------------------------------------- */
     </style>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
 
-    <div id="biometricLockScreen" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300">
+    <div id="biometricLockScreen" class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center text-white stealth-layer-active">
         
         <div id="lockMainZone" class="text-center space-y-6 max-w-sm px-6 w-full block flex-shrink-0">
             <div class="pt-8">
@@ -380,27 +392,20 @@
             return buffer.buffer;
         }
 
+        // --- 強制ステルス関数 ---
         function forceLockScreen() {
-            if (getEl('appBodyContent')) {
-                getEl('appBodyContent').classList.add('force-hide-content');
-            }
-
             isCurrentlyAuthenticated = false;
             let lockScreen = getEl('biometricLockScreen');
-            
             if (lockScreen) {
-                lockScreen.style.transition = 'none';
-                lockScreen.classList.remove('hidden', 'opacity-0');
-                lockScreen.style.display = 'flex';
-
+                // 最速でOpacityを1にし、タッチをブロックする
+                lockScreen.classList.remove('stealth-layer-standby');
+                lockScreen.classList.add('stealth-layer-active');
+                
+                // 裏側でUIを通常ロック画面にリセットしておく（ダミーから戻るため）
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('lockMainZone').style.display = 'block';
                 getEl('dummyDataZone').classList.add('hidden');
                 getEl('dummyDataZone').style.display = 'none';
-
-                setTimeout(() => {
-                    if (lockScreen) lockScreen.style.transition = '';
-                }, 50);
             }
         }
 
@@ -432,6 +437,7 @@
                 await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
                 
                 if (targetMode === 'dummy') {
+                    // ステルスレイヤーはアクティブなまま、中身だけダミーUIに切り替える
                     getEl('lockMainZone').classList.add('hidden');
                     getEl('lockMainZone').style.display = 'none';
                     
@@ -490,30 +496,29 @@
         function unlockScreen() {
             isCurrentlyAuthenticated = true;
             
-            if (getEl('appBodyContent')) {
-                getEl('appBodyContent').classList.remove('force-hide-content');
-            }
-
             const lockScreen = getEl('biometricLockScreen');
             if (lockScreen) {
-                lockScreen.classList.add('opacity-0');
+                // アンロック時はスムーズに消すために一時的にtransitionを追加
+                lockScreen.style.transition = 'opacity 0.3s ease-out';
+                lockScreen.classList.remove('stealth-layer-active');
+                lockScreen.classList.add('stealth-layer-standby');
+                
                 setTimeout(() => { 
-                    if(lockScreen) {
-                        lockScreen.classList.add('hidden');
-                        lockScreen.style.display = 'none';
-                    }
+                    lockScreen.style.transition = 'none'; // 即時アニメーション無効に戻す
                     autoCheckNewFiles();
                 }, 300);
             }
         }
 
+        // --- 強力なバックグラウンド移行検知 ---
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') forceLockScreen(); 
         });
-
         window.addEventListener('pagehide', () => forceLockScreen());
+        document.addEventListener('freeze', () => forceLockScreen()); // 最新ブラウザ用
 
         window.addEventListener('blur', () => {
+            // 生体認証のプロンプト表示時以外は即隠す
             if (!isProcessingBiometrics) forceLockScreen();
         });
 
@@ -522,6 +527,7 @@
         });
 
         window.addEventListener('pageshow', (e) => {
+            // bfcache(戻るボタン)からの復帰時
             if (e.persisted && !isCurrentlyAuthenticated) forceLockScreen();
         });
 
