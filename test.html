@@ -6,25 +6,22 @@
     <title>Sales Attainment Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* テーマごとの背景色設定 */
+        /* === LINE Mode Styles === */
         .bg-theme-blue { background-color: #92afd9 !important; }
         .bg-theme-dark { background-color: #1a1a1a !important; }
         .bg-theme-pink { background-color: #fbcfe8 !important; }
         .bg-theme-beige { background-color: #f5f5dc !important; }
 
-        /* テーマ連動型のヘッダー背景色設定 */
         .header-blue { background-color: #92afd9; color: #374151; }
         .header-dark { background-color: #1a1a1a; color: #ffffff; }
         .header-pink { background-color: #fbcfe8; color: #374151; }
         .header-beige { background-color: #f5f5dc; color: #374151; }
 
-        /* テーマ連動型のヘッダーサブテキストの文字色設定 */
         .sub-blue { color: #6b7280; }
         .sub-dark { color: #9ca3af; }
         .sub-pink { color: #6b7280; }
         .sub-beige { color: #6b7280; }
 
-        /* 吹き出しの基本スタイル（Lightテーマ用） */
         .bubble-other {
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -43,8 +40,6 @@
             line-height: 1.4 !important;
             letter-spacing: 0.02em;
         }
-
-        /* しっぽ（ヒゲ）の形状 */
         .bubble-me::after {
             content: ""; position: absolute; top: 10px; right: -6px;
             border-width: 5px 0 5px 7px; border-style: solid;
@@ -56,113 +51,56 @@
             border-color: transparent #ffffff transparent transparent !important;
         }
 
-        /* 文字色（既読・時間・名前）の基本 */
         .time-text { color: #546173 !important; font-weight: 500; } 
         .name-text { color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.15); } 
 
-        /* ダークモード時の着色上書き */
-        .text-xs.bg-theme-dark .bubble-other,
-        .text-sm.bg-theme-dark .bubble-other,
-        .text-base.bg-theme-dark .bubble-other {
-            background-color: #2a2a2a !important;
-            color: #ffffff !important;
+        .text-xs.bg-theme-dark .bubble-other, .text-sm.bg-theme-dark .bubble-other, .text-base.bg-theme-dark .bubble-other {
+            background-color: #2a2a2a !important; color: #ffffff !important;
         }
-        .text-xs.bg-theme-dark .bubble-other::after,
-        .text-sm.bg-theme-dark .bubble-other::after,
-        .text-base.bg-theme-dark .bubble-other::after {
+        .text-xs.bg-theme-dark .bubble-other::after, .text-sm.bg-theme-dark .bubble-other::after, .text-base.bg-theme-dark .bubble-other::after {
             border-color: transparent #2a2a2a transparent transparent !important;
         }
-
-        .text-xs.bg-theme-dark .bubble-me,
-        .text-sm.bg-theme-dark .bubble-me,
-        .text-base.bg-theme-dark .bubble-me {
-            background-color: #9de693 !important; 
-            color: #000000 !important;
+        .text-xs.bg-theme-dark .bubble-me, .text-sm.bg-theme-dark .bubble-me, .text-base.bg-theme-dark .bubble-me {
+            background-color: #9de693 !important; color: #000000 !important;
         }
-        .text-xs.bg-theme-dark .bubble-me::after,
-        .text-sm.bg-theme-dark .bubble-me::after,
-        .text-base.bg-theme-dark .bubble-me::after {
+        .text-xs.bg-theme-dark .bubble-me::after, .text-sm.bg-theme-dark .bubble-me::after, .text-base.bg-theme-dark .bubble-me::after {
             border-color: transparent transparent transparent #9de693 !important;
         }
-
         .bg-theme-dark .time-text { color: #8a8a8a !important; }
         .bg-theme-dark .name-text { color: #a0a0a0 !important; text-shadow: none; }
 
-        /* --- GChat Mode Styles (システムテーマ連動) --- */
-        .mode-gchat .bubble-me, .mode-gchat .bubble-other {
-            box-shadow: none !important;
-            border-radius: 18px !important; /* GChat風の丸み */
-        }
-        .mode-gchat .bubble-me::after, .mode-gchat .bubble-other::after {
-            display: none !important; /* しっぽを消す */
-        }
-        .mode-gchat .date-line {
-            display: none !important; /* 日付の両脇の線を消す */
-        }
-        .mode-gchat .date-stamp-node {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            font-weight: bold;
-        }
-
-        /* GChat Light Theme */
-        .bg-theme-gchat-light { background-color: #ffffff !important; }
-        .header-gchat-light { background-color: #ffffff !important; color: #202124 !important; border-bottom: 1px solid #e0e0e0; }
-        .sub-gchat-light { color: #5f6368 !important; }
+        /* === GChat Mode Styles (Material Design 3) === */
+        /* ヘッダーのスタイル（GChat風） */
+        .header-gchat-light { background-color: #ffffff !important; color: #202124 !important; border-bottom: 1px solid #e0e0e0; box-shadow: none !important; }
+        .header-gchat-dark { background-color: #1f1f1f !important; color: #e8eaed !important; border-bottom: 1px solid #3c4043; box-shadow: none !important; }
         
-        .bg-theme-gchat-light .bubble-me { background-color: #e3f2fd !important; color: #202124 !important; }
-        .bg-theme-gchat-light .bubble-other { background-color: #f1f3f4 !important; color: #202124 !important; }
-        .bg-theme-gchat-light .time-text { color: #5f6368 !important; }
-        .bg-theme-gchat-light .name-text { color: #3c4043 !important; text-shadow: none !important; }
-        .bg-theme-gchat-light .date-stamp-node { color: #5f6368 !important; }
+        .header-gchat-light svg { stroke: #5f6368 !important; color: #5f6368 !important; }
+        .header-gchat-dark svg { stroke: #9aa0a6 !important; color: #9aa0a6 !important; }
 
-        /* GChat Dark Theme */
-        .bg-theme-gchat-dark { background-color: #202124 !important; }
-        .header-gchat-dark { background-color: #202124 !important; color: #e8eaed !important; border-bottom: 1px solid #3c4043; }
-        .sub-gchat-dark { color: #9aa0a6 !important; }
+        .mode-gchat #talkTitle { font-family: "Google Sans", Roboto, Arial, sans-serif; font-weight: 500; font-size: 17px; }
+        .mode-gchat #talkSub { display: none !important; } /* サブテキストを隠す */
+        .mode-gchat #headerAvatar { display: block !important; } /* GChat時はヘッダーにアイコン表示 */
 
-        .bg-theme-gchat-dark .bubble-me { background-color: #004a77 !important; color: #e8eaed !important; }
-        .bg-theme-gchat-dark .bubble-other { background-color: #3c4043 !important; color: #e8eaed !important; }
-        .bg-theme-gchat-dark .time-text { color: #9aa0a6 !important; }
-        .bg-theme-gchat-dark .name-text { color: #e8eaed !important; text-shadow: none !important; }
-        .bg-theme-gchat-dark .date-stamp-node { color: #9aa0a6 !important; }
+        /* チャット背景（GChat風） */
+        .bg-theme-gchat-light { background-color: #ffffff !important; }
+        .bg-theme-gchat-dark { background-color: #1f1f1f !important; }
 
 
         html, body {
-            overflow: hidden !important;
-            position: relative;
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 100%;
-            margin: 0;
-            padding: 0;
+            overflow: hidden !important; position: relative; width: 100% !important; max-width: 100% !important; height: 100%; margin: 0; padding: 0;
         }
 
         .allow-select-and-scroll {
-            user-select: text !important;
-            -webkit-user-select: text !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
+            user-select: text !important; -webkit-user-select: text !important; overflow-y: auto !important; overflow-x: hidden !important;
         }
 
         /* --- 常駐ステルスレイヤー用CSS --- */
         .stealth-layer-standby {
-            opacity: 0 !important;
-            pointer-events: none !important;
-            will-change: opacity; 
-            transform: translateZ(0); 
-            visibility: visible !important; 
-            display: flex !important; 
+            opacity: 0 !important; pointer-events: none !important; will-change: opacity; transform: translateZ(0); visibility: visible !important; display: flex !important; 
         }
 
         .stealth-layer-active {
-            opacity: 1 !important;
-            pointer-events: auto !important;
-            transition: none !important; 
-            z-index: 99999 !important;
-            visibility: visible !important;
-            display: flex !important;
+            opacity: 1 !important; pointer-events: auto !important; transition: none !important; z-index: 99999 !important; visibility: visible !important; display: flex !important;
         }
     </style>
 </head>
@@ -249,14 +187,17 @@
     <div id="appBodyContent" class="w-full h-full flex flex-col overflow-hidden">
         <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
             <div class="flex items-center space-x-1.5">
-                <button id="backBtn" class="p-2 -ml-2 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
+                <button id="backBtn" class="p-2 -ml-1 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
                     <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                 </button>
-                <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                    <h1 id="talkTitle" class="font-bold text-base leading-tight">Line Talk Viewer</h1>
-                    <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
+                <div id="titleArea" class="flex items-center cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
+                    <img id="headerAvatar" src="default-light.png" class="w-8 h-8 rounded-full object-cover hidden mr-2.5">
+                    <div class="flex flex-col justify-center">
+                        <h1 id="talkTitle" class="font-bold text-base leading-tight">Line Talk Viewer</h1>
+                        <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
+                    </div>
                 </div>
             </div>
             
@@ -619,7 +560,6 @@
             return getThemeDefaultAvatar();
         }
 
-        // --- 欠落していた関数の復元 ---
         function toggleHeaderBox(forceState) {
             const box = getEl('headerSearchBox'); if (!box) return;
             const isHidden = box.classList.contains('hidden'); const toShow = (forceState !== undefined) ? forceState : isHidden;
@@ -630,7 +570,6 @@
             } else { box.classList.add('hidden'); }
         }
 
-        // --- ★エラーの原因だった関数を復元 ---
         function applyTitle() { 
             const t = getEl('talkTitle'); 
             if (t) {
@@ -640,8 +579,11 @@
                     t.innerText = isCamouflageMode ? "Line Talk Viewer" : actualPartnerNames;
                 }
             }
+            const ha = getEl('headerAvatar');
+            if (ha) {
+                ha.src = getFinalAvatarUrl();
+            }
         }
-        // ------------------------------------
 
         function returnToInitialWelcome() {
             if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
@@ -868,7 +810,6 @@
             attemptInit();
         });
 
-        // --- Google Drive API 関連の欠落関数を復元 ---
         function gapiLoadedTrig() { 
             attemptInit(); 
         }
@@ -1065,6 +1006,7 @@
                                 hasDriveCustomImage = true;
                                 saveCache(globalMessages); 
                                 startRender();
+                                applyTitle();
                                 alert("選択した画像を相手のアイコンに設定しました！");
                             } catch(err) { console.error(err); }
                         };
@@ -1088,10 +1030,10 @@
                 if (el) el.innerHTML = '<p class="text-red-500 text-center py-4">⚠️ ドライブ情報の取得に失敗しました</p>';
             }
         }
-        // ------------------------------------------
 
         function applyCurrentMode() {
             if (currentAppMode === 'line') {
+                document.body.classList.remove('mode-gchat');
                 getEl('line-theme-selector').classList.remove('hidden');
                 getEl('gchat-theme-info').classList.add('hidden');
 
@@ -1100,6 +1042,7 @@
 
                 changeTheme(currentLineTheme);
             } else {
+                document.body.classList.add('mode-gchat');
                 getEl('line-theme-selector').classList.add('hidden');
                 getEl('gchat-theme-info').classList.remove('hidden');
 
@@ -1119,12 +1062,10 @@
             if (savedSize === 'sm') sizeClass = 'text-xs';
             if (savedSize === 'md') sizeClass = 'text-sm';
             if (savedSize === 'lg') sizeClass = 'text-base';
-            
-            const gchatClass = currentAppMode === 'gchat' ? 'mode-gchat' : '';
 
             const c = getEl('chatContainer');
             if (c) {
-                c.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} ${sizeClass} h-full w-full relative ${gchatClass}`;
+                c.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} ${sizeClass} h-full w-full relative`;
             }
             
             const header = getEl('mainHeader');
@@ -1439,6 +1380,7 @@
             toggleDrawer(false);
         }
 
+        // --- ★UIレンダーの分岐処理（GChat/LINE） ---
         function startRender() {
             const c = getEl('chatContainer');
             if (c) c.innerHTML = ''; 
@@ -1554,50 +1496,91 @@
             const frag = document.createDocumentFragment();
             const avatar = getFinalAvatarUrl();
             const defAvatar = getThemeDefaultAvatar();
+            
+            const isGChat = currentAppMode === 'gchat';
+            const isDarkGChat = currentThemeName === 'gchat-dark';
+
+            // Google Chat用のカラーパレット
+            const gMeBg = isDarkGChat ? 'bg-[#004a77] text-[#e8eaed]' : 'bg-[#c2e7ff] text-[#001d35]';
+            const gOtherBg = isDarkGChat ? 'bg-[#3c4043] text-[#e8eaed]' : 'bg-[#f2f2f4] text-[#202124]';
+            const gTimeText = isDarkGChat ? 'text-[#9aa0a6]' : 'text-[#5f6368]';
+            const gNameText = isDarkGChat ? 'text-[#e8eaed]' : 'text-[#202124]';
+            const gDateBg = isDarkGChat ? 'bg-[#3c4043] text-[#9aa0a6]' : 'bg-[#f1f3f4] text-[#5f6368]';
 
             msgs.forEach((msg, idx) => {
                 const gIdx = base + idx;
-                
+                const w = document.createElement('div');
+                w.id = `msg-${gIdx}`;
+
                 if (msg.type === 'date') { 
-                    const w = document.createElement('div');
                     w.className = 'w-full flex items-center justify-center my-4 select-none z-10 px-4 flex-shrink-0';
-                    w.innerHTML = `
-                        <div class="flex-1 border-t border-white/20 date-line"></div>
-                        <div class="date-stamp-node text-center text-white text-[11px] font-bold bg-black/30 rounded-full px-4 py-1 mx-3 shadow-sm border border-white/10">
-                            ${msg.text}
-                        </div>
-                        <div class="flex-1 border-t border-white/20 date-line"></div>
-                    `;
-                    frag.appendChild(w); 
+                    if (isGChat) {
+                        // GChat特有のカプセル型の日付
+                        w.innerHTML = `<div class="text-center text-[11px] font-medium rounded-full px-3 py-1 ${gDateBg}">${msg.text}</div>`;
+                    } else {
+                        // LINE特有のライン入りの日付
+                        w.innerHTML = `
+                            <div class="flex-1 border-t border-white/20 date-line"></div>
+                            <div class="date-stamp-node text-center text-white text-[11px] font-bold bg-black/30 rounded-full px-4 py-1 mx-3 shadow-sm border border-white/10">
+                                ${msg.text}
+                            </div>
+                            <div class="flex-1 border-t border-white/20 date-line"></div>
+                        `;
+                    }
                 } 
                 else if (msg.type === 'msg') {
                     const isMe = (msg.sender === currentMe); 
-                    const w = document.createElement('div'); 
-                    w.id = `msg-${gIdx}`;
-                    if (isMe) { 
-                        w.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 flex-shrink-0 mb-1'; 
-                        w.innerHTML = `
-                            <div class="flex flex-col items-end justify-end pb-0.5 space-y-1">
-                                <span class="text-[10px] time-text select-none leading-none">既読</span>
-                                <span class="text-[10px] time-text select-none leading-none whitespace-nowrap">${msg.time}</span>
-                            </div>
-                            <div class="bubble-me relative break-all whitespace-pre-wrap select-text">${msg.body}</div>
-                        `; 
-                    } 
-                    else { 
-                        w.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 flex-shrink-0 mb-1'; 
-                        w.innerHTML = `
-                            <img src="${avatar}" class="w-9 h-9 rounded-full object-cover flex-shrink-0 select-none mt-0.5" alt="avatar" onerror="this.src='${defAvatar}'">
-                            <div class="flex flex-col">
-                                <span class="text-[11px] name-text mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
-                                <div class="flex items-end space-x-1.5">
-                                    <div class="bubble-other relative break-all whitespace-pre-wrap select-text">${msg.body}</div>
-                                    <span class="text-[10px] time-text select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
+                    
+                    if (isGChat) {
+                        // === Google Chat 構造 ===
+                        if (isMe) { 
+                            w.className = 'flex items-end justify-end space-x-2 max-w-[85%] self-end p-0.5 mb-2'; 
+                            w.innerHTML = `
+                                <div class="flex flex-col items-end">
+                                    <div class="flex items-baseline space-x-2 mb-1 mr-1">
+                                        <span class="text-[10px] font-medium ${gTimeText}">${msg.time}</span>
+                                    </div>
+                                    <div class="relative break-all whitespace-pre-wrap select-text text-[14px] px-3.5 py-2 ${gMeBg}" style="border-radius: 18px 4px 18px 18px;">${msg.body}</div>
                                 </div>
-                            </div>`; 
+                            `; 
+                        } else { 
+                            w.className = 'flex items-start space-x-3 max-w-[85%] self-start p-0.5 mb-2'; 
+                            w.innerHTML = `
+                                <img src="${avatar}" class="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" alt="avatar" onerror="this.src='${defAvatar}'">
+                                <div class="flex flex-col items-start">
+                                    <div class="flex items-baseline space-x-2 mb-1 ml-1">
+                                        <span class="text-[12px] font-medium ${gNameText}">${msg.sender}</span>
+                                        <span class="text-[10px] font-medium ${gTimeText}">${msg.time}</span>
+                                    </div>
+                                    <div class="relative break-all whitespace-pre-wrap select-text text-[14px] px-3.5 py-2 ${gOtherBg}" style="border-radius: 4px 18px 18px 18px;">${msg.body}</div>
+                                </div>`; 
+                        }
+                    } else {
+                        // === LINE 構造 ===
+                        if (isMe) { 
+                            w.className = 'flex items-end justify-end space-x-1.5 space-x-reverse max-w-[85%] self-end p-0.5 flex-shrink-0 mb-1'; 
+                            w.innerHTML = `
+                                <div class="flex flex-col items-end justify-end pb-0.5 space-y-1">
+                                    <span class="text-[10px] time-text select-none leading-none">既読</span>
+                                    <span class="text-[10px] time-text select-none leading-none whitespace-nowrap">${msg.time}</span>
+                                </div>
+                                <div class="bubble-me relative break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                            `; 
+                        } else { 
+                            w.className = 'flex items-start space-x-2 max-w-[85%] self-start p-0.5 flex-shrink-0 mb-1'; 
+                            w.innerHTML = `
+                                <img src="${avatar}" class="w-9 h-9 rounded-full object-cover flex-shrink-0 select-none mt-0.5" alt="avatar" onerror="this.src='${defAvatar}'">
+                                <div class="flex flex-col">
+                                    <span class="text-[11px] name-text mb-0.5 ml-1 select-none font-medium">${msg.sender}</span>
+                                    <div class="flex items-end space-x-1.5">
+                                        <div class="bubble-other relative break-all whitespace-pre-wrap select-text">${msg.body}</div>
+                                        <span class="text-[10px] time-text select-none pb-0.5 whitespace-nowrap">${msg.time}</span>
+                                    </div>
+                                </div>`; 
+                        }
                     }
-                    frag.appendChild(w);
                 }
+                frag.appendChild(w);
             });
             
             const c = getEl('chatContainer');
@@ -1609,6 +1592,7 @@
                 } 
             }
         }
+        // ------------------------------------------
 
         function triggerSearch() {
             const kw = getEl('searchKeyword').value.trim().toLowerCase(); 
@@ -1760,38 +1744,4 @@
             const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2}).*$/; 
             const reg1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
             const reg2 = /^(\d{1,2}:\d{2})\s+([^\t\n]+?)\s+(.*)$/;
-            let ref = null;
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i]; const trim = line.trim(); 
-                if (trim === "") { if (ref) ref.body += '<br>'; continue; }
-                
-                let m = line.match(reg1) || line.match(reg2);
-                if (m) {
-                    const time = m[1] || "";
-                    const sender = m[2] || "";
-                    const body = m[3] || "";
-                    const cleanS = sender.trim(); counts[cleanS] = (counts[cleanS] || 0) + 1;
-                    let cleanB = body.replace(/\\n/g, '<br>'); 
-                    if (cleanB === '[スタンプ]' || cleanB === '[Sticker]') { cleanB = '🎨 [スタンプ]'; } 
-                    else if (cleanB === '[写真]' || cleanB === '[Photo]') { cleanB = '📸 [写真]'; } 
-                    else if (cleanB === '[動画]' || cleanB === '[Video]') { cleanB = '🎬 [動画]'; }
-                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanS, body: cleanB }; 
-                    messages.push(newMsg); 
-                    ref = newMsg;
-                } 
-                else if (dateRegex.test(trim)) { 
-                    messages.push({ type: 'date', text: trim }); 
-                    ref = null; 
-                } 
-                else if (ref) { 
-                    ref.body += '<br>' + line; 
-                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
-                    messages[messages.length - 1].body += '<br>' + line; 
-                }
-            }
-            return { messages, counts, partner };
-        }
-    </script>
-</body>
-</html>
+            let
