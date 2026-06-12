@@ -531,6 +531,26 @@
             if (e.persisted && !isCurrentlyAuthenticated) forceLockScreen();
         });
 
+        // --- 予測防御ハック（OSのスクショより早く動くための裏技） ---
+
+        // 1. タッチキャンセル検知（iOSのホームスワイプ等で発火する確率が高い）
+        document.addEventListener('touchcancel', () => {
+            if (!isProcessingBiometrics) forceLockScreen();
+        }, { passive: true });
+
+        // 2. 画面外へのポインター離脱検知（上部のURLバーや、画面外へのスワイプを検知）
+        document.addEventListener('mouseleave', (e) => {
+            // 上方向（URLバーや通知センター）または下方向（ホームバー）への離脱を検知
+            if (e.clientY <= 0 || e.clientY >= window.innerHeight - 10) {
+                if (!isProcessingBiometrics) forceLockScreen();
+            }
+        });
+
+        // 3. 戻る・進む操作の予測検知（ブラウザのUI操作によるスクショ対策）
+        window.addEventListener('popstate', () => {
+            if (!isProcessingBiometrics) forceLockScreen();
+        });
+
         function toggleDrawer(show) {
             const drawer = getEl('drawerMenu');
             const overlay = getEl('overlay');
