@@ -106,18 +106,24 @@
             overflow-x: hidden !important;
         }
 
-        /* 【変更】残像を完全に抹殺するためのステルスクラス */
-        /* display: none を追加し、描画ツリーから完全に消去します */
+        /* display: none を外し、以前の「透明にするだけ」の軽い処理に戻します */
         .force-hide-content {
-            display: none !important;
             opacity: 0 !important;
             visibility: hidden !important;
             transition: none !important;
             pointer-events: none !important;
         }
+
+        /* 【新規追加】GPUの力で最速で画面を覆うための専用ステルスレイヤー設定 */
+        #stealthLayer {
+            will-change: opacity;
+            transform: translateZ(0); /* GPUアクセラレーションを強制し、描画を最速化 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
+
+    <div id="stealthLayer" class="fixed inset-0 bg-slate-900 z-[10000] pointer-events-none transition-none" style="opacity: 0;"></div>
 
     <div id="biometricLockScreen" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300">
         
@@ -255,7 +261,7 @@
             
             <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
                 <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                    <p class="font-bold mb-1">Google Drive & LINE Viewer v82</p>
+                    <p class="font-bold mb-1">Google Drive & LINE Viewer v83</p>
                     <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
                 </div>
             </main>
@@ -382,28 +388,53 @@
             return buffer.buffer;
         }
 
+        // 【最速】ステルス幕を下ろす（表示する）関数
+        function triggerStealthMode() {
+            const stealth = getEl('stealthLayer');
+            if (stealth) {
+                stealth.style.opacity = '1';
+                stealth.style.pointerEvents = 'auto';
+            }
+        }
+
+        // ステルス幕を上げる（隠す）関数
+        function disableStealthMode() {
+            const stealth = getEl('stealthLayer');
+            if (stealth) {
+                stealth.style.opacity = '0';
+                stealth.style.pointerEvents = 'none';
+            }
+        }
+
+        // ロック画面の呼び出し（ステルス優先処理）
         function forceLockScreen() {
-            if (getEl('appBodyContent')) {
-                getEl('appBodyContent').classList.add('force-hide-content');
-            }
+            // 1. 重い処理の前に、まずGPUを使って「一瞬で」真っ暗な幕を下ろす
+            triggerStealthMode();
 
-            isCurrentlyAuthenticated = false;
-            let lockScreen = getEl('biometricLockScreen');
-            
-            if (lockScreen) {
-                lockScreen.style.transition = 'none';
-                lockScreen.classList.remove('hidden', 'opacity-0');
-                lockScreen.style.display = 'flex';
+            // 2. ブラウザがフリーズしないよう、DOMの書き換え（重い処理）は0.05秒だけ遅らせる
+            setTimeout(() => {
+                if (getEl('appBodyContent')) {
+                    getEl('appBodyContent').classList.add('force-hide-content');
+                }
 
-                getEl('lockMainZone').classList.remove('hidden');
-                getEl('lockMainZone').style.display = 'block';
-                getEl('dummyDataZone').classList.add('hidden');
-                getEl('dummyDataZone').style.display = 'none';
+                isCurrentlyAuthenticated = false;
+                let lockScreen = getEl('biometricLockScreen');
+                
+                if (lockScreen) {
+                    lockScreen.style.transition = 'none';
+                    lockScreen.classList.remove('hidden', 'opacity-0');
+                    lockScreen.style.display = 'flex';
 
-                setTimeout(() => {
-                    if (lockScreen) lockScreen.style.transition = '';
-                }, 50);
-            }
+                    getEl('lockMainZone').classList.remove('hidden');
+                    getEl('lockMainZone').style.display = 'block';
+                    getEl('dummyDataZone').classList.add('hidden');
+                    getEl('dummyDataZone').style.display = 'none';
+
+                    setTimeout(() => {
+                        if (lockScreen) lockScreen.style.transition = '';
+                    }, 50);
+                }
+            }, 50);
         }
 
         async function handleAuthAttempt(targetMode) {
@@ -441,6 +472,7 @@
                     getEl('dummyDataZone').style.display = 'flex';
                     
                     isCurrentlyAuthenticated = false; 
+                    disableStealthMode(); // ダミー画面を見せるために幕を上げる
                 } else if (targetMode === 'real') {
                     unlockScreen();
                 }
@@ -480,6 +512,7 @@
                 if (targetMode === 'dummy') {
                     getEl('lockMainZone').style.display = 'none';
                     getEl('dummyDataZone').style.display = 'flex';
+                    disableStealthMode();
                 } else {
                     unlockScreen();
                 }
@@ -504,8 +537,12 @@
                         lockScreen.classList.add('hidden');
                         lockScreen.style.display = 'none';
                     }
+                    disableStealthMode(); // トーク画面を表示するために最後に幕を上げる
                     autoCheckNewFiles();
                 }, 300);
+            } else {
+                disableStealthMode();
+                autoCheckNewFiles();
             }
         }
 
@@ -583,7 +620,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v82</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v83</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -845,7 +882,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v83</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
             actualPartnerNames = "Line Talk Viewer"; 
             isCamouflageMode = false;
@@ -930,7 +967,6 @@
                     } else if (isImage) {
                         currentFolderImageFile = file; 
                         item.innerHTML = `<span class="text-emerald-600 truncate flex-1">🖼️ ${file.name} (アイコン画像)</span>`;
-                        // ※ 手動での画像適用機能は維持しつつ、システム側ではピン留めされたフォルダの画像を最優先します
                         item.onclick = async () => {
                             try {
                                 const imgRes = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
@@ -1310,7 +1346,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v83</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
