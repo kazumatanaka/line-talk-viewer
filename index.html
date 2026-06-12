@@ -106,8 +106,10 @@
             overflow-x: hidden !important;
         }
 
-        /* 残像を完全に抹殺するためのステルスクラス */
+        /* 【変更】残像を完全に抹殺するためのステルスクラス */
+        /* display: none を追加し、描画ツリーから完全に消去します */
         .force-hide-content {
+            display: none !important;
             opacity: 0 !important;
             visibility: hidden !important;
             transition: none !important;
@@ -928,6 +930,7 @@
                     } else if (isImage) {
                         currentFolderImageFile = file; 
                         item.innerHTML = `<span class="text-emerald-600 truncate flex-1">🖼️ ${file.name} (アイコン画像)</span>`;
+                        // ※ 手動での画像適用機能は維持しつつ、システム側ではピン留めされたフォルダの画像を最優先します
                         item.onclick = async () => {
                             try {
                                 const imgRes = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
