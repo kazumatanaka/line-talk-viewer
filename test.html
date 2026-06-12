@@ -1580,26 +1580,26 @@
 
             let gMeBg = '';
             let gOtherBg = '';
+            let gTextModeColor = isDarkGChat ? 'text-white' : 'text-black';
 
             if (isGChat) {
                 if (!isDarkGChat) {
-                    // ライトモード用：相手のバブル背景を少しだけ濃いトーンに引き締め
-                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#e3f2fd] text-black'; gOtherBg = 'bg-[#e4ebf3] text-black'; }
-                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#fce8e6] text-black'; gOtherBg = 'bg-[#f3dedc] text-black'; }
-                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#f3e5f5] text-black'; gOtherBg = 'bg-[#ebd6ed] text-black'; }
-                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#e8f5e9] text-black'; gOtherBg = 'bg-[#dbeee0] text-black'; }
-                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#fffde7] text-black'; gOtherBg = 'bg-[#f5f3ce] text-black'; }
+                    // ライトモード用配色設定（紫系のトーン・比率に統一調整）
+                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#dbedff]'; gOtherBg = 'bg-[#eef4f9]'; }
+                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#ffdbe5]'; gOtherBg = 'bg-[#f9eef1]'; }
+                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#f0dbff]'; gOtherBg = 'bg-[#f6eef5]'; } // 指定コード
+                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#dbffd6]'; gOtherBg = 'bg-[#eef9f1]'; }
+                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#fffcd6]'; gOtherBg = 'bg-[#f9f9ee]'; }
                 } else {
-                    // ダークモード用：相手のバブル背景を少しだけ濃いトーンに引き締め
-                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#004a77] text-black'; gOtherBg = 'bg-[#404550] text-black'; }
-                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#5c2523] text-black'; gOtherBg = 'bg-[#523d3d] text-black'; }
-                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#4a235a] text-black'; gOtherBg = 'bg-[#473c4d] text-black'; }
-                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#1b4332] text-black'; gOtherBg = 'bg-[#3b473c] text-black'; }
-                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#5d4037] text-black'; gOtherBg = 'bg-[#4d4d3d] text-black'; }
+                    // ダークモード用配色設定（紫系のトーン・比率に統一調整）
+                    if (currentGChatColor === 'blue')   { gMeBg = 'bg-[#21293f]'; gOtherBg = 'bg-[#1a1c25]'; }
+                    if (currentGChatColor === 'red')    { gMeBg = 'bg-[#3f2128]'; gOtherBg = 'bg-[#251a1d]'; }
+                    if (currentGChatColor === 'purple') { gMeBg = 'bg-[#372c3f]'; gOtherBg = 'bg-[#221e25]'; } // 指定コード
+                    if (currentGChatColor === 'green')  { gMeBg = 'bg-[#213f26]'; gOtherBg = 'bg-[#1a251c]'; }
+                    if (currentGChatColor === 'yellow') { gMeBg = 'bg-[#3f3b21]'; gOtherBg = 'bg-[#25251a]'; }
                 }
             }
 
-            // ★変更点：名前と時間のテキストカラーを一段階薄く調整
             const gTimeText = isDarkGChat ? 'text-[#787e85]' : 'text-[#888e95]';
             const gNameText = isDarkGChat ? 'text-[#787e85]' : 'text-[#888e95]'; 
             const gDateBg   = isDarkGChat ? 'bg-[#3c4043] text-[#9aa0a6]' : 'bg-[#f1f3f4] text-[#5f6368]';
@@ -1634,7 +1634,7 @@
                                     <div class="flex items-baseline space-x-2 mb-1 mr-1">
                                         <span class="text-[10px] font-medium ${gTimeText}">${msg.time}</span>
                                     </div>
-                                    <div class="relative break-all whitespace-pre-wrap select-text text-[14px] px-3.5 py-2 ${gMeBg}" style="border-radius: 18px 4px 18px 18px;">${msg.body}</div>
+                                    <div class="relative break-all whitespace-pre-wrap select-text text-[14px] px-3.5 py-2 ${gMeBg} ${gTextModeColor}" style="border-radius: 18px 4px 18px 18px;">${msg.body}</div>
                                 </div>
                             `; 
                         } else { 
@@ -1646,7 +1646,7 @@
                                         <span class="text-[12px] font-medium ${gNameText}">${msg.sender}</span>
                                         <span class="text-[10px] font-medium ${gTimeText}">${msg.time}</span>
                                     </div>
-                                    <div class="relative break-all whitespace-pre-wrap select-text text-[14px] px-3.5 py-2 ${gOtherBg}" style="border-radius: 4px 18px 18px 18px;">${msg.body}</div>
+                                    <div class="relative break-all whitespace-pre-wrap select-text text-[14px] px-3.5 py-2 ${gOtherBg} ${gTextModeColor}" style="border-radius: 4px 18px 18px 18px;">${msg.body}</div>
                                 </div>`; 
                         }
                     } else {
