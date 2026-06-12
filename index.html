@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sales Attainment Viewer v78</title>
+    <title>Sales Attainment Viewer v79 (Custom SVG Icons)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -198,7 +198,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v78</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v79</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -244,7 +244,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v78</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v79</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -345,7 +345,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v78"; 
+        let actualPartnerNames = "LINE Talk Viewer v79"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -370,7 +370,7 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の生成・再配置
+        // ロック画面（目隠しレイヤー）の生成・最速同期配置
         function forceLockScreen() {
             isCurrentlyAuthenticated = false;
             let lockScreen = getEl('biometricLockScreen');
@@ -455,7 +455,7 @@
                 `;
                 document.body.appendChild(lockDiv);
             } else {
-                // 【修正】離脱からの復帰時は、ダミーデータ画面を隠し、必ず最初の「未認証ボタン画面」へ戻す
+                // 復帰時は問答無用でダミー表示を非表示、認証前状態へ同期リセット
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('lockMainZone').style.display = 'block';
                 getEl('dummyDataZone').classList.add('hidden');
@@ -539,7 +539,7 @@
                 localStorage.setItem(CONFIG_KEY, credIdBase64);
                 
                 if (targetMode === 'dummy') {
-                    getEl('lockMainZone').style.style.display = 'none';
+                    getEl('lockMainZone').style.display = 'none';
                     getEl('dummyDataZone').style.display = 'flex';
                 } else {
                     unlockScreen();
@@ -559,23 +559,28 @@
             }
         }
 
-        // --- 【超重要】ページ離脱・アプリ切り替えの強制監視の復活 ---
-        // 1. タブを閉じたりアプリが完全に非表示（スリープ、別アプリ）になった瞬間
+        // --- 【残像防止対策】OSがスクリーンショットを撮る瞬間に同期処理で割り込む ---
+        
+        // 対策1: visibilitychangeでの最速防衛
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                forceLockScreen();
+                forceLockScreen(); 
             }
         });
 
-        // 2. スマホ等でタスクバーを引っ張り出したり、別の小ウィンドウにフォーカスが外れた瞬間
+        // 対策2: アプリが完全に見えなくなる・破棄・スリープされる直前の同期的防衛 (最重要)
+        window.addEventListener('pagehide', () => {
+            forceLockScreen(); 
+        });
+
+        // 対策3: ウィンドウ切り替えのトリガーによる先行防衛
         window.addEventListener('blur', () => {
-            // 指紋認証ダイアログそのものが立ち上がる時のblurは、フラグ保護で除外する
             if (!isProcessingBiometrics) {
                 forceLockScreen();
             }
         });
 
-        // 3. 再度ブラウザに戻ってきたときの再検証防衛
+        // 対策4: 戻ってきたときの確認処理
         window.addEventListener('focus', () => {
             if (!isCurrentlyAuthenticated && !isProcessingBiometrics) {
                 forceLockScreen();
@@ -624,7 +629,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v78";
+            actualPartnerNames = "LINE Talk Viewer v79";
             isCamouflageMode = false;
             applyTitle();
             
@@ -638,7 +643,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v78</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v79</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -872,9 +877,9 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v78</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v79</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v78"; 
+            actualPartnerNames = "LINE Talk Viewer v79"; 
             isCamouflageMode = false;
             applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
@@ -1018,9 +1023,9 @@
             const t = getEl('talkTitle'); 
             if (t) {
                 if (globalMessages.length === 0) {
-                    t.innerText = "LINE Talk Viewer v78";
+                    t.innerText = "LINE Talk Viewer v79";
                 } else {
-                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v78" : actualPartnerNames;
+                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v79" : actualPartnerNames;
                 }
             }
         }
@@ -1162,7 +1167,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v78</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v79</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
