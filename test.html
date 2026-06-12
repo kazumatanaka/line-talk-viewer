@@ -90,8 +90,8 @@
         }
         .mode-gchat .name-text { font-size: 12px; font-weight: 500; }
 
-        /* GChat Light - 背景白固定、吹き出しがパステルカラー */
-        .bg-theme-gchat-light { background-color: #ffffff !important; }
+        /* GChat Light */
+        .bg-theme-gchat-light { background-color: #f8f9fa !important; }
         .gchat-light-blue .bubble-me { background-color: #c2e7ff !important; color: #001d35 !important; }
         .gchat-light-red .bubble-me { background-color: #fce8e6 !important; color: #c5221f !important; }
         .gchat-light-purple .bubble-me { background-color: #f3e8fd !important; color: #681da8 !important; }
@@ -105,7 +105,7 @@
         .mode-gchat.gchat-light-blue .name-text, .mode-gchat.gchat-light-red .name-text, .mode-gchat.gchat-light-purple .name-text, .mode-gchat.gchat-light-green .name-text, .mode-gchat.gchat-light-yellow .name-text { color: #5f6368 !important; text-shadow: none !important; }
         .mode-gchat.gchat-light-blue .date-stamp-node, .mode-gchat.gchat-light-red .date-stamp-node, .mode-gchat.gchat-light-purple .date-stamp-node, .mode-gchat.gchat-light-green .date-stamp-node, .mode-gchat.gchat-light-yellow .date-stamp-node { color: #5f6368 !important; }
 
-        /* GChat Dark - 背景黒固定、吹き出しがパステルカラー */
+        /* GChat Dark */
         .bg-theme-gchat-dark { background-color: #202124 !important; }
         .gchat-dark-blue .bubble-me { background-color: #1f385c !important; color: #d2e3fc !important; }
         .gchat-dark-red .bubble-me { background-color: #5c1e19 !important; color: #f8d9d5 !important; }
@@ -400,8 +400,8 @@
 
         let currentAppMode = 'line'; 
         let currentLineTheme = 'blue';
-        let gchatModeState = 'light'; // 'light' or 'dark'
-        let gchatModeColor = 'blue';  // 'blue', 'red', 'purple', 'green', 'yellow'
+        let gchatModeState = 'light'; 
+        let gchatModeColor = 'blue';  
         let currentThemeName = 'blue'; 
         let hasDriveCustomImage = false;
 
@@ -761,19 +761,9 @@
             if (targetId === "theme-pink") { currentLineTheme = 'pink'; localStorage.setItem('user_theme', 'pink'); applyCurrentMode(); }
             if (targetId === "theme-beige") { currentLineTheme = 'beige'; localStorage.setItem('user_theme', 'beige'); applyCurrentMode(); }
             
-            // GChat 手動モード変更 (Light / Dark)
-            if (targetId === "theme-gchat-light") {
-                gchatModeState = 'light';
-                localStorage.setItem('gchat_state', 'light');
-                applyCurrentMode();
-            }
-            if (targetId === "theme-gchat-dark") {
-                gchatModeState = 'dark';
-                localStorage.setItem('gchat_state', 'dark');
-                applyCurrentMode();
-            }
+            if (targetId === "theme-gchat-light") { gchatModeState = 'light'; localStorage.setItem('gchat_state', 'light'); applyCurrentMode(); }
+            if (targetId === "theme-gchat-dark") { gchatModeState = 'dark'; localStorage.setItem('gchat_state', 'dark'); applyCurrentMode(); }
 
-            // GChat 淡いパステルカラー選択
             if (targetId === "gchat-color-blue") { gchatModeColor = 'blue'; localStorage.setItem('gchat_color', 'blue'); applyCurrentMode(); }
             if (targetId === "gchat-color-red") { gchatModeColor = 'red'; localStorage.setItem('gchat_color', 'red'); applyCurrentMode(); }
             if (targetId === "gchat-color-purple") { gchatModeColor = 'purple'; localStorage.setItem('gchat_color', 'purple'); applyCurrentMode(); }
@@ -884,478 +874,224 @@
             attemptInit();
         });
 
-        function applyCurrentMode() {
-            if (currentAppMode === 'line') {
-                document.body.classList.remove('mode-gchat');
-                getEl('line-theme-selector').classList.remove('hidden');
-                
-                const gchatSel = getEl('gchat-theme-selector');
-                if(gchatSel) gchatSel.classList.add('hidden');
-
-                getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded font-bold bg-[#06c755] text-white cursor-pointer shadow-sm border border-transparent transition";
-                getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
-
-                changeTheme(currentLineTheme);
-            } else {
-                document.body.classList.add('mode-gchat');
-                getEl('line-theme-selector').classList.add('hidden');
-                
-                const gchatSel = getEl('gchat-theme-selector');
-                if(gchatSel) gchatSel.classList.remove('hidden');
-
-                getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
-                getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded font-bold bg-blue-600 text-white cursor-pointer shadow-sm border border-transparent transition";
-
-                changeTheme('gchat-' + gchatModeState + '-' + gchatModeColor);
-            }
+        function gapiLoadedTrig() { 
+            attemptInit(); 
         }
+        
+        function attemptInit() {
+            if (typeof gapi === 'undefined' || typeof gapi.load === 'undefined') return;
+            if (isGapiClientReady) return;
 
-        function changeTheme(themeName) {
-            currentThemeName = themeName; 
-            
-            const savedSize = localStorage.getItem('user_font_size') || 'md';
-            let sizeClass = 'text-sm';
-            if (savedSize === 'sm') sizeClass = 'text-xs';
-            if (savedSize === 'md') sizeClass = 'text-sm';
-            if (savedSize === 'lg') sizeClass = 'text-base';
-
-            const c = getEl('chatContainer');
-            if (c) {
-                c.className = `flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-${themeName} ${sizeClass} h-full w-full relative`;
-            }
-            
-            const header = getEl('mainHeader');
-            if (header) {
-                header.className = `h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200 header-${themeName}`;
-            }
-
-            const sub = getEl('talkSub');
-            if (sub) {
-                sub.className = `text-[10px] sub-${themeName}`;
-            }
-
-            if (currentAppMode === 'line') {
-                const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
-                buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-yellow-400'); });
-                const targetBtn = getEl(`theme-${themeName}`); if(targetBtn) targetBtn.classList.add('ring-4', 'ring-yellow-400');
-            } else {
-                const btnLight = getEl('theme-gchat-light');
-                const btnDark = getEl('theme-gchat-dark');
-                if(btnLight) btnLight.classList.remove('ring-4', 'ring-blue-400');
-                if(btnDark) btnDark.classList.remove('ring-4', 'ring-blue-400');
-                
-                if (gchatModeState === 'dark') {
-                    if(btnDark) btnDark.classList.add('ring-4', 'ring-blue-400');
-                } else {
-                    if(btnLight) btnLight.classList.add('ring-4', 'ring-blue-400');
-                }
-            }
-            
-            if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
-                startRender(); 
-            }
-        }
-
-        function changeFontSize(sizeName) {
-            const c = getEl('chatContainer');
-            if (c) {
-                c.classList.remove('text-xs', 'text-sm', 'text-base');
-                if (sizeName === 'sm') c.classList.add('text-xs');
-                if (sizeName === 'md') c.classList.add('text-sm');
-                if (sizeName === 'lg') c.classList.add('text-base');
-            }
-            localStorage.setItem('user_font_size', sizeName);
-            
-            const sizeButtons = [getEl('size-sm'), getEl('size-md'), getEl('size-lg')];
-            sizeButtons.forEach(b => { 
-                if(b) b.className = "bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer"; 
-            });
-            
-            const active = getEl(`size-${sizeName}`); 
-            if(active) {
-                active.className = "bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer";
-            }
-        }
-
-        updateBreadcrumb = function() {
-            const bc = getEl('breadcrumb');
-            if (!bc) return; bc.innerHTML = '';
-            folderHistory.forEach((f, idx) => {
-                if (idx > 0) { const arrow = document.createElement('span'); arrow.className = 'mx-1 text-gray-300'; arrow.innerText = '>'; bc.appendChild(arrow); }
-                const node = document.createElement('span'); const isLast = (idx === folderHistory.length - 1);
-                node.className = isLast ? 'font-bold text-gray-800' : 'text-blue-600 hover:underline cursor-pointer'; node.innerText = f.name;
-                if (!isLast) { node.onclick = () => { folderHistory = folderHistory.slice(0, idx + 1); renderExplorer(f.id); }; } bc.appendChild(node);
-            });
-        }
-
-        async function triggerBatchLoad() {
-            if (currentFolderFiles.length === 0) return; 
-            const title = getEl('talkTitle');
-            if (title) title.innerText = "全自動結合中...";
-
-            if (currentFolderImageFile) {
+            isGapiClientReady = true;
+            gapi.load('client', async () => {
                 try {
-                    const imgRes = await gapi.client.drive.files.get({ fileId: currentFolderImageFile.id, alt: 'media' });
-                    const bytes = new Uint8Array(imgRes.body.length);
-                    for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
-                    let binary = '';
-                    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                    partnerCustomAvatarUrl = `data:${currentFolderImageFile.mimeType};base64,` + window.btoa(binary);
-                    hasDriveCustomImage = true;
-                    localStorage.setItem('tracked_image_id', currentFolderImageFile.id);
-                } catch(e) { console.error("Batch load image fetch failed", e); }
-            } else {
-                localStorage.removeItem('tracked_image_id');
-                hasDriveCustomImage = false;
-                partnerCustomAvatarUrl = "";
-            }
-
-            let texts = [];
-            let fileIds = [];
-            for (let f of currentFolderFiles) { 
-                try { 
-                    const res = await gapi.client.drive.files.get({ fileId: f.id, alt: 'media' }); 
-                    texts.push({ text: res.body, name: f.name }); 
-                    fileIds.push(f.id);
-                } catch (err) { console.error(err); } 
-            }
-            
-            localStorage.setItem('tracked_folder_id', currentFolderId);
-            localStorage.setItem('tracked_file_ids', JSON.stringify(fileIds));
-            localStorage.setItem('tracked_folder_history', JSON.stringify(folderHistory));
-            processMultipleTexts(texts);
-        }
-
-        async function processSingleDrive(fileId, filename) { 
-            try { 
-                const title = getEl('talkTitle');
-                if (title) title.innerText = "ファイル取得中...";
-
-                if (currentFolderImageFile) {
-                    try {
-                        const imgRes = await gapi.client.drive.files.get({ fileId: currentFolderImageFile.id, alt: 'media' });
-                        const bytes = new Uint8Array(imgRes.body.length);
-                        for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
-                        let binary = '';
-                        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                        partnerCustomAvatarUrl = `data:${currentFolderImageFile.mimeType};base64,` + window.btoa(binary);
-                        hasDriveCustomImage = true;
-                        localStorage.setItem('tracked_image_id', currentFolderImageFile.id);
-                    } catch(e) { console.error("Single load image fetch failed", e); }
-                } else {
-                    localStorage.removeItem('tracked_image_id');
-                    hasDriveCustomImage = false;
-                    partnerCustomAvatarUrl = "";
-                }
-
-                const res = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); 
-                
-                localStorage.setItem('tracked_folder_id', currentFolderId);
-                localStorage.setItem('tracked_file_ids', JSON.stringify([fileId]));
-                localStorage.setItem('tracked_folder_history', JSON.stringify(folderHistory));
-                processMultipleTexts([{ text: res.body, name: filename }]); 
-            } catch (err) { console.error(err); } 
-        }
-
-        async function autoCheckNewFiles() {
-            const folderId = localStorage.getItem('tracked_folder_id');
-            const processedStr = localStorage.getItem('tracked_file_ids');
-            
-            if (!folderId || !processedStr || !isGapiClientReady || !isCurrentlyAuthenticated) return;
-            
-            let processedIds = [];
-            try { processedIds = JSON.parse(processedStr); } catch(e) { return; }
-
-            const titleElement = getEl('talkTitle');
-            const originalTitle = titleElement ? titleElement.innerText : "";
-            if (titleElement) titleElement.innerText = "同期データをチェック中...";
-
-            try {
-                const res = await gapi.client.drive.files.list({
-                    q: `'${folderId}' in parents and (mimeType = 'text/plain' or mimeType = 'image/jpeg' or mimeType = 'image/png') and trashed = false`,
-                    fields: 'files(id, name, mimeType)',
-                    orderBy: 'name'
-                });
-                const files = res.result.files || [];
-                
-                const imageFiles = files.filter(f => f.mimeType.startsWith('image/'));
-                const textFiles = files.filter(f => f.mimeType === 'text/plain');
-
-                let cacheNeedsUpdate = false;
-                let requiresRender = false;
-
-                if (imageFiles.length > 0) {
-                    const imgFile = imageFiles[0]; 
-                    const currentImageId = localStorage.getItem('tracked_image_id');
+                    await gapi.client.init({}); 
+                    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
                     
-                    if (imgFile.id !== currentImageId || !hasDriveCustomImage) {
-                        try {
-                            const imgRes = await gapi.client.drive.files.get({ fileId: imgFile.id, alt: 'media' });
-                            const bytes = new Uint8Array(imgRes.body.length);
-                            for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
-                            let binary = '';
-                            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                    const hash = window.location.hash;
+                    if (hash && hash.includes('access_token')) {
+                        const params = new URLSearchParams(hash.substring(1)); 
+                        const token = params.get('access_token'); 
+                        const expires = params.get('expires_in');
+                        
+                        if (token) {
+                            localStorage.setItem('drive_access_token', token); 
+                            localStorage.setItem('drive_token_expiry', Date.now() + (parseInt(expires, 10) * 1000));
+                            gapi.client.setToken({ access_token: token }); 
+                            window.location.hash = ""; 
+                            setAuthSuccess(); 
                             
-                            partnerCustomAvatarUrl = `data:${imgFile.mimeType};base64,` + window.btoa(binary);
-                            hasDriveCustomImage = true;
-                            localStorage.setItem('tracked_image_id', imgFile.id);
-                            
-                            cacheNeedsUpdate = true;
-                            requiresRender = true;
-                        } catch(e) { console.error("画像自動同期エラー", e); }
+                            const trackedHistory = localStorage.getItem('tracked_folder_history');
+                            if (trackedHistory) {
+                                folderHistory = JSON.parse(trackedHistory);
+                                renderExplorer(folderHistory[folderHistory.length - 1].id);
+                            } else {
+                                renderExplorer('root'); 
+                            }
+                            autoCheckNewFiles(); 
+                            return;
+                        }
                     }
-                } else {
-                    if (hasDriveCustomImage) {
-                        hasDriveCustomImage = false;
-                        partnerCustomAvatarUrl = "";
-                        localStorage.removeItem('tracked_image_id');
-                        cacheNeedsUpdate = true;
-                        requiresRender = true;
+
+                    const t = localStorage.getItem('drive_access_token'); 
+                    const exp = localStorage.getItem('drive_token_expiry');
+                    if (t && exp && Date.now() < parseInt(exp, 10)) {
+                        gapi.client.setToken({ access_token: t }); 
+                        setAuthSuccess();
+                        
+                        const trackedHistory = localStorage.getItem('tracked_folder_history');
+                        if (trackedHistory) {
+                            folderHistory = JSON.parse(trackedHistory);
+                            renderExplorer(folderHistory[folderHistory.length - 1].id);
+                        } else {
+                            const history = localStorage.getItem('explorer_folder_history');
+                            if (history) { 
+                                folderHistory = JSON.parse(history); 
+                                renderExplorer(folderHistory[folderHistory.length - 1].id); 
+                            } else { 
+                                renderExplorer('root'); 
+                            }
+                        }
+                        autoCheckNewFiles(); 
+                        return;
                     }
-                }
-
-                const newTextFiles = textFiles.filter(f => !processedIds.includes(f.id));
-
-                if (newTextFiles.length > 0) {
-                    if (titleElement) titleElement.innerText = `新着トークを追加中 (${newTextFiles.length}件)...`;
-                    let newTexts = [];
                     
-                    for (let nf of newTextFiles) {
-                        try {
-                            const fileRes = await gapi.client.drive.files.get({ fileId: nf.id, alt: 'media' });
-                            newTexts.push({ text: fileRes.body, name: nf.name });
-                            processedIds.push(nf.id);
-                        } catch(e) { console.error("新着ファイルのフェッチ失敗:", e); }
-                    }
+                    if (globalMessages.length === 0) clearAuthUi();
 
-                    if (newTexts.length > 0) {
-                        localStorage.setItem('tracked_file_ids', JSON.stringify(processedIds));
-                        
-                        let currentFlat = [];
-                        let currentDateStr = "";
-                        globalMessages.forEach(m => {
-                            if (m.type === 'date') currentDateStr = m.text;
-                            else if (m.type === 'msg' && currentDateStr) {
-                                currentFlat.push({ dateStr: currentDateStr, time: m.time, sender: m.sender, body: m.body });
-                            }
-                        });
-
-                        newTexts.forEach(obj => {
-                            const { messages } = parseText(obj.text, obj.name);
-                            let targetDate = "";
-                            messages.forEach(m => {
-                                if (m.type === 'date') targetDate = m.text;
-                                else if (m.type === 'msg' && targetDate) {
-                                    currentFlat.push({ dateStr: targetDate, time: m.time, sender: m.sender, body: m.body });
-                                }
-                            });
-                        });
-
-                        currentFlat.sort((a, b) => parseTimestamp(a.dateStr, a.time) - parseTimestamp(b.dateStr, b.time));
-
-                        let timeline = [];
-                        let uniqueKeys = new Set();
-                        let lastDateStr = "";
-                        let counts = {};
-
-                        currentFlat.forEach(m => {
-                            const key = `${m.dateStr}_${m.time}_${m.sender}_${m.body}`;
-                            if (!uniqueKeys.has(key)) {
-                                uniqueKeys.add(key);
-                                if (m.dateStr !== lastDateStr) {
-                                    timeline.push({ type: 'date', text: m.dateStr });
-                                    lastDateStr = m.dateStr;
-                                }
-                                timeline.push({ type: 'msg', time: m.time, sender: m.sender, body: m.body });
-                                counts[m.sender] = (counts[m.sender] || 0) + 1;
-                            }
-                        });
-
-                        globalMessages = timeline;
-                        filteredMessages = [...globalMessages];
-                        globalSenders = Object.keys(counts);
-
-                        const sub = getEl('talkSub');
-                        if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
-                        
-                        updateTitleText();
-                        cacheNeedsUpdate = true;
-                        requiresRender = true;
-                    }
-                }
-
-                if (cacheNeedsUpdate) saveCache(globalMessages);
-                if (requiresRender) startRender();
-
-                if (titleElement) titleElement.innerText = originalTitle;
-                
-            } catch (err) {
-                console.error("自動バックグラウンドチェックエラー:", err);
-                if (titleElement) titleElement.innerText = originalTitle;
-            }
-        }
-
-        function processMultipleTexts(fileObjects) {
-            let allRaw = []; let counts = {}; 
-            fileObjects.forEach(obj => { const { messages } = parseText(obj.text, obj.name); allRaw = allRaw.concat(messages); });
-            
-            if (allRaw.length === 0) {
-                applyTitle();
-                const sub = getEl('talkSub'); if (sub) sub.innerText = "読込エラー";
-                alert("トークデータを解析できませんでした。\nLINEから書き出したテキストファイル(.txt)か確認してください。");
-                toggleDrawer(false);
-                return;
-            }
-
-            let timeline = []; let currentDateStr = ""; let uniqueKeys = new Set(); let flat = [];
-            allRaw.forEach(m => { 
-                if (m.type === 'date') { currentDateStr = m.text; } 
-                else if (m.type === 'msg' && currentDateStr) { flat.push({ dateStr: currentDateStr, time: m.time, sender: m.sender, body: m.body }); } 
-            });
-            flat.sort((a, b) => parseTimestamp(a.dateStr, a.time) - parseTimestamp(b.dateStr, b.time));
-            let lastDateStr = "";
-            flat.forEach(m => {
-                const key = `${m.dateStr}_${m.time}_${m.sender}_${m.body}`;
-                if (!uniqueKeys.has(key)) { 
-                    uniqueKeys.add(key); 
-                    if (m.dateStr !== lastDateStr) { timeline.push({ type: 'date', text: m.dateStr }); lastDateStr = m.dateStr; } 
-                    timeline.push({ type: 'msg', time: m.time, sender: m.sender, body: m.body }); 
-                    counts[m.sender] = (counts[m.sender] || 0) + 1; 
+                } catch (err) {
+                    console.error("GAPI initialization error:", err);
+                    isGapiClientReady = false;
                 }
             });
-            globalMessages = timeline; filteredMessages = [...globalMessages]; globalSenders = Object.keys(counts);
-            
-            let assumedMe = "", max = 0; 
-            const sel = getEl('meSelector');
-            if (sel) sel.innerHTML = '';
-            for (const [sender, count] of Object.entries(counts)) {
-                const opt = document.createElement('option'); opt.value = sender; opt.innerText = `${sender} (${count}回)`; 
-                if (sel) sel.appendChild(opt); 
-                if (count > max) { max = count; assumedMe = sender; }
+        }
+
+        function triggerAuth() { 
+            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&prompt=consent`; 
+        }
+
+        function triggerLogout() {
+            const t = localStorage.getItem('drive_access_token'); 
+            if (t && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) { 
+                try { google.accounts.oauth2.revokeToken(t, () => {}); } catch(e){}
             }
-            const savedMe = localStorage.getItem('cached_me_user'); 
-            if (savedMe && counts[savedMe]) { currentMe = savedMe; } else if (assumedMe) { currentMe = assumedMe; }
-            if(currentMe && sel) { sel.value = currentMe; sel.disabled = false; localStorage.setItem('cached_me_user', currentMe); }
+            localStorage.removeItem('drive_access_token'); 
+            localStorage.removeItem('drive_token_expiry'); 
+            localStorage.removeItem('explorer_folder_history'); 
+            localStorage.removeItem('cached_me_user');
+            localStorage.removeItem('tracked_folder_id');
+            localStorage.removeItem('tracked_file_ids');
+            localStorage.removeItem('tracked_folder_history');
+            localStorage.removeItem('tracked_image_id');
             
-            const sub = getEl('talkSub');
-            if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+            if (typeof gapi !== 'undefined' && gapi.client) gapi.client.setToken(null); 
+            clearCache();
             
+            globalMessages = []; filteredMessages = []; globalSenders = []; currentMe = ""; 
+            partnerCustomAvatarUrl = "";
+            hasDriveCustomImage = false;
+            clearAuthUi();
+            if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.add('hidden');
+            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
+            toggleHeaderBox(false);
+            if (getEl('chatContainer')) { 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+            }
+            actualPartnerNames = "Line Talk Viewer"; 
             isCamouflageMode = false;
-            updateTitleText(); 
-            saveCache(globalMessages); 
-            startRender(); 
+            applyTitle();
+            if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
+            alert("連携情報を完全に削除しました。"); 
             toggleDrawer(false);
         }
 
-        function startRender() {
-            const c = getEl('chatContainer');
-            if (c) c.innerHTML = ''; 
-            if (getEl('calendarWrapper')) getEl('calendarWrapper').classList.remove('hidden'); 
-            if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
-            
-            if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v82</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
-                return; 
+        function setAuthSuccess() {
+            const btn = getEl('authBtn');
+            if (btn) { 
+                btn.innerText = "✓ 連携完了"; 
+                btn.className = "w-full bg-emerald-600 text-white text-xs py-2 px-3 rounded font-bold shadow-sm select-none pointer-events-none"; 
             }
-            
-            currentLoadedIndex = Math.max(0, filteredMessages.length - PAGE_SIZE); 
-            currentEndLoadedIndex = filteredMessages.length; 
-            
-            visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex); 
-            renderSegment(visibleMessages, 'append', currentLoadedIndex);
-            
-            if (c) c.scrollTop = c.scrollHeight; 
-        }
-
-        function loadMorePast() {
-            if (currentLoadedIndex <= 0) { isLoadingMore = false; return; }
-            const next = Math.max(0, currentLoadedIndex - PAGE_SIZE); 
-            const seg = filteredMessages.slice(next, currentLoadedIndex);
-            
-            const c = getEl('chatContainer');
-            const oldH = c ? c.scrollHeight : 0; 
-            const oldT = c ? c.scrollTop : 0; 
-            
-            currentLoadedIndex = next; 
-            renderSegment(seg, 'prepend', currentLoadedIndex);
-            
-            const newH = c ? c.scrollHeight : 0; 
-            if (c) c.scrollTop = oldT + (newH - oldH);
-            isLoadingMore = false;
-        }
-
-        function loadMoreFuture() {
-            if (currentEndLoadedIndex >= filteredMessages.length) { isLoadingMore = false; return; }
-            const nextEnd = Math.min(filteredMessages.length, currentEndLoadedIndex + PAGE_SIZE);
-            const seg = filteredMessages.slice(currentEndLoadedIndex, nextEnd);
-            const start = currentEndLoadedIndex;
-            currentEndLoadedIndex = nextEnd;
-            renderSegment(seg, 'append', start);
-            isLoadingMore = false;
-        }
-
-        function jumpDate(dateDash) {
-            const parts = dateDash.split('-'); if (parts.length < 3) return;
-            const y = parts[0]; const mR = parts[1]; const dR = parts[2];
-            const mS = parseInt(mR, 10).toString(); const dS = parseInt(dR, 10).toString();
-            
-            const pShort = `${y}/${mS}/${dS}`; 
-            const pLong = `${y}/${mR}/${dR}`;
-            
-            let found = -1;
-            for (let i = 0; i < filteredMessages.length; i++) { 
-                if (filteredMessages[i].type === 'date') { 
-                    const txt = filteredMessages[i].text; 
-                    if (txt.includes(pShort) || txt.includes(pLong)) { found = i; break; } 
-                } 
+            const lBtn = getEl('logoutBtn');
+            if (lBtn) lBtn.classList.remove('hidden');
+            const guide = getEl('guideText');
+            if (globalMessages.length === 0 && guide) {
+                guide.innerText = "自動ログイン成功！フォルダを選択してください。";
+                const sub = getEl('talkSub');
+                if (sub) sub.innerText = "フォルダを探してください";
             }
-            
-            if (found === -1) {
-                const target = new Date(parseInt(y, 10), parseInt(mR, 10) - 1, parseInt(dR, 10)).getTime();
-                let min = Infinity;
-                let nearest = -1;
-                
-                for (let i = 0; i < filteredMessages.length; i++) {
-                    if (filteredMessages[i].type === 'date') {
-                        const t = parseTimestamp(filteredMessages[i].text, "00:00");
-                        const diff = Math.abs(target - t);
-                        if (diff < min) { min = diff; nearest = i; }
+        }
+
+        function clearAuthUi() {
+            const btn = getEl('authBtn');
+            if (btn) { 
+                btn.innerText = "Googleドライブと連携する"; 
+                btn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer"; 
+            }
+            const lBtn = getEl('logoutBtn');
+            if (lBtn) lBtn.classList.add('hidden');
+            const ph = getEl('explorerPlaceholder');
+            if (ph) ph.innerText = "連携するとフォルダが表示されます";
+            const el = getEl('explorerList');
+            if (el) el.innerHTML = '<p class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>';
+            const sub = getEl('talkSub');
+            if (sub) sub.innerText = "未連携";
+            currentFolderId = 'root'; folderHistory = [{ id: 'root', name: 'マイドライブ' }]; currentFolderFiles = [];
+        }
+
+        async function renderExplorer(folderId) {
+            currentFolderId = folderId; 
+            const el = getEl('explorerList');
+            if (el) el.innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
+            updateBreadcrumb(); 
+            localStorage.setItem('explorer_folder_history', JSON.stringify(folderHistory));
+            try {
+                const res = await gapi.client.drive.files.list({ 
+                    q: `'${folderId}' in parents and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'text/plain' or mimeType = 'image/jpeg' or mimeType = 'image/png') and trashed = false`, 
+                    fields: 'files(id, name, mimeType)', 
+                    pageSize: 100, 
+                    orderBy: 'folder,name' 
+                });
+                const files = res.result.files; 
+                if (el) el.innerHTML = ''; 
+                currentFolderFiles = [];
+                currentFolderImageFile = null; 
+
+                if (currentFolderId === localStorage.getItem('tracked_folder_id')) {
+                    const pinInfo = document.createElement('div');
+                    pinInfo.className = 'text-[10px] text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded mb-2 text-center border border-emerald-200 flex-shrink-0';
+                    pinInfo.innerText = '📌 起動時の固定フォルダとして設定されています';
+                    if(el) el.appendChild(pinInfo);
+                }
+
+                if ((!files || files.length === 0) && el) { 
+                    el.innerHTML += '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
+                    return; 
+                }
+                let textCount = 0;
+                files.forEach(file => {
+                    const isFolder = (file.mimeType === 'application/vnd.google-apps.folder'); 
+                    const isImage = (file.mimeType === 'image/jpeg' || file.mimeType === 'image/png');
+                    const item = document.createElement('div');
+                    item.className = 'p-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer transition select-none';
+                    
+                    if (isFolder) { 
+                        item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`; 
+                        item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); }; 
+                    } else if (isImage) {
+                        currentFolderImageFile = file; 
+                        item.innerHTML = `<span class="text-emerald-600 truncate flex-1">🖼️ ${file.name} (アイコン画像)</span>`;
+                        item.onclick = async () => {
+                            try {
+                                const imgRes = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
+                                const bytes = new Uint8Array(imgRes.body.length);
+                                for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
+                                let binary = '';
+                                for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                                partnerCustomAvatarUrl = `data:${file.mimeType};base64,` + window.btoa(binary);
+                                hasDriveCustomImage = true;
+                                saveCache(globalMessages); 
+                                startRender();
+                                alert("選択した画像を相手のアイコンに設定しました！");
+                            } catch(err) { console.error(err); }
+                        };
+                    } else { 
+                        item.innerHTML = `<span class="text-gray-600 truncate flex-1">📄 ${file.name}</span>`; 
+                        currentFolderFiles.push(file); 
+                        textCount++; 
+                        item.onclick = () => processSingleDrive(file.id, file.name); 
                     }
+                    if (el) el.appendChild(item);
+                });
+                const bBtn = getEl('batchLoadBtn');
+                if (textCount > 0 && bBtn) { 
+                    bBtn.innerText = `⚡ このフォルダ内の一括結合 (${textCount}個)`; 
+                    bBtn.classList.remove('hidden'); 
+                } else if(bBtn) {
+                    bBtn.classList.add('hidden');
                 }
-                
-                if (nearest !== -1) {
-                    found = nearest;
-                    const dText = filteredMessages[nearest].text.match(/\d+[\/\.\-年]\d+[\/\.\-月]\d+/)[0];
-                    alert(`${y}/${mS}/${dS} のトークがないため、一番近い ${dText} を表示します。`);
-                } else {
-                    alert(`トーク履歴自体が空のため、ジャンプできません。`);
-                    return;
-                }
+            } catch (err) { 
+                console.error(err); 
+                if (el) el.innerHTML = '<p class="text-red-500 text-center py-4">⚠️ ドライブ情報の取得に失敗しました</p>';
             }
-            
-            currentLoadedIndex = Math.max(0, found - 50); 
-            currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
-            visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
-            
-            const c = getEl('chatContainer');
-            if (c) c.innerHTML = ''; 
-            
-            renderSegment(visibleMessages, 'append', currentLoadedIndex);
-            
-            setTimeout(() => {
-                if (!c) return; 
-                const stamps = c.querySelectorAll('.date-stamp-node');
-                const tText = filteredMessages[found].text;
-                
-                for (let el of stamps) { 
-                    if (el.innerText.trim() === tText.trim()) { 
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
-                        el.classList.add('ring-4', 'ring-yellow-400'); 
-                        setTimeout(() => el.classList.remove('ring-4', 'ring-yellow-400'), 2000); 
-                        break; 
-                    } 
-                }
-            }, 150);
         }
 
         function renderSegment(msgs, mode = 'append', base = 0) {
@@ -1493,130 +1229,6 @@
                 }
             }
             return { messages, counts, partner };
-        }
-
-        function triggerSearch() {
-            const kw = getEl('searchKeyword').value.trim().toLowerCase(); 
-            const res = getEl('searchResults');
-            if (res) res.innerHTML = ''; 
-            if (!kw) { if (res) res.classList.add('hidden'); return; }
-            let match = 0;
-            globalMessages.forEach((m, idx) => {
-                if (m.type === 'msg' && m.body.toLowerCase().includes(kw)) {
-                    match++; 
-                    const item = document.createElement('div'); 
-                    item.className = 'p-2.5 hover:bg-gray-200 pointer-events-auto cursor-pointer transition border-b border-gray-100 last:border-0';
-                    item.innerHTML = `<div class="flex justify-between font-bold text-gray-600 text-[10px]"><span>${m.sender}</span><span>${m.time}</span></div><div class="text-gray-600 truncate mt-0.5">${m.body.replace(/<br>/g, ' ')}</div>`;
-                    item.onclick = () => {
-                        currentLoadedIndex = Math.max(0, idx - 50); 
-                        currentEndLoadedIndex = Math.min(filteredMessages.length, currentLoadedIndex + PAGE_SIZE); 
-                        visibleMessages = filteredMessages.slice(currentLoadedIndex, currentEndLoadedIndex);
-                        
-                        const c = getEl('chatContainer');
-                        if (c) c.innerHTML = ''; 
-                        renderSegment(visibleMessages, 'append', currentLoadedIndex);
-                        
-                        setTimeout(() => { 
-                            const tar = getEl(`msg-${idx}`); 
-                            if (tar) { 
-                                tar.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-                                tar.classList.add('ring-4', 'ring-yellow-400'); 
-                                setTimeout(() => tar.classList.remove('ring-4', 'ring-yellow-400'), 2000); 
-                            } 
-                        }, 100);
-                    };
-                    if (res) res.appendChild(item);
-                }
-            });
-            if (res) { 
-                res.classList.toggle('hidden', match === 0); 
-                if(match === 0) { 
-                    res.innerHTML = '<div class="p-3 text-center text-gray-400 text-xs">見つかりませんでした</div>'; 
-                    res.classList.remove('hidden'); 
-                } 
-            }
-        }
-
-        function saveCache(data) { 
-            try {
-                const req = indexedDB.open("LineViewerCacheDB", 1);
-                req.onsuccess = function(e) { 
-                    try {
-                        e.target.result.transaction("timeline", "readwrite")
-                            .objectStore("timeline")
-                            .put({ 
-                                id: "last_timeline", 
-                                data: data,
-                                avatar: partnerCustomAvatarUrl,
-                                hasCustom: hasDriveCustomImage
-                            }); 
-                    } catch(err) { console.error("Cache write error", err); }
-                }; 
-            } catch (err) {
-                console.error("IndexedDB blocked or not supported", err);
-            }
-        }
-
-        function openDbAndLoad() {
-            try {
-                const req = indexedDB.open("LineViewerCacheDB", 1);
-                req.onupgradeneeded = function(e) { 
-                    const db = e.target.result; 
-                    if (!db.objectStoreNames.contains("timeline")) {
-                        db.createObjectStore("timeline", { keyPath: "id" }); 
-                    }
-                };
-                req.onsuccess = function(e) {
-                    try {
-                        const db = e.target.result; 
-                        const getReq = db.transaction("timeline", "readonly").objectStore("timeline").get("last_timeline");
-                        getReq.onsuccess = function() {
-                            const res = getReq.result;
-                            if (res && res.data && res.data.length > 0) {
-                                globalMessages = res.data; 
-                                filteredMessages = [...globalMessages]; 
-                                
-                                partnerCustomAvatarUrl = res.avatar || "";
-                                hasDriveCustomImage = res.hasCustom || false;
-
-                                let counts = {}; 
-                                globalMessages.forEach(m => { if(m.type === 'msg') counts[m.sender] = (counts[m.sender] || 0) + 1; }); 
-                                globalSenders = Object.keys(counts);
-                                
-                                const sel = getEl('meSelector');
-                                if (sel) sel.innerHTML = '';
-                                for (const [s, cnt] of Object.entries(counts)) { 
-                                    const opt = document.createElement('option'); opt.value = s; opt.innerText = `${s} (${cnt}回)`; 
-                                    if (sel) sel.appendChild(opt); 
-                                }
-                                const saved = localStorage.getItem('cached_me_user'); 
-                                if (saved && counts[saved]) { currentMe = saved; if(sel) { sel.value = saved; sel.disabled = false; } }
-                                
-                                const sub = getEl('talkSub');
-                                if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
-                                
-                                isCamouflageMode = false; 
-                                updateTitleText(); 
-                                startRender();
-                            } else { 
-                                clearAuthUi(); 
-                            }
-                        };
-                    } catch(err) { console.error(err); clearAuthUi(); }
-                };
-            } catch (err) {
-                console.error("DB init error", err);
-                clearAuthUi();
-            }
-        }
-
-        function clearCache() { 
-            try {
-                const req = indexedDB.open("LineViewerCacheDB", 1);
-                req.onsuccess = function(e) { 
-                    try { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); } catch(err) {}
-                }; 
-            } catch(e){}
         }
     </script>
 </body>
