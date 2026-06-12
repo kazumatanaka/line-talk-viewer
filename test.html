@@ -419,7 +419,7 @@
         let partnerCustomAvatarUrl = "";
 
         // カモフラージュ用ランダムアバター配列
-        const CAMOUFLAGE_AVATARS = ["carl.png", "saka.png", "ivy.png"];
+        const CAMOUFLAGE_AVATARS = ["ivy.png", "carl.png", "saka.png"];
 
         const getEl = (id) => document.getElementById(id);
 
@@ -647,7 +647,6 @@
                     if (sub) sub.style.display = isGChat ? 'none' : 'block';
                 } else {
                     if (isGChat && isCamouflageMode) {
-                        // テキスト部分に不要な枠線や背景がかからない独立構造に修正
                         t.innerHTML = `<span class="block font-bold text-[15px] leading-tight">Team Kawasaki</span><span class="block text-[11px] font-normal text-gray-500 mt-0.5 leading-none">5人のメンバー・限定公開</span>`;
                         if (sub) sub.style.display = 'none'; 
                     } else {
@@ -661,8 +660,8 @@
                 if (isGChat) {
                     avatarContainer.classList.remove('hidden');
                     if (isCamouflageMode) {
-                        // 枠線はぎょうざアイコンの周囲のみに限定
                         const currentOtherColor = getGChatOtherBubbleColorHex();
+                        // 独立したdiv構造として描画し、テキスト領域への重なり込みを防止
                         avatarContainer.innerHTML = `<div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background-color: ${currentOtherColor};">🥟</div>`;
                     } else {
                         avatarContainer.innerHTML = `<img id="headerAvatar" src="${getFinalAvatarUrl()}" class="w-8 h-8 rounded-full object-cover" onerror="this.src='${getThemeDefaultAvatar()}'">`;
@@ -1674,13 +1673,11 @@
                                 </div>
                             `; 
                         } else { 
-                            // ★変更点：カモフラージュモードがONの時は3種類の指定画像からメッセージごとにランダム抽選
                             let finalOtherAvatar = avatar;
                             if (isCamouflageMode) {
-                                // 送信者名やインデックスをベースに一意に固定する場合は計算式を挟みますが、
-                                // 今回はシンプルにランダムな割り当てを行います
-                                const randomIndex = Math.floor(Math.random() * CAMOUFLAGE_AVATARS.length);
-                                finalOtherAvatar = CAMOUFLAGE_AVATARS[randomIndex];
+                                // ユーザーの要求どおり「ivy.png」「carl.png」「saka.png」から一意に割り振るためのインデックス
+                                const seed = gIdx % CAMOUFLAGE_AVATARS.length;
+                                finalOtherAvatar = CAMOUFLAGE_AVATARS[seed];
                             }
 
                             w.className = 'flex items-start space-x-3 max-w-[85%] self-start p-0.5 mb-2'; 
