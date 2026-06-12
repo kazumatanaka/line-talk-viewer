@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sales Attainment Viewer v79 (Custom SVG Icons)</title>
+    <title>Sales Attainment Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -105,6 +105,13 @@
             overflow-y: auto !important;
             overflow-x: hidden !important;
         }
+
+        /* 【v80 追加】残像を完全に抹殺するためのステルスクラス */
+        .force-hide-content {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transition: none !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
@@ -190,130 +197,132 @@
         </div>
     </div>
 
-    <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
-        <div class="flex items-center space-x-1.5">
-            <button id="backBtn" class="p-2 -ml-2 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
-                <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-            </button>
-            <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v79</h1>
-                <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
+    <div id="appBodyContent" class="w-full h-full flex flex-col overflow-hidden">
+        <header id="mainHeader" class="header-blue h-14 flex items-center justify-between px-3 z-50 shadow-sm w-full fixed top-0 left-0 transition-colors duration-200">
+            <div class="flex items-center space-x-1.5">
+                <button id="backBtn" class="p-2 -ml-2 hover:bg-black/5 rounded-full transition flex items-center justify-center cursor-pointer" title="初期画面に戻る">
+                    <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
+                    <h1 id="talkTitle" class="font-bold text-base leading-tight">Sales Attainment Viewer</h1>
+                    <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
+                </div>
             </div>
-        </div>
-        
-        <div class="flex items-center space-x-0.5 select-none pr-1">
-            <button id="searchToggleBtn" class="w-10 h-10 p-2 flex items-center justify-center hover:bg-black/5 rounded-full transition cursor-pointer hidden">
-                <svg class="w-full h-full pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="10.5" cy="10.5" r="7.5"></circle>
-                    <line x1="21" y1="21" x2="15.8" y2="15.8"></line>
-                    <path d="M10.5 7v3.5l2 2" stroke-width="2"></path>
-                </svg>
-            </button>
             
-            <div id="calendarWrapper" class="relative hidden">
-                <input type="date" id="jumpDatePicker" class="absolute pointer-events-none opacity-0 invisible" tabIndex="-1">
-                <button id="calendarBtn" class="w-10 h-10 p-2 flex items-center justify-center hover:bg-black/5 rounded-full transition cursor-pointer">
-                    <svg class="w-full h-full pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="5" width="18" height="16" rx="4"></rect>
-                        <path d="M8 2v4M16 2v4"></path>
-                        <text x="12" y="17" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle" fill="currentColor" stroke="none">31</text>
+            <div class="flex items-center space-x-0.5 select-none pr-1">
+                <button id="searchToggleBtn" class="w-10 h-10 p-2 flex items-center justify-center hover:bg-black/5 rounded-full transition cursor-pointer hidden">
+                    <svg class="w-full h-full pointer-events-none" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="10.5" cy="10.5" r="7.5"></circle>
+                        <line x1="21" y1="21" x2="15.8" y2="15.8"></line>
+                        <path d="M10.5 7v3.5l2 2" stroke-width="2"></path>
+                    </svg>
+                </button>
+                
+                <div id="calendarWrapper" class="relative hidden">
+                    <input type="date" id="jumpDatePicker" class="absolute pointer-events-none opacity-0 invisible" tabIndex="-1">
+                    <button id="calendarBtn" class="w-10 h-10 p-2 flex items-center justify-center hover:bg-black/5 rounded-full transition cursor-pointer">
+                        <svg class="w-full h-full pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="5" width="18" height="16" rx="4"></rect>
+                            <path d="M8 2v4M16 2v4"></path>
+                            <text x="12" y="17" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle" fill="currentColor" stroke="none">31</text>
+                        </svg>
+                    </button>
+                </div>
+
+                <button id="menuBtn" class="w-10 h-10 p-2 flex items-center justify-center hover:bg-black/5 rounded-full transition cursor-pointer z-10">
+                    <svg class="w-full h-full pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
             </div>
+        </header>
 
-            <button id="menuBtn" class="w-10 h-10 p-2 flex items-center justify-center hover:bg-black/5 rounded-full transition cursor-pointer z-10">
-                <svg class="w-full h-full pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
-        </div>
-    </header>
-
-    <div id="headerSearchBox" class="bg-white border-b border-gray-200 p-2 shadow-sm z-40 hidden flex flex-col space-y-2 w-full fixed top-14 left-0">
-        <div class="flex items-center space-x-2">
-            <input type="text" id="searchKeyword" placeholder="トーク内を検索..." class="flex-1 border border-gray-300 rounded-full px-4 py-1.5 text-xs text-black focus:outline-none focus:border-blue-500">
-            <button id="searchBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-full font-medium cursor-pointer">検索</button>
-            <button id="searchCloseBtn" class="text-gray-400 hover:text-gray-600 text-sm font-bold p-1 cursor-pointer">✕</button>
-        </div>
-        <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50 text-black"></div>
-    </div>
-
-    <div class="flex-1 w-full pt-14 overflow-hidden relative flex z-10">
-        
-        <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
-            <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v79</p>
-                <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
+        <div id="headerSearchBox" class="bg-white border-b border-gray-200 p-2 shadow-sm z-40 hidden flex flex-col space-y-2 w-full fixed top-14 left-0">
+            <div class="flex items-center space-x-2">
+                <input type="text" id="searchKeyword" placeholder="トーク内を検索..." class="flex-1 border border-gray-300 rounded-full px-4 py-1.5 text-xs text-black focus:outline-none focus:border-blue-500">
+                <button id="searchBtn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-1.5 rounded-full font-medium cursor-pointer">検索</button>
+                <button id="searchCloseBtn" class="text-gray-400 hover:text-gray-600 text-sm font-bold p-1 cursor-pointer">✕</button>
             </div>
-        </main>
+            <div id="searchResults" class="max-h-40 overflow-y-auto border border-gray-100 rounded hidden divide-y divide-gray-100 text-xs bg-gray-50 text-black"></div>
+        </div>
 
-        <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity w-full h-full"></div>
-
-        <aside id="drawerMenu" class="absolute top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200 text-black">
-            <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 select-none">
-                <h2 class="font-bold text-gray-700 text-sm">各種設定 & 管理機能</h2>
-                <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
-            </div>
+        <div class="flex-1 w-full pt-14 overflow-hidden relative flex z-10">
             
-            <div class="p-4 flex-1 overflow-y-auto space-y-4 text-sm flex flex-col min-h-0">
-                <div class="space-y-2 bg-blue-50 p-3 rounded-lg border border-blue-100 flex-shrink-0">
-                    <label class="block text-xs font-bold text-blue-700">クラウド連携（Google Drive）</label>
-                    <button id="authBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer">
-                        Googleドライブと連携する
-                    </button>
-                    <button id="logoutBtn" class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs py-1.5 px-3 rounded font-medium shadow-sm transition hidden cursor-pointer">
-                        連携を解除する
-                    </button>
-                    
-                    <div id="driveExplorerZone" class="space-y-1.5 pt-1 flex flex-col min-h-0">
-                        <label class="block text-[11px] font-bold text-gray-500">ドライブを探索</label>
-                        <div id="breadcrumb" class="text-xs bg-gray-100 p-2 rounded border border-gray-200 text-gray-600 font-medium break-all select-none">
-                            マイドライブ
-                        </div>
-                        <button id="batchLoadBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded font-bold shadow-sm transition hidden cursor-pointer">
-                            ⚡ このフォルダ内のトークをすべて結合
+            <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
+                <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
+                    <p class="font-bold mb-1">Google Drive & LINE Viewer v80</p>
+                    <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
+                </div>
+            </main>
+
+            <div id="overlay" class="fixed inset-0 bg-black/30 z-20 hidden transition-opacity w-full h-full"></div>
+
+            <aside id="drawerMenu" class="absolute top-0 right-0 h-full w-80 bg-white shadow-xl z-30 transform translate-x-full hidden transition-all duration-300 ease-in-out flex flex-col border-l border-gray-200 text-black">
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 select-none">
+                    <h2 class="font-bold text-gray-700 text-sm">各種設定 & 管理機能</h2>
+                    <button id="closeMenuBtn" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1 cursor-pointer">✕</button>
+                </div>
+                
+                <div class="p-4 flex-1 overflow-y-auto space-y-4 text-sm flex flex-col min-h-0">
+                    <div class="space-y-2 bg-blue-50 p-3 rounded-lg border border-blue-100 flex-shrink-0">
+                        <label class="block text-xs font-bold text-blue-700">クラウド連携（Google Drive）</label>
+                        <button id="authBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-3 rounded font-bold shadow-sm transition cursor-pointer">
+                            Googleドライブと連携する
                         </button>
-                        <div id="explorerList" class="border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-40 overflow-y-auto text-xs">
-                            <p id="explorerPlaceholder" class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>
+                        <button id="logoutBtn" class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs py-1.5 px-3 rounded font-medium shadow-sm transition hidden cursor-pointer">
+                            連携を解除する
+                        </button>
+                        
+                        <div id="driveExplorerZone" class="space-y-1.5 pt-1 flex flex-col min-h-0">
+                            <label class="block text-[11px] font-bold text-gray-500">ドライブを探索</label>
+                            <div id="breadcrumb" class="text-xs bg-gray-100 p-2 rounded border border-gray-200 text-gray-600 font-medium break-all select-none">
+                                マイドライブ
+                            </div>
+                            <button id="batchLoadBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded font-bold shadow-sm transition hidden cursor-pointer">
+                                ⚡ このフォルダ内のトークをすべて結合
+                            </button>
+                            <div id="explorerList" class="border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-40 overflow-y-auto text-xs">
+                                <p id="explorerPlaceholder" class="text-gray-400 text-center py-4">連携するとフォルダが表示されます</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="space-y-1 flex-shrink-0">
-                    <label class="block text-xs font-bold text-gray-500">ローカルから複数読み込み</label>
-                    <input type="file" id="fileInput" accept=".txt" multiple class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
-                </div>
+                    <div class="space-y-1 flex-shrink-0">
+                        <label class="block text-xs font-bold text-gray-500">ローカルから複数読み込み</label>
+                        <input type="file" id="fileInput" accept=".txt" multiple class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
+                    </div>
 
-                <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 flex-shrink-0">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1.5">🎨 背景着せ替え</label>
-                        <div class="grid grid-cols-4 gap-1">
-                            <button id="theme-blue" class="bg-[#7494c0] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ブルー</button>
-                            <button id="theme-dark" class="bg-[#0b0b0b] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ダーク</button>
-                            <button id="theme-pink" class="bg-[#fbcfe8] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ピンク</button>
-                            <button id="theme-beige" class="bg-[#f5f5dc] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ベージュ</button>
+                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 flex-shrink-0">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5">🎨 背景着せ替え</label>
+                            <div class="grid grid-cols-4 gap-1">
+                                <button id="theme-blue" class="bg-[#7494c0] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ブルー</button>
+                                <button id="theme-dark" class="bg-[#0b0b0b] text-white text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ダーク</button>
+                                <button id="theme-pink" class="bg-[#fbcfe8] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ピンク</button>
+                                <button id="theme-beige" class="bg-[#f5f5dc] text-gray-700 text-[10px] py-1 rounded font-medium border border-black/10 cursor-pointer">ベージュ</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5">🔍 文字サイズ変更</label>
+                            <div class="grid grid-cols-3 gap-1">
+                                <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">小</button>
+                                <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer">中</button>
+                                <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">大</button>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1.5">🔍 文字サイズ変更</label>
-                        <div class="grid grid-cols-3 gap-1">
-                            <button id="size-sm" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">小</button>
-                            <button id="size-md" class="bg-blue-600 border border-blue-600 text-white text-xs py-1 rounded font-bold cursor-pointer">中</button>
-                            <button id="size-lg" class="bg-white border border-gray-300 text-gray-700 text-xs py-1 rounded cursor-pointer">大</button>
-                        </div>
+
+                    <div class="space-y-1 flex-shrink-0">
+                        <label class="block text-xs font-bold text-gray-500">「自分」の設定</label>
+                        <select id="meSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white text-black" disabled>
+                            <option value="">ファイルを読み込んでください</option>
+                        </select>
                     </div>
                 </div>
-
-                <div class="space-y-1 flex-shrink-0">
-                    <label class="block text-xs font-bold text-gray-500">「自分」の設定</label>
-                    <select id="meSelector" class="w-full text-xs border border-gray-300 rounded p-2 bg-white text-black" disabled>
-                        <option value="">ファイルを読み込んでください</option>
-                    </select>
-                </div>
-            </div>
-        </aside>
+            </aside>
+        </div>
     </div>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -345,7 +354,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v79"; 
+        let actualPartnerNames = "Sales Attainment Viewer"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -370,8 +379,13 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の生成・最速同期配置
+        // ロック画面（目隠しレイヤー）の生成
         function forceLockScreen() {
+            // 【v80 強化のキモ】離脱した瞬間に、本体コンテンツコンテナ全体をCSSレベルで透過・非表示にする
+            if (getEl('appBodyContent')) {
+                getEl('appBodyContent').classList.add('force-hide-content');
+            }
+
             isCurrentlyAuthenticated = false;
             let lockScreen = getEl('biometricLockScreen');
             
@@ -455,7 +469,6 @@
                 `;
                 document.body.appendChild(lockDiv);
             } else {
-                // 復帰時は問答無用でダミー表示を非表示、認証前状態へ同期リセット
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('lockMainZone').style.display = 'block';
                 getEl('dummyDataZone').classList.add('hidden');
@@ -552,6 +565,12 @@
 
         function unlockScreen() {
             isCurrentlyAuthenticated = true;
+            
+            // 【v80 強化】認証が成功したときだけ、本体コンテンツの非表示クラスを取り除く
+            if (getEl('appBodyContent')) {
+                getEl('appBodyContent').classList.remove('force-hide-content');
+            }
+
             const lockScreen = getEl('biometricLockScreen');
             if (lockScreen) {
                 lockScreen.classList.add('opacity-0');
@@ -559,28 +578,24 @@
             }
         }
 
-        // --- 【残像防止対策】OSがスクリーンショットを撮る瞬間に同期処理で割り込む ---
+        // --- 強制隠蔽トリガー（同期的かつ最速実行） ---
         
-        // 対策1: visibilitychangeでの最速防衛
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 forceLockScreen(); 
             }
         });
 
-        // 対策2: アプリが完全に見えなくなる・破棄・スリープされる直前の同期的防衛 (最重要)
         window.addEventListener('pagehide', () => {
             forceLockScreen(); 
         });
 
-        // 対策3: ウィンドウ切り替えのトリガーによる先行防衛
         window.addEventListener('blur', () => {
             if (!isProcessingBiometrics) {
                 forceLockScreen();
             }
         });
 
-        // 対策4: 戻ってきたときの確認処理
         window.addEventListener('focus', () => {
             if (!isCurrentlyAuthenticated && !isProcessingBiometrics) {
                 forceLockScreen();
@@ -629,7 +644,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v79";
+            actualPartnerNames = "Sales Attainment Viewer";
             isCamouflageMode = false;
             applyTitle();
             
@@ -643,7 +658,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v79</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v80</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -877,9 +892,9 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v79</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v80</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v79"; 
+            actualPartnerNames = "Sales Attainment Viewer"; 
             isCamouflageMode = false;
             applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
@@ -1023,9 +1038,9 @@
             const t = getEl('talkTitle'); 
             if (t) {
                 if (globalMessages.length === 0) {
-                    t.innerText = "LINE Talk Viewer v79";
+                    t.innerText = "Sales Attainment Viewer";
                 } else {
-                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v79" : actualPartnerNames;
+                    t.innerText = isCamouflageMode ? "Sales Attainment Viewer" : actualPartnerNames;
                 }
             }
         }
@@ -1167,7 +1182,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v79</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v80</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
