@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LINE Talk Viewer v76 (Custom SVG Icons)</title>
+    <title>LINE Talk Viewer v77 (Custom SVG Icons)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* テーマごとの背景色設定（画像から抽出した厳密なカラーコード） */
@@ -97,13 +97,21 @@
             margin: 0;
             padding: 0;
         }
+
+        /* ダミー表示ゾーンのみ選択やスクロールを完全に許可する安定化スタイル */
+        .allow-select-and-scroll {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none w-full max-w-full m-0 p-0">
 
     <div id="biometricLockScreen" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300">
         
-        <div id="lockMainZone" class="text-center space-y-6 max-w-sm px-6 w-full block">
+        <div id="lockMainZone" class="text-center space-y-6 max-w-sm px-6 w-full block flex-shrink-0">
             <div class="pt-8">
                 <h2 class="text-xl font-bold tracking-wider text-blue-400">Internal Data</h2>
                 <p class="text-xs text-gray-400 mt-2" id="lockMessage">アクセスを許可するには指紋（生体）認証が必要です。</p>
@@ -120,17 +128,17 @@
             </div>
         </div>
 
-        <div id="dummyDataZone" class="hidden w-full max-w-xl px-4 flex flex-col items-center space-y-6">
-            <div class="text-center">
+        <div id="dummyDataZone" class="hidden w-full max-w-2xl px-4 py-8 flex-col items-center space-y-6 max-h-full allow-select-and-scroll">
+            <div class="text-center flex-shrink-0">
                 <h2 class="text-lg font-bold tracking-wider text-emerald-400">Internal Data Summary</h2>
-                <p class="text-xs text-gray-400 mt-1">Sector Analysis Report</p>
+                <p class="text-xs text-gray-400 mt-1">Sector Analysis Report (Live)</p>
             </div>
             
-            <div class="w-full overflow-x-auto bg-slate-800 rounded-xl border border-slate-700 shadow-xl">
-                <table class="w-full text-left text-xs font-mono">
-                    <thead class="bg-slate-700/50 text-gray-300 border-b border-slate-700">
+            <div class="w-full overflow-x-auto bg-slate-800 rounded-xl border border-slate-700 shadow-xl touch-pan-x touch-pan-y select-text">
+                <table class="w-full text-left text-xs font-mono min-w-[500px]">
+                    <thead class="bg-slate-700/50 text-gray-300 border-b border-slate-700 select-none">
                         <tr>
-                            <th class="p-3">Category</th>
+                            <th class="p-3 sticky left-0 bg-slate-800">Category</th>
                             <th class="p-3">Sector1</th>
                             <th class="p-3">Sector2</th>
                             <th class="p-3">Sector3</th>
@@ -138,9 +146,9 @@
                             <th class="p-3 font-bold text-emerald-400">Total</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700/40 text-gray-300">
+                    <tbody class="divide-y divide-slate-700/40 text-gray-300 select-text">
                         <tr class="hover:bg-slate-700/20">
-                            <td class="p-3 font-sans font-medium text-blue-400">Search</td>
+                            <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">Search</td>
                             <td class="p-3">99.8</td>
                             <td class="p-3">102.1</td>
                             <td class="p-3">100.1</td>
@@ -148,7 +156,7 @@
                             <td class="p-3 font-bold">101.1</td>
                         </tr>
                         <tr class="hover:bg-slate-700/20">
-                            <td class="p-3 font-sans font-medium text-blue-400">YouTube</td>
+                            <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">YouTube</td>
                             <td class="p-3">102.1</td>
                             <td class="p-3">103.9</td>
                             <td class="p-3">89.8</td>
@@ -156,7 +164,7 @@
                             <td class="p-3 font-bold">99.8</td>
                         </tr>
                         <tr class="hover:bg-slate-700/20">
-                            <td class="p-3 font-sans font-medium text-blue-400">Display</td>
+                            <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">Display</td>
                             <td class="p-3">89.6</td>
                             <td class="p-3">92.3</td>
                             <td class="p-3">97.6</td>
@@ -164,7 +172,7 @@
                             <td class="p-3 font-bold">93.2</td>
                         </tr>
                         <tr class="bg-slate-700/30 text-emerald-400 font-bold border-t border-slate-600">
-                            <td class="p-3 font-sans">Total</td>
+                            <td class="p-3 font-sans sticky left-0 bg-slate-800 select-none">Total</td>
                             <td class="p-3">99.3</td>
                             <td class="p-3">100.6</td>
                             <td class="p-3">98.9</td>
@@ -175,7 +183,10 @@
                 </table>
             </div>
             
-            <p class="text-[10px] text-gray-500">Session ID: local_active_report_secured</p>
+            <div class="text-center space-y-1 flex-shrink-0 select-none">
+                <p class="text-[10px] text-gray-500">Session ID: local_active_report_secured</p>
+                <p class="text-[9px] text-slate-600">Encrypted internal endpoint connection stable.</p>
+            </div>
         </div>
     </div>
 
@@ -187,7 +198,7 @@
                 </svg>
             </button>
             <div id="titleArea" class="cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v76</h1>
+                <h1 id="talkTitle" class="font-bold text-base leading-tight">LINE Talk Viewer v77</h1>
                 <p id="talkSub" class="text-[10px] sub-blue leading-none mt-0.5">未連携</p>
             </div>
         </div>
@@ -233,7 +244,7 @@
         
         <main id="chatContainer" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-4 select-text bg-theme-blue h-full w-full relative">
             <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                <p class="font-bold mb-1">Google Drive & LINE Viewer v76</p>
+                <p class="font-bold mb-1">Google Drive & LINE Viewer v77</p>
                 <p id="guideText" class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p>
             </div>
         </main>
@@ -334,7 +345,7 @@
         let currentFolderFiles = []; 
 
         let isCamouflageMode = false;
-        let actualPartnerNames = "LINE Talk Viewer v76"; 
+        let actualPartnerNames = "LINE Talk Viewer v77"; 
         let isGapiClientReady = false; 
 
         let partnerCustomAvatarUrl = "";
@@ -344,6 +355,7 @@
         // --- 簡易型 WebAuthn（指紋生体認証）制御用ロジック ---
         const CONFIG_KEY = 'bio_auth_credential_id';
         let isCurrentlyAuthenticated = false; 
+        let isProcessingBiometrics = false; // 認証ポップアップ表示中の多重バグ防止ガードフラグ
 
         function bufferToBase64Url(buffer) {
             return btoa(String.fromCharCode(...new Uint8Array(buffer)))
@@ -358,8 +370,14 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の配置・初期リセット
+        // ロック画面（目隠しレイヤー）の生成・安定化
         function forceLockScreen() {
+            // ダミー画面が表示されている（すでに認証通過してデータ閲覧中）なら、リセットしない
+            const dummyZone = getEl('dummyDataZone');
+            if (dummyZone && !dummyZone.classList.contains('hidden')) {
+                return; 
+            }
+
             isCurrentlyAuthenticated = false;
             let lockScreen = getEl('biometricLockScreen');
             
@@ -368,7 +386,7 @@
                 lockDiv.id = 'biometricLockScreen';
                 lockDiv.className = 'fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300';
                 lockDiv.innerHTML = `
-                    <div id="lockMainZone" class="text-center space-y-6 max-w-sm px-6 w-full block">
+                    <div id="lockMainZone" class="text-center space-y-6 max-w-sm px-6 w-full block flex-shrink-0">
                         <div class="pt-8">
                             <h2 class="text-xl font-bold tracking-wider text-blue-400">Internal Data</h2>
                             <p class="text-xs text-gray-400 mt-2" id="lockMessage">アクセスを許可するには指紋（生体）認証が必要です。</p>
@@ -382,16 +400,16 @@
                             </p>
                         </div>
                     </div>
-                    <div id="dummyDataZone" class="hidden w-full max-w-xl px-4 flex flex-col items-center space-y-6">
-                        <div class="text-center">
+                    <div id="dummyDataZone" class="hidden w-full max-w-2xl px-4 py-8 flex flex-col items-center space-y-6 max-h-full allow-select-and-scroll">
+                        <div class="text-center flex-shrink-0">
                             <h2 class="text-lg font-bold tracking-wider text-emerald-400">Internal Data Summary</h2>
-                            <p class="text-xs text-gray-400 mt-1">Sector Analysis Report</p>
+                            <p class="text-xs text-gray-400 mt-1">Sector Analysis Report (Live)</p>
                         </div>
-                        <div class="w-full overflow-x-auto bg-slate-800 rounded-xl border border-slate-700 shadow-xl">
-                            <table class="w-full text-left text-xs font-mono">
-                                <thead class="bg-slate-700/50 text-gray-300 border-b border-slate-700">
+                        <div class="w-full overflow-x-auto bg-slate-800 rounded-xl border border-slate-700 shadow-xl touch-pan-x touch-pan-y select-text">
+                            <table class="w-full text-left text-xs font-mono min-w-[500px]">
+                                <thead class="bg-slate-700/50 text-gray-300 border-b border-slate-700 select-none">
                                     <tr>
-                                        <th class="p-3">Category</th>
+                                        <th class="p-3 sticky left-0 bg-slate-800">Category</th>
                                         <th class="p-3">Sector1</th>
                                         <th class="p-3">Sector2</th>
                                         <th class="p-3">Sector3</th>
@@ -399,9 +417,9 @@
                                         <th class="p-3 font-bold text-emerald-400">Total</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-700/40 text-gray-300">
+                                <tbody class="divide-y divide-slate-700/40 text-gray-300 select-text">
                                     <tr class="hover:bg-slate-700/20">
-                                        <td class="p-3 font-sans font-medium text-blue-400">Search</td>
+                                        <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">Search</td>
                                         <td class="p-3">99.8</td>
                                         <td class="p-3">102.1</td>
                                         <td class="p-3">100.1</td>
@@ -409,7 +427,7 @@
                                         <td class="p-3 font-bold">101.1</td>
                                     </tr>
                                     <tr class="hover:bg-slate-700/20">
-                                        <td class="p-3 font-sans font-medium text-blue-400">YouTube</td>
+                                        <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">YouTube</td>
                                         <td class="p-3">102.1</td>
                                         <td class="p-3">103.9</td>
                                         <td class="p-3">89.8</td>
@@ -417,7 +435,7 @@
                                         <td class="p-3 font-bold">99.8</td>
                                     </tr>
                                     <tr class="hover:bg-slate-700/20">
-                                        <td class="p-3 font-sans font-medium text-blue-400">Display</td>
+                                        <td class="p-3 font-sans font-medium text-blue-400 sticky left-0 bg-slate-800 select-none">Display</td>
                                         <td class="p-3">89.6</td>
                                         <td class="p-3">92.3</td>
                                         <td class="p-3">97.6</td>
@@ -425,7 +443,7 @@
                                         <td class="p-3 font-bold">93.2</td>
                                     </tr>
                                     <tr class="bg-slate-700/30 text-emerald-400 font-bold border-t border-slate-600">
-                                        <td class="p-3 font-sans">Total</td>
+                                        <td class="p-3 font-sans sticky left-0 bg-slate-800 select-none">Total</td>
                                         <td class="p-3">99.3</td>
                                         <td class="p-3">100.6</td>
                                         <td class="p-3">98.9</td>
@@ -435,27 +453,29 @@
                                 </tbody>
                             </table>
                         </div>
-                        <p class="text-[10px] text-gray-500">Session ID: local_active_report_secured</p>
+                        <div class="text-center space-y-1 flex-shrink-0 select-none">
+                            <p class="text-[10px] text-gray-500">Session ID: local_active_report_secured</p>
+                            <p class="text-[9px] text-slate-600">Encrypted internal endpoint connection stable.</p>
+                        </div>
                     </div>
                 `;
                 document.body.appendChild(lockDiv);
             } else {
-                // アプリ復帰時はダミー表示状態をクリアし、ボタン操作画面を再表示
                 getEl('lockMainZone').style.display = 'block';
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('dummyDataZone').style.display = 'none';
                 getEl('dummyDataZone').classList.add('hidden');
             }
 
-            // 操作イベントの明示的な再バインド
             getEl('dummyAuthBtn').onclick = () => handleAuthAttempt('dummy');
             getEl('realAuthTrigger').onclick = () => handleAuthAttempt('real');
         }
 
-        // 認証処理ロジック
+        // 認証処理
         async function handleAuthAttempt(targetMode) {
-            const storedCredId = localStorage.getItem(CONFIG_KEY);
+            if (isProcessingBiometrics) return; // 多重発火ガード
             
+            const storedCredId = localStorage.getItem(CONFIG_KEY);
             if (!storedCredId) {
                 if(getEl('lockMessage')) getEl('lockMessage').innerText = "初回登録：生体認証をデバイスに紐付けます...";
                 await registerBiometrics(targetMode);
@@ -463,6 +483,7 @@
             }
 
             try {
+                isProcessingBiometrics = true;
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
 
@@ -476,29 +497,33 @@
                     timeout: 60000
                 };
 
-                // デバイスの指紋認証ポップアップを呼び出し（ここで処理が一時停止します）
                 await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
                 
-                // 【検証通過後】
+                // 認証成功時
                 if (targetMode === 'dummy') {
-                    // クラス操作とインラインスタイル指定の両方で、確実に表示を切り替えます
+                    // 表示の完全切り替えと安定化
                     getEl('lockMainZone').classList.add('hidden');
                     getEl('lockMainZone').style.display = 'none';
                     
                     getEl('dummyDataZone').classList.remove('hidden');
                     getEl('dummyDataZone').style.display = 'flex';
+                    
+                    // ダミーデータ表示中フラグをセット
+                    isCurrentlyAuthenticated = false; 
                 } else if (targetMode === 'real') {
                     unlockScreen();
                 }
             } catch (err) {
-                console.error("認証エラーまたはキャンセル:", err);
+                console.error("認証失敗:", err);
                 if(getEl('lockMessage')) getEl('lockMessage').innerText = "認証に失敗したか、キャンセルされました。";
                 
-                // 認証エラー時は絶対にダミーを表示せず維持
                 getEl('lockMainZone').classList.remove('hidden');
                 getEl('lockMainZone').style.display = 'block';
                 getEl('dummyDataZone').classList.add('hidden');
                 getEl('dummyDataZone').style.display = 'none';
+            } finally {
+                // ポップアップが閉じた後、わずかに遅延させてガードフラグを解除（フォーカスバグ防止）
+                setTimeout(() => { isProcessingBiometrics = false; }, 500);
             }
         }
 
@@ -543,20 +568,37 @@
             }
         }
 
-        // バックグラウンド切り替え監視（自動ポップアップは行わず、ロック配置のみ）
+        // バックグラウンド・アプリ切り替え監視（認証中、またはすでにダミーデータ表示中なら強制ロックを無視する構造に変更）
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                forceLockScreen();
+                // ダミーデータ表示中であるかチェック
+                const dummyZone = getEl('dummyDataZone');
+                if (dummyZone && !dummyZone.classList.contains('hidden')) {
+                    // ダミーデータ画面を表示している時は、アプリ切り替え時にメインの「ボタン画面」へ戻す
+                    forceLockScreen();
+                } else if (!isCurrentlyAuthenticated) {
+                    forceLockScreen();
+                }
             }
         });
 
         window.addEventListener('blur', () => {
-            forceLockScreen();
+            if (!isProcessingBiometrics) { // 認証ポップアップによるblurを回避
+                const dummyZone = getEl('dummyDataZone');
+                if (dummyZone && !dummyZone.classList.contains('hidden')) {
+                    forceLockScreen();
+                } else if (!isCurrentlyAuthenticated) {
+                    forceLockScreen();
+                }
+            }
         });
 
         window.addEventListener('focus', () => {
-            if (!isCurrentlyAuthenticated) {
-                forceLockScreen();
+            if (!isCurrentlyAuthenticated && !isProcessingBiometrics) {
+                const dummyZone = getEl('dummyDataZone');
+                if (!dummyZone || dummyZone.classList.contains('hidden')) {
+                    forceLockScreen();
+                }
             }
         });
 
@@ -602,7 +644,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
 
-            actualPartnerNames = "LINE Talk Viewer v76";
+            actualPartnerNames = "LINE Talk Viewer v77";
             isCamouflageMode = false;
             applyTitle();
             
@@ -616,7 +658,7 @@
             if (container) {
                 container.innerHTML = `
                     <div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner">
-                        <p class="font-bold mb-1">Google Drive & LINE Viewer v76</p>
+                        <p class="font-bold mb-1">Google Drive & LINE Viewer v77</p>
                         <p id="guideText" class="text-xs text-white/80">
                             表示をリセットしました。トークを確認するには右上のメニューからフォルダまたはファイルを再選択してください。
                         </p>
@@ -850,9 +892,9 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.add('hidden');
             toggleHeaderBox(false);
             if (getEl('chatContainer')) { 
-                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v76</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
+                getEl('chatContainer').innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v77</p><p class="text-xs text-white/80">内部キャッシュデータを完全消去しました。</p></div>`; 
             }
-            actualPartnerNames = "LINE Talk Viewer v76"; 
+            actualPartnerNames = "LINE Talk Viewer v77"; 
             isCamouflageMode = false;
             applyTitle();
             if (getEl('talkSub')) getEl('talkSub').innerText = "未連携";
@@ -996,9 +1038,9 @@
             const t = getEl('talkTitle'); 
             if (t) {
                 if (globalMessages.length === 0) {
-                    t.innerText = "LINE Talk Viewer v76";
+                    t.innerText = "LINE Talk Viewer v77";
                 } else {
-                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v76" : actualPartnerNames;
+                    t.innerText = isCamouflageMode ? "LINE Talk Viewer v77" : actualPartnerNames;
                 }
             }
         }
@@ -1140,7 +1182,7 @@
             if (getEl('searchToggleBtn')) getEl('searchToggleBtn').classList.remove('hidden');
             
             if (filteredMessages.length === 0) { 
-                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v76</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
+                if (c) c.innerHTML = `<div id="initialWelcomeBox" class="text-center text-white text-sm my-auto bg-black/20 rounded-2xl px-6 py-4 max-w-xs self-center shadow-inner"><p class="font-bold mb-1">Google Drive & LINE Viewer v77</p><p class="text-xs text-white/80">同期済みのデータがありません。右上のメニューからトークファイルを結合してください。</p></div>`; 
                 return; 
             }
             
