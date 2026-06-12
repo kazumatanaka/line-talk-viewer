@@ -90,20 +90,22 @@
         }
         .mode-gchat .name-text { font-size: 12px; font-weight: 500; }
 
-        /* GChat Light - 淡い色 */
-        .bg-theme-gchat-light { background-color: #f8f9fa !important; }
-        .gchat-light-blue .bubble-me { background-color: #e8f0fe !important; color: #174ea6 !important; }
+        /* GChat Light - 背景白固定、吹き出しがパステルカラー */
+        .bg-theme-gchat-light { background-color: #ffffff !important; }
+        .gchat-light-blue .bubble-me { background-color: #c2e7ff !important; color: #001d35 !important; }
         .gchat-light-red .bubble-me { background-color: #fce8e6 !important; color: #c5221f !important; }
         .gchat-light-purple .bubble-me { background-color: #f3e8fd !important; color: #681da8 !important; }
         .gchat-light-green .bubble-me { background-color: #e6f4ea !important; color: #137333 !important; }
         .gchat-light-yellow .bubble-me { background-color: #fef7e0 !important; color: #b06000 !important; }
         
-        .bg-theme-gchat-light .bubble-other { background-color: #f1f3f4 !important; color: #202124 !important; }
-        .bg-theme-gchat-light .time-text { color: #5f6368 !important; }
-        .bg-theme-gchat-light .name-text { color: #5f6368 !important; text-shadow: none !important; }
-        .bg-theme-gchat-light .date-stamp-node { color: #5f6368 !important; }
+        .gchat-light-blue .bubble-other, .gchat-light-red .bubble-other, .gchat-light-purple .bubble-other, .gchat-light-green .bubble-other, .gchat-light-yellow .bubble-other { 
+            background-color: #f1f3f4 !important; color: #202124 !important; 
+        }
+        .mode-gchat.gchat-light-blue .time-text, .mode-gchat.gchat-light-red .time-text, .mode-gchat.gchat-light-purple .time-text, .mode-gchat.gchat-light-green .time-text, .mode-gchat.gchat-light-yellow .time-text { color: #5f6368 !important; }
+        .mode-gchat.gchat-light-blue .name-text, .mode-gchat.gchat-light-red .name-text, .mode-gchat.gchat-light-purple .name-text, .mode-gchat.gchat-light-green .name-text, .mode-gchat.gchat-light-yellow .name-text { color: #5f6368 !important; text-shadow: none !important; }
+        .mode-gchat.gchat-light-blue .date-stamp-node, .mode-gchat.gchat-light-red .date-stamp-node, .mode-gchat.gchat-light-purple .date-stamp-node, .mode-gchat.gchat-light-green .date-stamp-node, .mode-gchat.gchat-light-yellow .date-stamp-node { color: #5f6368 !important; }
 
-        /* GChat Dark - 淡い色 */
+        /* GChat Dark - 背景黒固定、吹き出しがパステルカラー */
         .bg-theme-gchat-dark { background-color: #202124 !important; }
         .gchat-dark-blue .bubble-me { background-color: #1f385c !important; color: #d2e3fc !important; }
         .gchat-dark-red .bubble-me { background-color: #5c1e19 !important; color: #f8d9d5 !important; }
@@ -111,10 +113,12 @@
         .gchat-dark-green .bubble-me { background-color: #134621 !important; color: #ceead6 !important; }
         .gchat-dark-yellow .bubble-me { background-color: #593900 !important; color: #fef7e0 !important; }
 
-        .bg-theme-gchat-dark .bubble-other { background-color: #3c4043 !important; color: #e8eaed !important; }
-        .bg-theme-gchat-dark .time-text { color: #9aa0a6 !important; }
-        .bg-theme-gchat-dark .name-text { color: #9aa0a6 !important; text-shadow: none !important; }
-        .bg-theme-gchat-dark .date-stamp-node { color: #9aa0a6 !important; }
+        .gchat-dark-blue .bubble-other, .gchat-dark-red .bubble-other, .gchat-dark-purple .bubble-other, .gchat-dark-green .bubble-other, .gchat-dark-yellow .bubble-other { 
+            background-color: #3c4043 !important; color: #e8eaed !important; 
+        }
+        .mode-gchat.gchat-dark-blue .time-text, .mode-gchat.gchat-dark-red .time-text, .mode-gchat.gchat-dark-purple .time-text, .mode-gchat.gchat-dark-green .time-text, .mode-gchat.gchat-dark-yellow .time-text { color: #9aa0a6 !important; }
+        .mode-gchat.gchat-dark-blue .name-text, .mode-gchat.gchat-dark-red .name-text, .mode-gchat.gchat-dark-purple .name-text, .mode-gchat.gchat-dark-green .name-text, .mode-gchat.gchat-dark-yellow .name-text { color: #9aa0a6 !important; text-shadow: none !important; }
+        .mode-gchat.gchat-dark-blue .date-stamp-node, .mode-gchat.gchat-dark-red .date-stamp-node, .mode-gchat.gchat-dark-purple .date-stamp-node, .mode-gchat.gchat-dark-green .date-stamp-node, .mode-gchat.gchat-dark-yellow .date-stamp-node { color: #9aa0a6 !important; }
 
         /* アイコンの切り替え */
         .icon-gchat { display: none !important; }
@@ -227,7 +231,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                     <svg class="w-6 h-6 stroke-current icon-gchat" fill="none" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4M4 12l6-6M4 12l6 6"></path>
                     </svg>
                 </button>
                 <div id="titleArea" class="flex items-center cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
@@ -329,7 +333,7 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 mb-1.5">📱 表示モード設定</label>
                             <div class="flex space-x-2 mb-3">
-                                <button id="mode-line" class="flex-1 py-1.5 text-xs rounded border font-bold bg-[#06c755] text-white cursor-pointer shadow-sm border-transparent transition">LINE風</button>
+                                <button id="mode-line" class="flex-1 py-1.5 text-xs rounded border font-bold bg-[#06c755] text-white cursor-pointer shadow-sm border border-transparent transition">LINE風</button>
                                 <button id="mode-gchat" class="flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition">Google Chat風</button>
                             </div>
 
@@ -757,24 +761,24 @@
             if (targetId === "theme-pink") { currentLineTheme = 'pink'; localStorage.setItem('user_theme', 'pink'); applyCurrentMode(); }
             if (targetId === "theme-beige") { currentLineTheme = 'beige'; localStorage.setItem('user_theme', 'beige'); applyCurrentMode(); }
             
-            // GChat手動テーマ切り替え
+            // GChat 手動モード変更 (Light / Dark)
             if (targetId === "theme-gchat-light") {
                 gchatModeState = 'light';
                 localStorage.setItem('gchat_state', 'light');
-                changeTheme('gchat-' + gchatModeColor);
+                applyCurrentMode();
             }
             if (targetId === "theme-gchat-dark") {
                 gchatModeState = 'dark';
                 localStorage.setItem('gchat_state', 'dark');
-                changeTheme('gchat-' + gchatModeColor);
+                applyCurrentMode();
             }
 
-            // GChat淡いパステルカラーの選択
-            if (targetId === "gchat-color-blue") { gchatModeColor = 'blue'; changeTheme('gchat-blue'); }
-            if (targetId === "gchat-color-red") { gchatModeColor = 'red'; changeTheme('gchat-red'); }
-            if (targetId === "gchat-color-purple") { gchatModeColor = 'purple'; changeTheme('gchat-purple'); }
-            if (targetId === "gchat-color-green") { gchatModeColor = 'green'; changeTheme('gchat-green'); }
-            if (targetId === "gchat-color-yellow") { gchatModeColor = 'yellow'; changeTheme('gchat-yellow'); }
+            // GChat 淡いパステルカラー選択
+            if (targetId === "gchat-color-blue") { gchatModeColor = 'blue'; localStorage.setItem('gchat_color', 'blue'); applyCurrentMode(); }
+            if (targetId === "gchat-color-red") { gchatModeColor = 'red'; localStorage.setItem('gchat_color', 'red'); applyCurrentMode(); }
+            if (targetId === "gchat-color-purple") { gchatModeColor = 'purple'; localStorage.setItem('gchat_color', 'purple'); applyCurrentMode(); }
+            if (targetId === "gchat-color-green") { gchatModeColor = 'green'; localStorage.setItem('gchat_color', 'green'); applyCurrentMode(); }
+            if (targetId === "gchat-color-yellow") { gchatModeColor = 'yellow'; localStorage.setItem('gchat_color', 'yellow'); applyCurrentMode(); }
 
             if (targetId === "size-sm") changeFontSize('sm');
             if (targetId === "size-md") changeFontSize('md');
@@ -902,7 +906,7 @@
                 getEl('mode-line').className = "flex-1 py-1.5 text-xs rounded border border-gray-300 font-medium bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer transition";
                 getEl('mode-gchat').className = "flex-1 py-1.5 text-xs rounded font-bold bg-blue-600 text-white cursor-pointer shadow-sm border border-transparent transition";
 
-                changeTheme('gchat-' + gchatModeColor);
+                changeTheme('gchat-' + gchatModeState + '-' + gchatModeColor);
             }
         }
 
@@ -930,7 +934,6 @@
                 sub.className = `text-[10px] sub-${themeName}`;
             }
 
-            // アクティブなテーマボタンのハイライト処理
             if (currentAppMode === 'line') {
                 const buttons = [getEl('theme-blue'), getEl('theme-dark'), getEl('theme-pink'), getEl('theme-beige')];
                 buttons.forEach(b => { if(b) b.classList.remove('ring-4', 'ring-yellow-400'); });
@@ -941,7 +944,7 @@
                 if(btnLight) btnLight.classList.remove('ring-4', 'ring-blue-400');
                 if(btnDark) btnDark.classList.remove('ring-4', 'ring-blue-400');
                 
-                if (themeName.startsWith('gchat-dark')) {
+                if (gchatModeState === 'dark') {
                     if(btnDark) btnDark.classList.add('ring-4', 'ring-blue-400');
                 } else {
                     if(btnLight) btnLight.classList.add('ring-4', 'ring-blue-400');
@@ -1366,10 +1369,7 @@
             const gMeBg = isDarkGChat ? 'bg-[#004a77] text-[#e8eaed]' : 'bg-[#c2e7ff] text-[#001d35]';
             const gOtherBg = isDarkGChat ? 'bg-[#3c4043] text-[#e8eaed]' : 'bg-[#f2f2f4] text-[#202124]';
             const gTimeText = isDarkGChat ? 'text-[#9aa0a6]' : 'text-[#5f6368]';
-            
-            // ★名前の色を時間と同じトーンのグレーにして文字色を薄くした
             const gNameText = isDarkGChat ? 'text-[#9aa0a6]' : 'text-[#5f6368]';
-            
             const gDateBg = isDarkGChat ? 'bg-[#3c4043] text-[#9aa0a6]' : 'bg-[#f1f3f4] text-[#5f6368]';
 
             msgs.forEach((msg, idx) => {
@@ -1452,6 +1452,47 @@
                     c.appendChild(frag); 
                 } 
             }
+        }
+
+        function parseText(text, filename) {
+            if (!text) return { messages: [], counts: {}, partner: "" };
+            const lines = text.split(/\r?\n/); const messages = []; const counts = {}; let partner = "";
+            const match = (filename || "").match(/\[LINE\]\s*(.+?)とのトーク/); if (match) partner = match[1];
+            
+            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2}).*$/; 
+            const reg1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
+            const reg2 = /^(\d{1,2}:\d{2})\s+([^\t\n]+?)\s+(.*)$/;
+            let ref = null;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i]; const trim = line.trim(); 
+                if (trim === "") { if (ref) ref.body += '<br>'; continue; }
+                
+                let m = line.match(reg1) || line.match(reg2);
+                if (m) {
+                    const time = m[1] || "";
+                    const sender = m[2] || "";
+                    const body = m[3] || "";
+                    const cleanS = sender.trim(); counts[cleanS] = (counts[cleanS] || 0) + 1;
+                    let cleanB = body.replace(/\\n/g, '<br>'); 
+                    if (cleanB === '[スタンプ]' || cleanB === '[Sticker]') { cleanB = '🎨 [スタンプ]'; } 
+                    else if (cleanB === '[写真]' || cleanB === '[Photo]') { cleanB = '📸 [写真]'; } 
+                    else if (cleanB === '[動画]' || cleanB === '[Video]') { cleanB = '🎬 [動画]'; }
+                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanS, body: cleanB }; 
+                    messages.push(newMsg); 
+                    ref = newMsg;
+                } 
+                else if (dateRegex.test(trim)) { 
+                    messages.push({ type: 'date', text: trim }); 
+                    ref = null; 
+                } 
+                else if (ref) { 
+                    ref.body += '<br>' + line; 
+                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
+                    messages[messages.length - 1].body += '<br>' + line; 
+                }
+            }
+            return { messages, counts, partner };
         }
 
         function triggerSearch() {
@@ -1576,65 +1617,6 @@
                     try { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); } catch(err) {}
                 }; 
             } catch(e){}
-        }
-
-        function parseTimestamp(dStr, tStr) { 
-            const dM = (dStr || "").match(/\d+/g); 
-            const tM = (tStr || "").match(/\d+/g); 
-            if (!dM || dM.length < 3) return 0; 
-            const h = tM && tM.length > 0 ? parseInt(tM[0], 10) : 0; 
-            const m = tM && tM.length > 1 ? parseInt(tM[1], 10) : 0; 
-            return new Date(parseInt(dM[0], 10), parseInt(dM[1], 10) - 1, parseInt(dM[2], 10), h, m, 0).getTime(); 
-        }
-        
-        function updateTitleText() { 
-            if (globalSenders.length === 0) return; 
-            const partners = globalSenders.filter(s => s !== currentMe); 
-            actualPartnerNames = partners.length > 0 ? partners.join(', ') : currentMe; 
-            applyTitle(); 
-        }
-        
-        function Render() { startRender(); }
-
-        function parseText(text, filename) {
-            if (!text) return { messages: [], counts: {}, partner: "" };
-            const lines = text.split(/\r?\n/); const messages = []; const counts = {}; let partner = "";
-            const match = (filename || "").match(/\[LINE\]\s*(.+?)とのトーク/); if (match) partner = match[1];
-            
-            const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2}).*$/; 
-            const reg1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
-            const reg2 = /^(\d{1,2}:\d{2})\s+([^\t\n]+?)\s+(.*)$/;
-            let ref = null;
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i]; const trim = line.trim(); 
-                if (trim === "") { if (ref) ref.body += '<br>'; continue; }
-                
-                let m = line.match(reg1) || line.match(reg2);
-                if (m) {
-                    const time = m[1] || "";
-                    const sender = m[2] || "";
-                    const body = m[3] || "";
-                    const cleanS = sender.trim(); counts[cleanS] = (counts[cleanS] || 0) + 1;
-                    let cleanB = body.replace(/\\n/g, '<br>'); 
-                    if (cleanB === '[スタンプ]' || cleanB === '[Sticker]') { cleanB = '🎨 [スタンプ]'; } 
-                    else if (cleanB === '[写真]' || cleanB === '[Photo]') { cleanB = '📸 [写真]'; } 
-                    else if (cleanB === '[動画]' || cleanB === '[Video]') { cleanB = '🎬 [動画]'; }
-                    const newMsg = { type: 'msg', time: time.trim(), sender: cleanS, body: cleanB }; 
-                    messages.push(newMsg); 
-                    ref = newMsg;
-                } 
-                else if (dateRegex.test(trim)) { 
-                    messages.push({ type: 'date', text: trim }); 
-                    ref = null; 
-                } 
-                else if (ref) { 
-                    ref.body += '<br>' + line; 
-                } else if (messages.length > 0 && messages[messages.length - 1].type === 'msg') { 
-                    messages[messages.length - 1].body += '<br>' + line; 
-                }
-            }
-            return { messages, counts, partner };
         }
     </script>
 </body>
