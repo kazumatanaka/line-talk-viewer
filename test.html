@@ -151,16 +151,16 @@
         .stealth-layer-standby {
             opacity: 0 !important;
             pointer-events: none !important;
-            will-change: opacity; /* GPUに事前準備させる */
-            transform: translateZ(0); /* ハードウェアアクセラレーションを強制 */
+            will-change: opacity; 
+            transform: translateZ(0); 
             visibility: visible !important; 
-            display: flex !important; /* display:noneによるレイアウト再計算を防ぐ */
+            display: flex !important; 
         }
 
         .stealth-layer-active {
             opacity: 1 !important;
             pointer-events: auto !important;
-            transition: none !important; /* アニメーションを無効化し即時発動 */
+            transition: none !important; 
             z-index: 99999 !important;
             visibility: visible !important;
             display: flex !important;
@@ -762,7 +762,7 @@
             const size = localStorage.getItem('user_font_size') || 'md';
             changeFontSize(size);
             
-            // 安全なイベントリスナーの登録（古いiOSへの互換性対応）
+            // 安全なイベントリスナーの登録
             const mql = window.matchMedia('(prefers-color-scheme: dark)');
             const handleDarkTheme = (e) => {
                 if (currentAppMode === 'gchat') {
@@ -797,7 +797,7 @@
                 };
             }
 
-            // 安全なファイル読み込み処理（エラーキャッチ付き）
+            // --- ★修正箇所：安全装置とエラー表示の追加 ---
             if (getEl('fileInput')) {
                 getEl('fileInput').onchange = async (e) => {
                     const files = e.target.files; if (!files || files.length === 0) return;
@@ -815,14 +815,19 @@
                         localStorage.removeItem('tracked_folder_history');
                         localStorage.removeItem('tracked_image_id');
                         for (let f of files) {
-                            const txt = await new Promise((res) => { const r = new FileReader(); r.onload = (evt) => res(evt.target.result); r.readAsText(f, 'UTF-8'); });
+                            const txt = await new Promise((res, rej) => {
+                                const r = new FileReader();
+                                r.onload = (evt) => res(evt.target.result);
+                                r.onerror = () => rej(new Error(f.name + " の読み込みに失敗しました"));
+                                r.readAsText(f, 'UTF-8');
+                            });
                             texts.push({ text: txt, name: f.name });
                         }
                         processMultipleTexts(texts);
                     } catch (err) {
                         console.error(err);
                         if (titleEl) titleEl.innerText = "Line Talk Viewer";
-                        alert("ファイルの読み込み中にエラーが発生しました。");
+                        alert("エラーが発生しました。\n\n詳細: " + (err.message || err));
                     }
                     e.target.value = ''; // 連続読み込み用のリセット
                 };
@@ -1410,72 +1415,98 @@
             }
         }
 
+        // --- ★修正箇所：IndexedDBの呼び出しを安全に保護 ---
         function saveCache(data) { 
-            indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { 
-                e.target.result.transaction("timeline", "readwrite")
-                    .objectStore("timeline")
-                    .put({ 
-                        id: "last_timeline", 
-                        data: data,
-                        avatar: partnerCustomAvatarUrl,
-                        hasCustom: hasDriveCustomImage
-                    }); 
-            }; 
+            try {
+                const req = indexedDB.open("LineViewerCacheDB", 1);
+                req.onsuccess = function(e) { 
+                    try {
+                        e.target.result.transaction("timeline", "readwrite")
+                            .objectStore("timeline")
+                            .put({ 
+                                id: "last_timeline", 
+                                data: data,
+                                avatar: partnerCustomAvatarUrl,
+                                hasCustom: hasDriveCustomImage
+                            }); 
+                    } catch(err) { console.error("Cache write error", err); }
+                }; 
+            } catch (err) {
+                console.error("IndexedDB blocked or not supported", err);
+            }
         }
 
         function openDbAndLoad() {
-            const req = indexedDB.open("LineViewerCacheDB", 1);
-            req.onupgradeneeded = function(e) { 
-                const db = e.target.result; 
-                if (!db.objectStoreNames.contains("timeline")) {
-                    db.createObjectStore("timeline", { keyPath: "id" }); 
-                }
-            };
-            req.onsuccess = function(e) {
-                const db = e.target.result; 
-                const getReq = db.transaction("timeline", "readonly").objectStore("timeline").get("last_timeline");
-                getReq.onsuccess = function() {
-                    const res = getReq.result;
-                    if (res && res.data && res.data.length > 0) {
-                        globalMessages = res.data; 
-                        filteredMessages = [...globalMessages]; 
-                        
-                        partnerCustomAvatarUrl = res.avatar || "";
-                        hasDriveCustomImage = res.hasCustom || false;
-
-                        let counts = {}; 
-                        globalMessages.forEach(m => { if(m.type === 'msg') counts[m.sender] = (counts[m.sender] || 0) + 1; }); 
-                        globalSenders = Object.keys(counts);
-                        
-                        const sel = getEl('meSelector');
-                        if (sel) sel.innerHTML = '';
-                        for (const [s, cnt] of Object.entries(counts)) { 
-                            const opt = document.createElement('option'); opt.value = s; opt.innerText = `${s} (${cnt}回)`; 
-                            if (sel) sel.appendChild(opt); 
-                        }
-                        const saved = localStorage.getItem('cached_me_user'); 
-                        if (saved && counts[saved]) { currentMe = saved; if(sel) { sel.value = saved; sel.disabled = false; } }
-                        
-                        const sub = getEl('talkSub');
-                        if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
-                        
-                        isCamouflageMode = false; 
-                        updateTitleText(); 
-                        startRender();
-                    } else { 
-                        clearAuthUi(); 
+            try {
+                const req = indexedDB.open("LineViewerCacheDB", 1);
+                req.onupgradeneeded = function(e) { 
+                    const db = e.target.result; 
+                    if (!db.objectStoreNames.contains("timeline")) {
+                        db.createObjectStore("timeline", { keyPath: "id" }); 
                     }
                 };
-            };
+                req.onsuccess = function(e) {
+                    try {
+                        const db = e.target.result; 
+                        const getReq = db.transaction("timeline", "readonly").objectStore("timeline").get("last_timeline");
+                        getReq.onsuccess = function() {
+                            const res = getReq.result;
+                            if (res && res.data && res.data.length > 0) {
+                                globalMessages = res.data; 
+                                filteredMessages = [...globalMessages]; 
+                                
+                                partnerCustomAvatarUrl = res.avatar || "";
+                                hasDriveCustomImage = res.hasCustom || false;
+
+                                let counts = {}; 
+                                globalMessages.forEach(m => { if(m.type === 'msg') counts[m.sender] = (counts[m.sender] || 0) + 1; }); 
+                                globalSenders = Object.keys(counts);
+                                
+                                const sel = getEl('meSelector');
+                                if (sel) sel.innerHTML = '';
+                                for (const [s, cnt] of Object.entries(counts)) { 
+                                    const opt = document.createElement('option'); opt.value = s; opt.innerText = `${s} (${cnt}回)`; 
+                                    if (sel) sel.appendChild(opt); 
+                                }
+                                const saved = localStorage.getItem('cached_me_user'); 
+                                if (saved && counts[saved]) { currentMe = saved; if(sel) { sel.value = saved; sel.disabled = false; } }
+                                
+                                const sub = getEl('talkSub');
+                                if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
+                                
+                                isCamouflageMode = false; 
+                                updateTitleText(); 
+                                startRender();
+                            } else { 
+                                clearAuthUi(); 
+                            }
+                        };
+                    } catch(err) { console.error(err); clearAuthUi(); }
+                };
+            } catch (err) {
+                console.error("DB init error", err);
+                clearAuthUi();
+            }
         }
 
         function clearCache() { 
-            indexedDB.open("LineViewerCacheDB", 1).onsuccess = function(e) { 
-                e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); 
-            }; 
+            try {
+                const req = indexedDB.open("LineViewerCacheDB", 1);
+                req.onsuccess = function(e) { 
+                    try { e.target.result.transaction("timeline", "readwrite").objectStore("timeline").delete("last_timeline"); } catch(err) {}
+                }; 
+            } catch(e){}
         }
 
-        function parseTimestamp(dStr, tStr) { const dM = dStr.match(/\d+/g); const tM = tStr.match(/\d+/g); if (!dM || dM.length < 3) return 0; const h = tM ? parseInt(tM[0], 10) : 0; const m = tM ? parseInt(tM[1], 10) : 0; return new Date(parseInt(dM[0], 10), parseInt(dM[1], 10) - 1, parseInt(dM[2], 10), h, m, 0).getTime(); }
+        // --- ★修正箇所：より安全な文字列処理 ---
+        function parseTimestamp(dStr, tStr) { 
+            const dM = (dStr || "").match(/\d+/g); 
+            const tM = (tStr || "").match(/\d+/g); 
+            if (!dM || dM.length < 3) return 0; 
+            const h = tM && tM.length > 0 ? parseInt(tM[0], 10) : 0; 
+            const m = tM && tM.length > 1 ? parseInt(tM[1], 10) : 0; 
+            return new Date(parseInt(dM[0], 10), parseInt(dM[1], 10) - 1, parseInt(dM[2], 10), h, m, 0).getTime(); 
+        }
         
         function updateTitleText() { 
             if (globalSenders.length === 0) return; 
@@ -1487,10 +1518,10 @@
         function Render() { startRender(); }
 
         function parseText(text, filename) {
+            if (!text) return { messages: [], counts: {}, partner: "" };
             const lines = text.split(/\r?\n/); const messages = []; const counts = {}; let partner = "";
-            const match = filename.match(/\[LINE\]\s*(.+?)とのトーク/); if (match) partner = match[1];
+            const match = (filename || "").match(/\[LINE\]\s*(.+?)とのトーク/); if (match) partner = match[1];
             
-            // あらゆるフォーマットでこけないように許容範囲を緩めた安全な正規表現
             const dateRegex = /^(\d{4}[\/\.\-年]\d{1,2}[\/\.\-月]\d{1,2}).*$/; 
             const reg1 = /^(\d{1,2}:\d{2})[\t]([^\t\n]+)[\t](.*)$/; 
             const reg2 = /^(\d{1,2}:\d{2})\s+([^\t\n]+?)\s+(.*)$/;
@@ -1502,7 +1533,10 @@
                 
                 let m = line.match(reg1) || line.match(reg2);
                 if (m) {
-                    const [_, time, sender, body] = m; const cleanS = sender.trim(); counts[cleanS] = (counts[cleanS] || 0) + 1;
+                    const time = m[1] || "";
+                    const sender = m[2] || "";
+                    const body = m[3] || "";
+                    const cleanS = sender.trim(); counts[cleanS] = (counts[cleanS] || 0) + 1;
                     let cleanB = body.replace(/\\n/g, '<br>'); 
                     if (cleanB === '[スタンプ]' || cleanB === '[Sticker]') { cleanB = '🎨 [スタンプ]'; } 
                     else if (cleanB === '[写真]' || cleanB === '[Photo]') { cleanB = '📸 [写真]'; } 
