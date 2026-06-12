@@ -228,8 +228,8 @@
                     </svg>
                 </button>
                 <div id="titleArea" class="flex items-center cursor-pointer hover:bg-black/5 active:scale-95 transition-all p-1.5 rounded-lg select-none">
-                    <div id="headerAvatarContainer" class="hidden mr-2.5 flex-shrink-0">
-                        <img id="headerAvatar" src="default-light.png" class="w-8 h-8 rounded-full object-cover">
+                    <div id="headerAvatarContainer" class="hidden mr-2.5 flex-shrink-0" style="width: 32px; height: 32px;">
+                        <img id="headerAvatar" src="default-light.png" class="w-full h-full rounded-full object-cover">
                     </div>
                     <div id="headerTextContainer" class="flex flex-col justify-center">
                         <h1 id="talkTitle" class="font-bold text-base leading-tight">Line Talk Viewer</h1>
@@ -419,7 +419,7 @@
         let partnerCustomAvatarUrl = "";
 
         // カモフラージュ用ランダムアバター配列
-        const CAMOUFLAGE_AVATARS = ["ivy.png", "carl.png", "saka.png"];
+        const CAMOUFLAGE_AVATARS = ["carl.png", "saka.png", "ivy.png"];
 
         const getEl = (id) => document.getElementById(id);
 
@@ -661,10 +661,10 @@
                     avatarContainer.classList.remove('hidden');
                     if (isCamouflageMode) {
                         const currentOtherColor = getGChatOtherBubbleColorHex();
-                        // 独立したdiv構造として描画し、テキスト領域への重なり込みを防止
-                        avatarContainer.innerHTML = `<div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background-color: ${currentOtherColor};">🥟</div>`;
+                        // インラインでwidth, height, flex-shrinkを徹底適用し、テキスト領域への干渉を排除した完全な正方形を作ります
+                        avatarContainer.innerHTML = `<div style="width: 32px; height: 32px; border-radius: 8px; background-color: ${currentOtherColor}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" class="text-sm">🥟</div>`;
                     } else {
-                        avatarContainer.innerHTML = `<img id="headerAvatar" src="${getFinalAvatarUrl()}" class="w-8 h-8 rounded-full object-cover" onerror="this.src='${getThemeDefaultAvatar()}'">`;
+                        avatarContainer.innerHTML = `<img id="headerAvatar" src="${getFinalAvatarUrl()}" class="w-full h-full rounded-full object-cover" onerror="this.src='${getThemeDefaultAvatar()}'">`;
                     }
                 } else {
                     avatarContainer.classList.add('hidden');
@@ -1675,9 +1675,9 @@
                         } else { 
                             let finalOtherAvatar = avatar;
                             if (isCamouflageMode) {
-                                // ユーザーの要求どおり「ivy.png」「carl.png」「saka.png」から一意に割り振るためのインデックス
-                                const seed = gIdx % CAMOUFLAGE_AVATARS.length;
-                                finalOtherAvatar = CAMOUFLAGE_AVATARS[seed];
+                                // gIdxを用いて擬似乱数を作り3種から選出。これによりスクロール等での再描画時も同じ発言には同じ画像が固定されます
+                                const hash = (gIdx * 73 + (msg.body ? msg.body.length : 0)) % CAMOUFLAGE_AVATARS.length;
+                                finalOtherAvatar = CAMOUFLAGE_AVATARS[hash];
                             }
 
                             w.className = 'flex items-start space-x-3 max-w-[85%] self-start p-0.5 mb-2'; 
