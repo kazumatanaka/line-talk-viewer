@@ -24,7 +24,7 @@
         .sub-pink { color: #fdf2f8; }
         .sub-beige { color: #6b7280; }
 
-        /* 吹き出しの基本スタイル（Blue等のLightテーマ用） */
+        /* 吹き出しの基本スタイル（Lightテーマ用） */
         .bubble-other {
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -353,6 +353,7 @@
         let currentFolderId = 'root'; 
         let folderHistory = [{ id: 'root', name: 'マイドライブ' }];
         let currentFolderFiles = []; 
+        let currentFolderImageFile = null; 
 
         let isCamouflageMode = false;
         let actualPartnerNames = "Line Talk Viewer"; 
@@ -362,7 +363,6 @@
 
         const getEl = (id) => document.getElementById(id);
 
-        // --- WebAuthn制御用ロジック ---
         const CONFIG_KEY = 'bio_auth_credential_id';
         let isCurrentlyAuthenticated = false; 
         let isProcessingBiometrics = false; 
@@ -380,7 +380,6 @@
             return buffer.buffer;
         }
 
-        // ロック画面（目隠しレイヤー）の生成
         function forceLockScreen() {
             if (getEl('appBodyContent')) {
                 getEl('appBodyContent').classList.add('force-hide-content');
@@ -405,7 +404,6 @@
             }
         }
 
-        // 認証判定
         async function handleAuthAttempt(targetMode) {
             if (isProcessingBiometrics) return; 
             
@@ -504,13 +502,11 @@
                         lockScreen.classList.add('hidden');
                         lockScreen.style.display = 'none';
                     }
-                    // 【v82 追加】ロック解除後に一度バックグラウンドでの新着ファイルスキャンを試行する
                     autoCheckNewFiles();
                 }, 300);
             }
         }
 
-        // --- 強制隠蔽トリガー ---
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') forceLockScreen(); 
         });
@@ -716,9 +712,9 @@
                     const files = e.target.files; if (!files || files.length === 0) return;
                     if (getEl('talkTitle')) getEl('talkTitle').innerText = "ファイルを結合中...";
                     let texts = [];
-                    // ローカル読み込み時は管理フォルダの追跡対象外とするためメタデータをクリア
                     localStorage.removeItem('tracked_folder_id');
                     localStorage.removeItem('tracked_file_ids');
+                    localStorage.removeItem('tracked_folder_history'); // 手動時はクリア
                     for (let f of files) {
                         const txt = await new Promise((res) => { const r = new FileReader(); r.onload = (evt) => res(evt.target.result); r.readAsText(f, 'UTF-8'); });
                         texts.push({ text: txt, name: f.name });
@@ -772,8 +768,16 @@
                             gapi.client.setToken({ access_token: token }); 
                             window.location.hash = ""; 
                             setAuthSuccess(); 
-                            renderExplorer('root'); 
-                            autoCheckNewFiles(); // 認証成功時に新着チェック
+                            
+                            // 固定履歴があればダイレクトジャンプ
+                            const trackedHistory = localStorage.getItem('tracked_folder_history');
+                            if (trackedHistory) {
+                                folderHistory = JSON.parse(trackedHistory);
+                                renderExplorer(folderHistory[folderHistory.length - 1].id);
+                            } else {
+                                renderExplorer('root'); 
+                            }
+                            autoCheckNewFiles(); 
                             return;
                         }
                     }
@@ -783,14 +787,22 @@
                     if (t && exp && Date.now() < parseInt(exp, 10)) {
                         gapi.client.setToken({ access_token: t }); 
                         setAuthSuccess();
-                        const history = localStorage.getItem('explorer_folder_history');
-                        if (history) { 
-                            folderHistory = JSON.parse(history); 
-                            renderExplorer(folderHistory[folderHistory.length - 1].id); 
-                        } else { 
-                            renderExplorer('root'); 
+                        
+                        // 固定履歴があればダイレクトジャンプ優先
+                        const trackedHistory = localStorage.getItem('tracked_folder_history');
+                        if (trackedHistory) {
+                            folderHistory = JSON.parse(trackedHistory);
+                            renderExplorer(folderHistory[folderHistory.length - 1].id);
+                        } else {
+                            const history = localStorage.getItem('explorer_folder_history');
+                            if (history) { 
+                                folderHistory = JSON.parse(history); 
+                                renderExplorer(folderHistory[folderHistory.length - 1].id); 
+                            } else { 
+                                renderExplorer('root'); 
+                            }
                         }
-                        autoCheckNewFiles(); // 自動ログイン成功時に新着チェック
+                        autoCheckNewFiles(); 
                         return;
                     }
                     
@@ -818,6 +830,7 @@
             localStorage.removeItem('cached_me_user');
             localStorage.removeItem('tracked_folder_id');
             localStorage.removeItem('tracked_file_ids');
+            localStorage.removeItem('tracked_folder_history');
             if (typeof gapi !== 'undefined' && gapi.client) gapi.client.setToken(null); 
             clearCache();
             
@@ -888,32 +901,18 @@
                 const files = res.result.files; 
                 if (el) el.innerHTML = ''; 
                 currentFolderFiles = [];
-                
-                let imgFile = files ? files.find(f => f.mimeType === 'image/jpeg' || f.mimeType === 'image/png') : null;
-                if (imgFile) {
-                    try {
-                        const imgRes = await gapi.client.drive.files.get({ fileId: imgFile.id, alt: 'media' });
-                        const bytes = new Uint8Array(imgRes.body.length);
-                        for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
-                        let binary = '';
-                        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-                        partnerCustomAvatarUrl = `data:${imgFile.mimeType};base64,` + window.btoa(binary);
-                        hasDriveCustomImage = true;
-                    } catch(e) {
-                        console.error("画像の自動読み込みに失敗しました", e);
-                        hasDriveCustomImage = false;
-                    }
-                } else {
-                    partnerCustomAvatarUrl = "";
-                    hasDriveCustomImage = false;
-                }
+                currentFolderImageFile = null; 
 
-                if (globalMessages.length > 0 && !getEl('initialWelcomeBox')) {
-                    startRender();
+                // 【追加】固定フォルダ表示バッジ
+                if (currentFolderId === localStorage.getItem('tracked_folder_id')) {
+                    const pinInfo = document.createElement('div');
+                    pinInfo.className = 'text-[10px] text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded mb-2 text-center border border-emerald-200 flex-shrink-0';
+                    pinInfo.innerText = '📌 起動時の固定フォルダとして設定されています';
+                    if(el) el.appendChild(pinInfo);
                 }
 
                 if ((!files || files.length === 0) && el) { 
-                    el.innerHTML = '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
+                    el.innerHTML += '<p class="text-gray-400 text-center py-4">📁 空っぽのフォルダです</p>'; 
                     return; 
                 }
                 let textCount = 0;
@@ -927,6 +926,7 @@
                         item.innerHTML = `<span class="font-medium text-gray-700 truncate flex-1">📁 ${file.name}</span>`; 
                         item.onclick = () => { folderHistory.push({ id: file.id, name: file.name }); renderExplorer(file.id); }; 
                     } else if (isImage) {
+                        currentFolderImageFile = file; 
                         item.innerHTML = `<span class="text-emerald-600 truncate flex-1">🖼️ ${file.name} (アイコン画像)</span>`;
                         item.onclick = async () => {
                             try {
@@ -954,6 +954,8 @@
                 if (textCount > 0 && bBtn) { 
                     bBtn.innerText = `⚡ このフォルダ内の一括結合 (${textCount}個)`; 
                     bBtn.classList.remove('hidden'); 
+                } else if(bBtn) {
+                    bBtn.classList.add('hidden');
                 }
             } catch (err) { 
                 console.error(err); 
@@ -1048,10 +1050,24 @@
             });
         }
 
+        // 【修正】一括読み込み時に、フォルダパスを記憶
         async function triggerBatchLoad() {
             if (currentFolderFiles.length === 0) return; 
             const title = getEl('talkTitle');
             if (title) title.innerText = "全自動結合中...";
+
+            if (currentFolderImageFile) {
+                try {
+                    const imgRes = await gapi.client.drive.files.get({ fileId: currentFolderImageFile.id, alt: 'media' });
+                    const bytes = new Uint8Array(imgRes.body.length);
+                    for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
+                    let binary = '';
+                    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                    partnerCustomAvatarUrl = `data:${currentFolderImageFile.mimeType};base64,` + window.btoa(binary);
+                    hasDriveCustomImage = true;
+                } catch(e) { console.error("Batch load image fetch failed", e); }
+            }
+
             let texts = [];
             let fileIds = [];
             for (let f of currentFolderFiles) { 
@@ -1061,28 +1077,46 @@
                     fileIds.push(f.id);
                 } catch (err) { console.error(err); } 
             }
-            // 【v82 追加】現在の管理対象フォルダIDと構成ファイルID群を記憶
+            
+            // 履歴ごとオートセーブ（ピン留め）
             localStorage.setItem('tracked_folder_id', currentFolderId);
             localStorage.setItem('tracked_file_ids', JSON.stringify(fileIds));
+            localStorage.setItem('tracked_folder_history', JSON.stringify(folderHistory));
             processMultipleTexts(texts);
         }
 
+        // 【修正】単一読み込み時も、フォルダパスを記憶
         async function processSingleDrive(fileId, filename) { 
             try { 
+                const title = getEl('talkTitle');
+                if (title) title.innerText = "ファイル取得中...";
+
+                if (currentFolderImageFile) {
+                    try {
+                        const imgRes = await gapi.client.drive.files.get({ fileId: currentFolderImageFile.id, alt: 'media' });
+                        const bytes = new Uint8Array(imgRes.body.length);
+                        for (let i = 0; i < imgRes.body.length; i++) bytes[i] = imgRes.body.charCodeAt(i) & 0xff;
+                        let binary = '';
+                        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                        partnerCustomAvatarUrl = `data:${currentFolderImageFile.mimeType};base64,` + window.btoa(binary);
+                        hasDriveCustomImage = true;
+                    } catch(e) { console.error("Single load image fetch failed", e); }
+                }
+
                 const res = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' }); 
-                // 単一選択の場合は、その親フォルダを管理対象とする
+                
+                // 履歴ごとオートセーブ（ピン留め）
                 localStorage.setItem('tracked_folder_id', currentFolderId);
                 localStorage.setItem('tracked_file_ids', JSON.stringify([fileId]));
+                localStorage.setItem('tracked_folder_history', JSON.stringify(folderHistory));
                 processMultipleTexts([{ text: res.body, name: filename }]); 
             } catch (err) { console.error(err); } 
         }
 
-        // 【v82 追加】裏側での新着ファイル自動スキャン・同期ロジック
         async function autoCheckNewFiles() {
             const folderId = localStorage.getItem('tracked_folder_id');
             const processedStr = localStorage.getItem('tracked_file_ids');
             
-            // ロードされた履歴情報(GAPI準備完了)がなければ処理を抜ける
             if (!folderId || !processedStr || !isGapiClientReady || !isCurrentlyAuthenticated) return;
             
             let processedIds = [];
@@ -1093,14 +1127,11 @@
             if (titleElement) titleElement.innerText = "同期データをチェック中...";
 
             try {
-                // 指定フォルダ内のプレーンテキストファイルを再走査
                 const res = await gapi.client.drive.files.list({
                     q: `'${folderId}' in parents and mimeType = 'text/plain' and trashed = false`,
                     fields: 'files(id, name)'
                 });
                 const files = res.result.files || [];
-                
-                // まだ未処理（記憶しているID一覧に含まれない）の新しいファイルのみを検出
                 const newFiles = files.filter(f => !processedIds.includes(f.id));
 
                 if (newFiles.length > 0) {
@@ -1116,10 +1147,8 @@
                     }
 
                     if (newTexts.length > 0) {
-                        // 既存の管理ファイルIDリストを更新
                         localStorage.setItem('tracked_file_ids', JSON.stringify(processedIds));
                         
-                        // 既存の globalMessages からパース済みの生メッセージを抽出し直してマージ
                         let currentFlat = [];
                         let currentDateStr = "";
                         globalMessages.forEach(m => {
@@ -1129,7 +1158,6 @@
                             }
                         });
 
-                        // 新しいファイルの内容をパースして追加
                         newTexts.forEach(obj => {
                             const { messages } = parseText(obj.text, obj.name);
                             let targetDate = "";
@@ -1141,10 +1169,8 @@
                             });
                         });
 
-                        // 全データを時系列ソート
                         currentFlat.sort((a, b) => parseTimestamp(a.dateStr, a.time) - parseTimestamp(b.dateStr, b.time));
 
-                        // 重複排除して再構築
                         let timeline = [];
                         let uniqueKeys = new Set();
                         let lastDateStr = "";
@@ -1167,7 +1193,6 @@
                         filteredMessages = [...globalMessages];
                         globalSenders = Object.keys(counts);
 
-                        // ヘッダー情報とIndexedDBのキャッシュを書き換え
                         const sub = getEl('talkSub');
                         if (sub) sub.innerText = `${globalMessages.filter(m => m.type === 'msg').length} 件`;
                         
@@ -1176,7 +1201,6 @@
                         startRender();
                     }
                 } else {
-                    // 新しいファイルがなければ元のタイトル表示に戻す
                     if (titleElement) titleElement.innerText = originalTitle;
                 }
             } catch (err) {
